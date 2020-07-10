@@ -1,8 +1,8 @@
-package uap
+package stor
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/web/apps/uap/api"
+	"github.com/oceanho/gw/web/apps/stor/api"
 )
 
 func init() {
@@ -16,13 +16,13 @@ func New() *App {
 }
 
 func (u App) Name() string {
-	return "oceanho.uap"
+	return "oceanho.stor"
 }
 
 func (u App) BaseRouter() string {
-	return "uap"
+	return "stor"
 }
 
 func (u App) Register(router *gin.RouterGroup) {
-	router.GET("tenant/<uid:int64>", api.CreateTenant)
+	router.GET("obj/<uid:int64>", api.CreateObject)
 }

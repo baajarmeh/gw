@@ -11,19 +11,27 @@ import (
 
 type App interface {
 	Name() string
-	Register(router *gin.Engine)
+	BaseRouter() string
+	Register(router *gin.RouterGroup)
 }
 
-type Server struct {
+type Router struct {
+	gin.Engine
+}
+
+type ApiServer struct {
 	Addr                  string
 	Name                  string
 	Mode                  string
 	Restart               string
+	ApiPrefix             string
+	ApiVersion            string
+	StartBeforeHandler    func(server *ApiServer) error
+	ShutDownBeforeHandler func(server *ApiServer) error
+	locker                sync.Mutex
+	httpServer            *gin.Engine
+	router                *gin.RouterGroup
 	apps                  map[string]App
-	locker                sync.Locker
-	router                *gin.Engine
-	StartBeforeHandler    func(server *Server) error
-	ShutDownBeforeHandler func(server *Server) error
 }
 
 var (
@@ -31,34 +39,45 @@ var (
 	appDefaultName                  = "oceanho.app"
 	appDefaultRestart               = "always"
 	appDefaultMode                  = "release"
-	appDefaultStartBeforeHandler    = func(server *Server) error { return nil }
-	appDefaultShutDownBeforeHandler = func(server *Server) error { return nil }
+	appDefaultApiPrefix             = "api"
+	appDefaultApiVersion            = "v1"
+	appDefaultStartBeforeHandler    = func(server *ApiServer) error { return nil }
+	appDefaultShutDownBeforeHandler = func(server *ApiServer) error { return nil }
 )
 
-func New() *Server {
-	router := gin.Default()
-	return &Server{
+func New() *ApiServer {
+	engine := gin.New()
+	apiServer := &ApiServer{
 		Addr:                  appDefaultAddr,
 		Name:                  appDefaultName,
 		Restart:               appDefaultRestart,
 		Mode:                  appDefaultMode,
-		router:                router,
 		StartBeforeHandler:    appDefaultStartBeforeHandler,
 		ShutDownBeforeHandler: appDefaultShutDownBeforeHandler,
+		httpServer:            engine,
+		ApiPrefix:             appDefaultApiPrefix,
+		ApiVersion:            appDefaultApiVersion,
+		apps:                  make(map[string]App),
 	}
+	apiGroupPath := fmt.Sprintf("%s/%s", apiServer.ApiPrefix, apiServer.ApiVersion)
+	apiServer.router = apiServer.httpServer.Group(apiGroupPath)
+	return apiServer
 }
 
-func (server *Server) Register(app App) {
+func (server *ApiServer) Register(apps ...App) {
 	server.locker.Lock()
 	defer server.locker.Unlock()
-	appName := app.Name()
-	if _, ok := server.apps[appName]; !ok {
-		server.apps[appName] = app
-		app.Register(server.router)
+	for _, app := range apps {
+		appName := app.Name()
+		if _, ok := server.apps[appName]; !ok {
+			server.apps[appName] = app
+			rg := server.router.Group(app.BaseRouter())
+			app.Register(rg)
+		}
 	}
 }
 
-func (server *Server) Serve() {
+func (server *ApiServer) Serve() {
 	sigs := make(chan os.Signal, 1)
 	handler := server.StartBeforeHandler
 	if handler != nil {
@@ -67,7 +86,7 @@ func (server *Server) Serve() {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-	err := server.router.Run(server.Addr)
+	err := server.httpServer.Run(server.Addr)
 	if err != nil {
 		panic(fmt.Errorf("call server.router.Run, %v", err))
 	}

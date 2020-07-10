@@ -1,19 +1,14 @@
 package main
 
-import "github.com/oceanho/gw/contrib/app"
+import (
+	"github.com/oceanho/gw/contrib/app"
+	"github.com/oceanho/gw/web/apps/stor"
+	"github.com/oceanho/gw/web/apps/uap"
+)
 
 func main() {
-	//router := gin.New()
-	//router.GET("/", func(c *gin.Context) {
-	//	c.JSON(200, gin.H{
-	//		"message": "pong",
-	//	})
-	//})
-	//
-	//// By default it serves on :8080 unless a
-	//// PORT environment variable was defined.
-	//router.Run(":8000")
-	//// router.Run(":3000") for a hard coded port
 	server := app.New()
+	server.Register(uap.New())
+	server.Register(stor.New())
 	server.Serve()
 }
