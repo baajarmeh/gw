@@ -28,49 +28,49 @@ type ApiRouteGroup struct {
 }
 
 func (router *ApiRouter) GET(relativePath string, handler Handler) {
-	router.router.GET(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handler)
+	router.router.GET(relativePath, func(c *gin.Context) {
+		handle(c, handler)
 	})
 }
 
 func (router *ApiRouter) POST(relativePath string, handler Handler) {
-	router.router.POST(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handler)
+	router.router.POST(relativePath, func(c *gin.Context) {
+		handle(c, handler)
 	})
 }
 
 func (router *ApiRouter) PUT(relativePath string, handler Handler) {
-	router.router.PUT(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handler)
+	router.router.PUT(relativePath, func(c *gin.Context) {
+		handle(c, handler)
 	})
 }
 func (router *ApiRouter) HEAD(relativePath string, handler Handler) {
-	router.router.HEAD(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handler)
+	router.router.HEAD(relativePath, func(c *gin.Context) {
+		handle(c, handler)
 	})
 }
 
 func (router *ApiRouter) DELETE(relativePath string, handler Handler) {
-	router.router.DELETE(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handler)
+	router.router.DELETE(relativePath, func(c *gin.Context) {
+		handle(c, handler)
 	})
 }
 
 func (router *ApiRouter) OPTIONS(relativePath string, handler Handler) {
-	router.router.OPTIONS(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handler)
+	router.router.OPTIONS(relativePath, func(c *gin.Context) {
+		handle(c, handler)
 	})
 }
 
 func (router *ApiRouter) PATCH(relativePath string, handler Handler) {
-	router.router.PATCH(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handler)
+	router.router.PATCH(relativePath, func(c *gin.Context) {
+		handle(c, handler)
 	})
 }
 
 func (router *ApiRouter) Any(relativePath string, handler Handler) {
-	router.router.Any(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handler)
+	router.router.Any(relativePath, func(c *gin.Context) {
+		handle(c, handler)
 	})
 }
 
@@ -83,8 +83,8 @@ func (router *ApiRouter) Group(relativePath string, handler Handler) *ApiRouteGr
 		router,
 	}
 	if handler != nil {
-		apiRg.server.Group(relativePath, func(ctx *gin.Context) {
-			handle(ctx, handler)
+		apiRg.server.Group(relativePath, func(c *gin.Context) {
+			handle(c, handler)
 		})
 	} else {
 		apiRg.server.Group(relativePath)
@@ -92,18 +92,18 @@ func (router *ApiRouter) Group(relativePath string, handler Handler) *ApiRouteGr
 	return apiRg
 }
 
-func handle(ctx *gin.Context, handler Handler) {
-	handler(makeApiCtx(ctx))
+func handle(c *gin.Context, handler Handler) {
+	handler(makeApiCtx(c))
 }
 
-func makeApiCtx(ctx *gin.Context) *ApiContext {
-	_ctx := &ApiContext{
+func makeApiCtx(c *gin.Context) *ApiContext {
+	ctx := &ApiContext{
 		User:      nil,
 		Store:     nil,
 		RequestId: genRequestID(),
-		Context:   ctx,
+		Context:   c,
 	}
-	return _ctx
+	return ctx
 }
 
 func genRequestID() string {
