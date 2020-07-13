@@ -12,11 +12,7 @@ import (
 type App interface {
 	Name() string
 	BaseRouter() string
-	Register(router *gin.RouterGroup)
-}
-
-type Router struct {
-	gin.Engine
+	Register(router *ApiRouteGroup)
 }
 
 type ApiServer struct {
@@ -29,8 +25,7 @@ type ApiServer struct {
 	StartBeforeHandler    func(server *ApiServer) error
 	ShutDownBeforeHandler func(server *ApiServer) error
 	locker                sync.Mutex
-	httpServer            *gin.Engine
-	router                *gin.RouterGroup
+	router                *ApiRouter
 	apps                  map[string]App
 }
 
@@ -47,6 +42,9 @@ var (
 
 func New() *ApiServer {
 	engine := gin.New()
+	httpRouter := &ApiRouter{
+		server: engine,
+	}
 	apiServer := &ApiServer{
 		Addr:                  appDefaultAddr,
 		Name:                  appDefaultName,
@@ -54,47 +52,46 @@ func New() *ApiServer {
 		Mode:                  appDefaultMode,
 		StartBeforeHandler:    appDefaultStartBeforeHandler,
 		ShutDownBeforeHandler: appDefaultShutDownBeforeHandler,
-		httpServer:            engine,
 		ApiPrefix:             appDefaultApiPrefix,
 		ApiVersion:            appDefaultApiVersion,
 		apps:                  make(map[string]App),
 	}
-	apiGroupPath := fmt.Sprintf("%s/%s", apiServer.ApiPrefix, apiServer.ApiVersion)
-	apiServer.router = apiServer.httpServer.Group(apiGroupPath)
+	httpRouter.router = httpRouter.server.Group(fmt.Sprintf("%s/%s", apiServer.ApiPrefix, apiServer.ApiVersion))
+	apiServer.router = httpRouter
 	return apiServer
 }
 
-func (server *ApiServer) Register(apps ...App) {
-	server.locker.Lock()
-	defer server.locker.Unlock()
+func (apiServer *ApiServer) Register(apps ...App) {
+	apiServer.locker.Lock()
+	defer apiServer.locker.Unlock()
 	for _, app := range apps {
 		appName := app.Name()
-		if _, ok := server.apps[appName]; !ok {
-			server.apps[appName] = app
-			rg := server.router.Group(app.BaseRouter())
-			app.Register(rg)
+		if _, ok := apiServer.apps[appName]; !ok {
+			apiServer.apps[appName] = app
+			apiRg := apiServer.router.Group(app.BaseRouter())
+			app.Register(apiRg)
 		}
 	}
 }
 
-func (server *ApiServer) Serve() {
+func (apiServer *ApiServer) Serve() {
 	sigs := make(chan os.Signal, 1)
-	handler := server.StartBeforeHandler
+	handler := apiServer.StartBeforeHandler
 	if handler != nil {
-		err := server.StartBeforeHandler(server)
+		err := apiServer.StartBeforeHandler(apiServer)
 		if err != nil {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-	err := server.httpServer.Run(server.Addr)
+	err := apiServer.router.server.Run(apiServer.Addr)
 	if err != nil {
 		panic(fmt.Errorf("call server.router.Run, %v", err))
 	}
 	signal.Notify(sigs, syscall.SIGKILL, syscall.SIGTERM)
 	<-sigs
-	handler = server.ShutDownBeforeHandler
+	handler = apiServer.ShutDownBeforeHandler
 	if handler != nil {
-		err := server.ShutDownBeforeHandler(server)
+		err := apiServer.ShutDownBeforeHandler(apiServer)
 		if err != nil {
 			fmt.Printf("call app.ShutDownBeforeHandler, %v", err)
 		}

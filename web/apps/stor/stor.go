@@ -1,7 +1,7 @@
 package stor
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/oceanho/gw/contrib/app"
 	"github.com/oceanho/gw/web/apps/stor/api"
 )
 
@@ -23,6 +23,7 @@ func (u App) BaseRouter() string {
 	return "stor"
 }
 
-func (u App) Register(router *gin.RouterGroup) {
-	router.GET("obj/<uid:int64>", api.CreateObject)
+func (u App) Register(router *app.ApiRouteGroup) {
+	router.GET("/get", api.CreateObject)
+	router.POST("/modify", api.ModifyObject)
 }

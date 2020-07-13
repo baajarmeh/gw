@@ -1,7 +1,7 @@
 package uap
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/oceanho/gw/contrib/app"
 	"github.com/oceanho/gw/web/apps/uap/api"
 )
 
@@ -23,6 +23,6 @@ func (u App) BaseRouter() string {
 	return "uap"
 }
 
-func (u App) Register(router *gin.RouterGroup) {
-	router.GET("tenant/<uid:int64>", api.CreateTenant)
+func (u App) Register(router *app.ApiRouteGroup) {
+	router.GET("tenant/query", api.GetTenant)
 }

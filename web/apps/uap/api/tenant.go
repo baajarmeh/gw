@@ -1,9 +1,13 @@
 package api
 
-import "github.com/gin-gonic/gin"
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/oceanho/gw/contrib/app"
+)
 
-func CreateTenant(ctx *gin.Context) {
-	ctx.JSON(200, gin.H{
-		"payload": "Hello, world",
-	})
+func GetTenant(ctx *app.ApiContext) interface{} {
+	return gin.H{
+		"payload": fmt.Sprintf("Hello, world, Your user ID is %s", ctx.Query("uid")),
+	}
 }
