@@ -37,7 +37,7 @@ type ApiServer struct {
 	ShutDownBeforeHandler func(server *ApiServer) error
 	locker                sync.Mutex
 	router                *ApiRouter
-	rootRouter			  *ApiRouter
+	rootRouter			  ApiRouter
 	apps                  map[string]App
 	conf                  *Config
 }
@@ -91,9 +91,9 @@ func New(conf *Config) *ApiServer {
 		conf:                  conf,
 	}
 	httpRouter.router = httpRouter.server.Group(apiServer.ApiPrefix)
-	apiServer.rootRouter = &ApiRouter{
+	apiServer.rootRouter = ApiRouter{
 		server: engine,
-		router: httpRouter.server.Group(apiServer.ApiPrefix),
+		router: httpRouter.router,
 	}
 	return apiServer
 }
