@@ -74,6 +74,9 @@ func New(conf *Config) *ApiServer {
 	gin.SetMode(conf.Mode)
 	engine := gin.New()
 	engine.Use(gin.Recovery())
+	if conf.Mode == "debug" {
+		engine.Use(gin.Logger())
+	}
 	httpRouter := &ApiRouter{
 		server: engine,
 	}
@@ -101,6 +104,7 @@ func (apiServer *ApiServer) Register(apps ...App) {
 		appName := app.Name()
 		if _, ok := apiServer.apps[appName]; !ok {
 			apiServer.apps[appName] = app
+			fmt.Printf("\n[Ocean GW]  register app: %s\n", appName)
 			rg := apiServer.router.Group(app.BaseRouter(), nil)
 			app.Register(rg)
 		}

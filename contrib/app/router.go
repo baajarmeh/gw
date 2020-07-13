@@ -17,8 +17,8 @@ type ApiContext struct {
 }
 
 type ApiRouter struct {
-	server *gin.Engine
-	router *gin.RouterGroup
+	server        *gin.Engine
+	router        *gin.RouterGroup
 	currentRouter *gin.RouterGroup
 }
 
