@@ -42,6 +42,7 @@ var (
 
 func New() *ApiServer {
 	engine := gin.New()
+	engine.Use(gin.Recovery(), gin.Logger())
 	httpRouter := &ApiRouter{
 		server: engine,
 	}
