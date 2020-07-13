@@ -1,6 +1,9 @@
 package store
 
-import "gorm.io/gorm"
+import (
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
 
 type CacheStore interface {
 	Get(key interface{}) interface{}
@@ -10,4 +13,8 @@ type CacheStore interface {
 type Backend interface {
 	GetDbStore() *gorm.DB
 	GetCacheStore(index int) CacheStore
+}
+
+func GetBackend(c *gin.Context) Backend {
+	return nil
 }

@@ -14,8 +14,8 @@ type HandlerRet func(ctx *ApiContext) interface{}
 type ApiContext struct {
 	*gin.Context
 	RequestId string
-	User      *auth.User
-	Store     *store.Backend
+	User      auth.User
+	Store     store.Backend
 }
 
 type ApiRouter struct {
@@ -98,8 +98,8 @@ func handle(c *gin.Context, handler Handler) {
 
 func makeApiCtx(c *gin.Context) *ApiContext {
 	ctx := &ApiContext{
-		User:      nil,
-		Store:     nil,
+		User:      auth.GetUser(c),
+		Store:     store.GetBackend(c),
 		RequestId: genRequestID(),
 		Context:   c,
 	}
