@@ -1,0 +1,9 @@
+configsvr:
+  addr: "https://configsvr.oceanho.com"
+application:
+  appid: ""
+  appsecret: ""
+  provider: defaultHttpProvider
+  security:
+    salt: ""
+    algorithms: 3des

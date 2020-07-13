@@ -1,0 +1,12 @@
+api:
+  prefix: "api"
+  version: "v1"
+common:
+  backend:
+    db:
+      addr:
+      user:
+      passwd:
+      database:
+      ssl_mode: on
+      ssl_cert: ap
