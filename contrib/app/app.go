@@ -37,7 +37,6 @@ type ApiServer struct {
 	ShutDownBeforeHandler func(server *ApiServer) error
 	locker                sync.Mutex
 	router                *ApiRouter
-	rootRouter			  ApiRouter
 	apps                  map[string]App
 	conf                  *Config
 }
@@ -91,10 +90,7 @@ func New(conf *Config) *ApiServer {
 		conf:                  conf,
 	}
 	httpRouter.router = httpRouter.server.Group(apiServer.ApiPrefix)
-	apiServer.rootRouter = ApiRouter{
-		server: engine,
-		router: httpRouter.router,
-	}
+	apiServer.router = httpRouter
 	return apiServer
 }
 
@@ -105,7 +101,7 @@ func (apiServer *ApiServer) Register(apps ...App) {
 		appName := app.Name()
 		if _, ok := apiServer.apps[appName]; !ok {
 			apiServer.apps[appName] = app
-			rg := apiServer.rootRouter.Group(app.BaseRouter(), nil)
+			rg := apiServer.router.Group(app.BaseRouter(), nil)
 			app.Register(rg)
 		}
 	}
@@ -120,7 +116,7 @@ func (apiServer *ApiServer) Serve() {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-	err := apiServer.rootRouter.server.Run(apiServer.Addr)
+	err := apiServer.router.server.Run(apiServer.Addr)
 	if err != nil {
 		panic(fmt.Errorf("call server.router.Run, %v", err))
 	}
