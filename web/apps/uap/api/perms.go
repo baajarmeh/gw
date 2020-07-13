@@ -6,30 +6,42 @@ import (
 	"github.com/oceanho/gw/contrib/app"
 )
 
-func GetTenant(c *app.ApiContext) {
+func GetPermission(c *app.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
-func CreateTenant(c *app.ApiContext) {
-	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
-	})
-}
-
-func ModifyTenant(c *app.ApiContext) {
+func CreatePermission(c *app.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func DeleteTenant(c *app.ApiContext) {
+func ModifyPermission(c *app.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func QueryTenant(c *app.ApiContext) {
+func DeletePermission(c *app.ApiContext) {
+	c.JSON(200, gin.H{
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+	})
+}
+
+func QueryPermission(c *app.ApiContext) {
+	c.JSON(200, gin.H{
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+	})
+}
+
+func Grant(c *app.ApiContext) {
+	c.JSON(200, gin.H{
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+	})
+}
+
+func Revoke(c *app.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})

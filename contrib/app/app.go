@@ -15,6 +15,17 @@ type App interface {
 	Register(router *ApiRouteGroup)
 }
 
+type Config struct {
+	Addr                  string
+	Name                  string
+	Mode                  string
+	Restart               string
+	ApiPrefix             string
+	ApiVersion            string
+	StartBeforeHandler    func(server *ApiServer) error
+	ShutDownBeforeHandler func(server *ApiServer) error
+}
+
 type ApiServer struct {
 	Addr                  string
 	Name                  string
@@ -26,27 +37,24 @@ type ApiServer struct {
 	ShutDownBeforeHandler func(server *ApiServer) error
 	locker                sync.Mutex
 	router                *ApiRouter
+	rootRouter			  *ApiRouter
 	apps                  map[string]App
+	conf                  *Config
 }
 
 var (
 	appDefaultAddr                  = ":8080"
 	appDefaultName                  = "oceanho.app"
 	appDefaultRestart               = "always"
-	appDefaultMode                  = "release"
-	appDefaultApiPrefix             = "api"
-	appDefaultApiVersion            = "v1"
+	appDefaultMode                  = "debug"
+	appDefaultApiPrefix             = "api/v1"
+	appDefaultApiVersion            = "Version 1.0"
 	appDefaultStartBeforeHandler    = func(server *ApiServer) error { return nil }
 	appDefaultShutDownBeforeHandler = func(server *ApiServer) error { return nil }
 )
 
-func New() *ApiServer {
-	engine := gin.New()
-	engine.Use(gin.Recovery(), gin.Logger())
-	httpRouter := &ApiRouter{
-		server: engine,
-	}
-	apiServer := &ApiServer{
+func NewConfig() *Config {
+	conf := &Config{
 		Addr:                  appDefaultAddr,
 		Name:                  appDefaultName,
 		Restart:               appDefaultRestart,
@@ -55,10 +63,38 @@ func New() *ApiServer {
 		ShutDownBeforeHandler: appDefaultShutDownBeforeHandler,
 		ApiPrefix:             appDefaultApiPrefix,
 		ApiVersion:            appDefaultApiVersion,
-		apps:                  make(map[string]App),
 	}
-	httpRouter.router = httpRouter.server.Group(fmt.Sprintf("/%s/%s", apiServer.ApiPrefix, apiServer.ApiVersion))
-	apiServer.router = httpRouter
+	return conf
+}
+
+func Default() *ApiServer {
+	return New(NewConfig())
+}
+
+func New(conf *Config) *ApiServer {
+	gin.SetMode(conf.Mode)
+	engine := gin.New()
+	engine.Use(gin.Recovery())
+	httpRouter := &ApiRouter{
+		server: engine,
+	}
+	apiServer := &ApiServer{
+		Addr:                  conf.Addr,
+		Name:                  conf.Name,
+		Restart:               conf.Restart,
+		Mode:                  conf.Mode,
+		StartBeforeHandler:    conf.StartBeforeHandler,
+		ShutDownBeforeHandler: conf.ShutDownBeforeHandler,
+		ApiPrefix:             conf.ApiPrefix,
+		ApiVersion:            conf.ApiVersion,
+		apps:                  make(map[string]App),
+		conf:                  conf,
+	}
+	httpRouter.router = httpRouter.server.Group(apiServer.ApiPrefix)
+	apiServer.rootRouter = &ApiRouter{
+		server: engine,
+		router: httpRouter.server.Group(apiServer.ApiPrefix),
+	}
 	return apiServer
 }
 
@@ -69,8 +105,8 @@ func (apiServer *ApiServer) Register(apps ...App) {
 		appName := app.Name()
 		if _, ok := apiServer.apps[appName]; !ok {
 			apiServer.apps[appName] = app
-			apiRg := apiServer.router.Group(app.BaseRouter(), nil)
-			app.Register(apiRg)
+			rg := apiServer.rootRouter.Group(app.BaseRouter(), nil)
+			app.Register(rg)
 		}
 	}
 }
@@ -84,7 +120,7 @@ func (apiServer *ApiServer) Serve() {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-	err := apiServer.router.server.Run(apiServer.Addr)
+	err := apiServer.rootRouter.server.Run(apiServer.Addr)
 	if err != nil {
 		panic(fmt.Errorf("call server.router.Run, %v", err))
 	}

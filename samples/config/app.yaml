@@ -1,9 +1,10 @@
 configsvr:
   addr: "https://configsvr.oceanho.com"
-application:
   appid: ""
-  appsecret: ""
+  secret: ""
+  type: plaintext
   provider: defaultHttpProvider
-  security:
-    salt: ""
-    algorithms: 3des
+  decryptor:
+    algs: plugins/security/configsvr/lh-conf-manger.so
+    args:
+      - --salt Salt$#NB

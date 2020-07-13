@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	server := app.New()
+	server := app.Default()
 	registerApps(server)
 	server.Serve()
 }

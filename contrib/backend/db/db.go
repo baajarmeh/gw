@@ -15,8 +15,16 @@ func init() {
 	conf.User = "ocean"
 	conf.Passwd = "oceanho"
 	conf.DBName = "djdb"
-	Db, err = gorm.Open(mysql.Open(conf.FormatDSN()), &gorm.Config{})
+	Store, err := gorm.Open(mysql.Open(conf.FormatDSN()), &gorm.Config{})
 	if err != nil {
 		panic(fmt.Errorf("initial db. %v", err))
+	}
+	db, err := Store.DB()
+	if err != nil {
+		panic(fmt.Errorf("get sql.db. %v", err))
+	}
+	err = db.Ping()
+	if err != nil {
+		panic(fmt.Errorf("ping db. %v", err))
 	}
 }

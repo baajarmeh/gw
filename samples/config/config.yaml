@@ -1,12 +1,30 @@
 api:
-  prefix: "api"
-  version: "v1"
+  prefix: "api/v1"
+  version: "Version 1.0"
+  remarks: "User Account Platform API Services."
+  security:
+    auth:
+      disable: False
+    noauth-urls:
+      - POST:${API_PREFIX}/ucp/account/login
 common:
   backend:
     db:
-      addr:
-      user:
-      passwd:
-      database:
+    - primary:
+      addr: 127.0.0.1
+      port: 3306
+      user: root
+      passwd: oceanho
+      database: djdb
       ssl_mode: on
       ssl_cert: ap
+    cache:
+    - primary:
+      addr: 127.0.0.1
+      port: 6379
+      type: redis
+      auth:
+        disable: True
+        user: ocean
+        database: 1
+        passwd: oceanho
