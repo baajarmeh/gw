@@ -79,17 +79,17 @@ func (router *ApiRouter) Handlers() gin.HandlersChain {
 }
 
 func (router *ApiRouter) Group(relativePath string, handler Handler) *ApiRouteGroup {
-	apiRg := &ApiRouteGroup{
+	rg := &ApiRouteGroup{
 		router,
 	}
 	if handler != nil {
-		apiRg.server.Group(relativePath, func(c *gin.Context) {
+		rg.server.Group(relativePath, func(c *gin.Context) {
 			handle(c, handler)
 		})
 	} else {
-		apiRg.server.Group(relativePath)
+		rg.server.Group(relativePath)
 	}
-	return apiRg
+	return rg
 }
 
 func handle(c *gin.Context, handler Handler) {
