@@ -56,7 +56,7 @@ func New() *ApiServer {
 		ApiVersion:            appDefaultApiVersion,
 		apps:                  make(map[string]App),
 	}
-	httpRouter.router = httpRouter.server.Group(fmt.Sprintf("%s/%s", apiServer.ApiPrefix, apiServer.ApiVersion))
+	httpRouter.router = httpRouter.server.Group(fmt.Sprintf("/%s/%s", apiServer.ApiPrefix, apiServer.ApiVersion))
 	apiServer.router = httpRouter
 	return apiServer
 }

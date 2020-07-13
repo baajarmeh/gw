@@ -66,7 +66,7 @@ func (router *ApiRouter) Any(relativePath string, handlers ...Handler) {
 }
 
 func (router *ApiRouter) Handlers() gin.HandlersChain {
-	return router.server.Handlers
+	return router.router.Handlers
 }
 
 func (router *ApiRouter) Group(relativePath string, handlers ...Handler) *ApiRouteGroup {
@@ -74,11 +74,11 @@ func (router *ApiRouter) Group(relativePath string, handlers ...Handler) *ApiRou
 		router,
 	}
 	if len(handlers) > 0 {
-		apiRg.router.Group(relativePath, func(ctx *gin.Context) {
+		apiRg.server.Group(relativePath, func(ctx *gin.Context) {
 			handle(ctx, handlers...)
 		})
 	} else {
-		apiRg.router.Group(relativePath)
+		apiRg.server.Group(relativePath)
 	}
 	return apiRg
 }
