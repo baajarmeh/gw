@@ -3,14 +3,13 @@ package app
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/render"
 	"github.com/oceanho/gw/contrib/app/auth"
-	"github.com/oceanho/gw/contrib/app/resp"
 	"github.com/oceanho/gw/contrib/app/store"
 	"time"
 )
 
-type Handler func(ctx *ApiContext) resp.IApiResp
+type Handler func(ctx *ApiContext)
+type HandlerRet func(ctx *ApiContext) interface{}
 
 type ApiContext struct {
 	*gin.Context
@@ -45,7 +44,6 @@ func (router *ApiRouter) PUT(relativePath string, handler Handler) {
 		handle(ctx, handler)
 	})
 }
-
 func (router *ApiRouter) HEAD(relativePath string, handler Handler) {
 	router.router.HEAD(relativePath, func(ctx *gin.Context) {
 		handle(ctx, handler)
@@ -95,16 +93,7 @@ func (router *ApiRouter) Group(relativePath string, handler Handler) *ApiRouteGr
 }
 
 func handle(ctx *gin.Context, handler Handler) {
-	respObj, ok := handler(makeApiCtx(ctx)).(resp.IApiResp)
-	if ok {
-		renderObj := render.Reader{
-			Headers:       respObj.GetHeaders(),
-			ContentType:   respObj.GetContentType(),
-			Reader:        respObj.GetBodyReader(),
-			ContentLength: respObj.GetContentLength(),
-		}
-		ctx.Render(respObj.GetCode(), renderObj)
-	}
+	handler(makeApiCtx(ctx))
 }
 
 func makeApiCtx(ctx *gin.Context) *ApiContext {

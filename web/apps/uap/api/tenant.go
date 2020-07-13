@@ -6,8 +6,8 @@ import (
 	"github.com/oceanho/gw/contrib/app"
 )
 
-func GetTenant(ctx *app.ApiContext) interface{} {
-	return gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", ctx.RequestId, ctx.Query("uid")),
-	}
+func GetTenant(c *app.ApiContext) {
+	c.JSON(200, gin.H{
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+	})
 }
