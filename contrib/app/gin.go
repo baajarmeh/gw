@@ -1,17 +1,20 @@
 package app
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/contrib/app/auth"
 	"github.com/oceanho/gw/contrib/app/store"
+	"time"
 )
 
 type Handler func(ctx *ApiContext) interface{}
 
 type ApiContext struct {
 	*gin.Context
-	User  *auth.User
-	Store *store.Backend
+	RequestId string
+	User      *auth.User
+	Store     *store.Backend
 }
 
 type ApiRouter struct {
@@ -59,6 +62,12 @@ func (router *ApiRouter) OPTIONS(relativePath string, handlers ...Handler) {
 	})
 }
 
+func (router *ApiRouter) PATCH(relativePath string, handlers ...Handler) {
+	router.router.PATCH(relativePath, func(ctx *gin.Context) {
+		handle(ctx, handlers...)
+	})
+}
+
 func (router *ApiRouter) Any(relativePath string, handlers ...Handler) {
 	router.router.Any(relativePath, func(ctx *gin.Context) {
 		handle(ctx, handlers...)
@@ -101,7 +110,12 @@ func makeApiCtx(ctx *gin.Context) *ApiContext {
 	_ctx := &ApiContext{
 		User:    nil,
 		Store:   nil,
+		RequestId: genRequestID(),
 		Context: ctx,
 	}
 	return _ctx
+}
+
+func genRequestID() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }

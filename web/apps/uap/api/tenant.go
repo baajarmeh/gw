@@ -8,6 +8,6 @@ import (
 
 func GetTenant(ctx *app.ApiContext) interface{} {
 	return gin.H{
-		"payload": fmt.Sprintf("Hello, world, Your user ID is %s", ctx.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s",ctx.RequestId, ctx.Query("uid")),
 	}
 }
