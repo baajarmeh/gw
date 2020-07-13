@@ -3,12 +3,14 @@ package app
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
 	"github.com/oceanho/gw/contrib/app/auth"
+	"github.com/oceanho/gw/contrib/app/resp"
 	"github.com/oceanho/gw/contrib/app/store"
 	"time"
 )
 
-type Handler func(ctx *ApiContext) interface{}
+type Handler func(ctx *ApiContext) resp.IApiResp
 
 type ApiContext struct {
 	*gin.Context
@@ -26,51 +28,51 @@ type ApiRouteGroup struct {
 	*ApiRouter
 }
 
-func (router *ApiRouter) GET(relativePath string, handlers ...Handler) {
+func (router *ApiRouter) GET(relativePath string, handler Handler) {
 	router.router.GET(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handlers...)
+		handle(ctx, handler)
 	})
 }
 
-func (router *ApiRouter) POST(relativePath string, handlers ...Handler) {
+func (router *ApiRouter) POST(relativePath string, handler Handler) {
 	router.router.POST(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handlers...)
+		handle(ctx, handler)
 	})
 }
 
-func (router *ApiRouter) PUT(relativePath string, handlers ...Handler) {
+func (router *ApiRouter) PUT(relativePath string, handler Handler) {
 	router.router.PUT(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handlers...)
+		handle(ctx, handler)
 	})
 }
 
-func (router *ApiRouter) HEAD(relativePath string, handlers ...Handler) {
+func (router *ApiRouter) HEAD(relativePath string, handler Handler) {
 	router.router.HEAD(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handlers...)
+		handle(ctx, handler)
 	})
 }
 
-func (router *ApiRouter) DELETE(relativePath string, handlers ...Handler) {
+func (router *ApiRouter) DELETE(relativePath string, handler Handler) {
 	router.router.DELETE(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handlers...)
+		handle(ctx, handler)
 	})
 }
 
-func (router *ApiRouter) OPTIONS(relativePath string, handlers ...Handler) {
+func (router *ApiRouter) OPTIONS(relativePath string, handler Handler) {
 	router.router.OPTIONS(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handlers...)
+		handle(ctx, handler)
 	})
 }
 
-func (router *ApiRouter) PATCH(relativePath string, handlers ...Handler) {
+func (router *ApiRouter) PATCH(relativePath string, handler Handler) {
 	router.router.PATCH(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handlers...)
+		handle(ctx, handler)
 	})
 }
 
-func (router *ApiRouter) Any(relativePath string, handlers ...Handler) {
+func (router *ApiRouter) Any(relativePath string, handler Handler) {
 	router.router.Any(relativePath, func(ctx *gin.Context) {
-		handle(ctx, handlers...)
+		handle(ctx, handler)
 	})
 }
 
@@ -78,13 +80,13 @@ func (router *ApiRouter) Handlers() gin.HandlersChain {
 	return router.router.Handlers
 }
 
-func (router *ApiRouter) Group(relativePath string, handlers ...Handler) *ApiRouteGroup {
+func (router *ApiRouter) Group(relativePath string, handler Handler) *ApiRouteGroup {
 	apiRg := &ApiRouteGroup{
 		router,
 	}
-	if len(handlers) > 0 {
+	if handler != nil {
 		apiRg.server.Group(relativePath, func(ctx *gin.Context) {
-			handle(ctx, handlers...)
+			handle(ctx, handler)
 		})
 	} else {
 		apiRg.server.Group(relativePath)
@@ -92,26 +94,25 @@ func (router *ApiRouter) Group(relativePath string, handlers ...Handler) *ApiRou
 	return apiRg
 }
 
-func handle(ctx *gin.Context, handlers ...Handler) {
-	// FIXME(Ocean): Should be removal the following code.
-	// fmt.Printf("handlers: %v\n", handlers)
-	results := make([]interface{}, 0)
-	for _, handler := range handlers {
-		results = append(results, handler(makeApiCtx(ctx)))
+func handle(ctx *gin.Context, handler Handler) {
+	respObj, ok := handler(makeApiCtx(ctx)).(resp.IApiResp)
+	if ok {
+		renderObj := render.Reader{
+			Headers:       respObj.GetHeaders(),
+			ContentType:   respObj.GetContentType(),
+			Reader:        respObj.GetBodyReader(),
+			ContentLength: respObj.GetContentLength(),
+		}
+		ctx.Render(respObj.GetCode(), renderObj)
 	}
-	if len(results) == 1 {
-		ctx.JSON(200, results[0])
-		return
-	}
-	ctx.JSON(200, results)
 }
 
 func makeApiCtx(ctx *gin.Context) *ApiContext {
 	_ctx := &ApiContext{
-		User:    nil,
-		Store:   nil,
+		User:      nil,
+		Store:     nil,
 		RequestId: genRequestID(),
-		Context: ctx,
+		Context:   ctx,
 	}
 	return _ctx
 }

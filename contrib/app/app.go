@@ -68,7 +68,7 @@ func (apiServer *ApiServer) Register(apps ...App) {
 		appName := app.Name()
 		if _, ok := apiServer.apps[appName]; !ok {
 			apiServer.apps[appName] = app
-			apiRg := apiServer.router.Group(app.BaseRouter())
+			apiRg := apiServer.router.Group(app.BaseRouter(), nil)
 			app.Register(apiRg)
 		}
 	}
