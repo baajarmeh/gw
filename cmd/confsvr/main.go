@@ -9,7 +9,7 @@ func main() {
 	conf := app.NewConfig()
 	conf.Name = "confsvr"
 	conf.Addr = ":8090"
-	conf.Mode = "release"
+	conf.Mode = "debug"
 
 	server := app.New(conf)
 	registerApps(server)

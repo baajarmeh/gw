@@ -22,7 +22,7 @@ func (u App) BaseRouter() string {
 
 func (u App) Register(router *app.ApiRouteGroup) {
 	// Auth service routers.
-	router.GET("auth/get", api.GetAuth)
+	router.GET("auth/auth", api.GetAuth)
 	router.GET("auth/create", api.CreateEnv)
 	router.GET("auth/modify", api.ModifyAuth)
 	router.GET("auth/destroy", api.DestroyAuth)
