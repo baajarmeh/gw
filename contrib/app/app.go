@@ -52,6 +52,15 @@ var (
 	appDefaultShutDownBeforeHandler = func(server *ApiServer) error { return nil }
 )
 
+var (
+	apiServers          map[string]*ApiServer
+	apiServerSafeLocker sync.Mutex
+)
+
+func init() {
+	apiServers = make(map[string]*ApiServer)
+}
+
 func NewConfig() *Config {
 	conf := &Config{
 		Addr:                  appDefaultAddr,
@@ -70,7 +79,27 @@ func Default() *ApiServer {
 	return New(NewConfig())
 }
 
+func GetDefaultApiServer() *ApiServer {
+	return GetApiServer(appDefaultName)
+}
+
+func GetApiServer(name string) *ApiServer {
+	apiServerSafeLocker.Lock()
+	defer apiServerSafeLocker.Unlock()
+	apiServer, ok := apiServers[name]
+	if ok {
+		return apiServer
+	}
+	return nil
+}
+
 func New(conf *Config) *ApiServer {
+	apiServerSafeLocker.Lock()
+	defer apiServerSafeLocker.Unlock()
+	apiServer, ok := apiServers[conf.Name]
+	if ok {
+		return apiServer
+	}
 	gin.SetMode(conf.Mode)
 	engine := gin.New()
 	engine.Use(gin.Recovery())
@@ -80,7 +109,7 @@ func New(conf *Config) *ApiServer {
 	httpRouter := &ApiRouter{
 		server: engine,
 	}
-	apiServer := &ApiServer{
+	apiServer = &ApiServer{
 		Addr:                  conf.Addr,
 		Name:                  conf.Name,
 		Restart:               conf.Restart,
@@ -94,6 +123,7 @@ func New(conf *Config) *ApiServer {
 	}
 	httpRouter.router = httpRouter.server.Group(apiServer.ApiPrefix)
 	apiServer.router = httpRouter
+	apiServers[conf.Name] = apiServer
 	return apiServer
 }
 

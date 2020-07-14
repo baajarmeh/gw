@@ -1,0 +1,21 @@
+package main
+
+import (
+	"github.com/oceanho/gw/contrib/app"
+	"github.com/oceanho/gw/web/apps/confsvr"
+)
+
+func main() {
+	conf := app.NewConfig()
+	conf.Name = "confsvr"
+	conf.Addr = ":8090"
+	conf.Mode = "release"
+
+	server := app.New(conf)
+	registerApps(server)
+	server.Serve()
+}
+
+func registerApps(server *app.ApiServer) {
+	server.Register(confsvr.New())
+}

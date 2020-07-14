@@ -96,10 +96,13 @@ func handle(c *gin.Context, handler Handler) {
 }
 
 func makeApiCtx(c *gin.Context) *ApiContext {
+	user := auth.GetUser(c)
+	requestId := req.GetRequestId(c)
+	backendStore := store.GetBackend(user)
 	ctx := &ApiContext{
-		User:      auth.GetUser(c),
-		Store:     store.GetBackend(c),
-		RequestId: req.GetRequestId(c),
+		User:      user,
+		Store:     backendStore,
+		RequestId: requestId,
 		Context:   c,
 	}
 	return ctx
