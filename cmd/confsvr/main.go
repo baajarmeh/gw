@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	conf := app.NewConfig()
+	conf := app.NewOption()
 	conf.Name = "confsvr"
 	conf.Addr = ":8090"
 	conf.Mode = "debug"

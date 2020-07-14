@@ -5,21 +5,25 @@ api:
   security:
     auth:
       disable: False
-    noauth-urls:
+    allow-urls:
       - POST:${API_PREFIX}/ucp/account/login
 common:
   backend:
     db:
-    - primary:
+    - name: primary
+      dirver: mysql
       addr: 127.0.0.1
       port: 3306
       user: root
-      passwd: oceanho
+      password: oceanho
       database: djdb
       ssl_mode: on
       ssl_cert: ap
+      args:
+        charset: utf8
+        parseTime: True
     cache:
-    - primary:
+    - name: primary
       addr: 127.0.0.1
       port: 6379
       type: redis
@@ -27,4 +31,4 @@ common:
         disable: True
         user: ocean
         database: 1
-        passwd: oceanho
+        password: oceanho

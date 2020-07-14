@@ -39,7 +39,7 @@ func (resp RespGetConf) String() string {
 
 type PayloadGetConf struct {
 	Data    string `json:"data"`
-	Version int64 `json:"version"`
+	Version int64  `json:"version"`
 }
 
 // ====================================

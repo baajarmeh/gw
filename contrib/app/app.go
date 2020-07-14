@@ -15,7 +15,64 @@ type App interface {
 	Register(router *ApiRouteGroup)
 }
 
+// ======================================== //
+//                                          //
+//    Define all of configuration Items     //
+//                                          //
+// ======================================== //
+
 type Config struct {
+	Api    Api `yaml:"api"`
+	Common struct {
+		Backend *Backend `yaml:"backend"`
+	} `yaml:"common"`
+}
+
+type Api struct {
+	Prefix   string `yaml:"prefix"`
+	Version  string `yaml:"version"`
+	Remarks  string `yaml:"version"`
+	Security struct {
+		Auth struct {
+			Disable     bool     `yaml:"disable"`
+			AllowedUrls []string `yaml:"allow-urls"`
+		}
+	} `yaml:"security"`
+}
+
+type Backend struct {
+	Db    *[]Db    `yaml:"db"`
+	Cache *[]Cache `yaml:"cache"`
+}
+
+type Db struct {
+	Driver   string            `yaml:"driver"`
+	Name     string            `yaml:"name"`
+	Addr     string            `yaml:"addr"`
+	Port     int               `yaml:"port"`
+	User     string            `yaml:"user"`
+	Password string            `yaml:"password"`
+	Database string            `yaml:"database"`
+	SSLMode  string            `yaml:"ssl_mode"`
+	SSLCert  string            `yaml:"ssl_cert"`
+	Args     map[string]string `yaml:"args"`
+}
+
+type Cache struct {
+	Name     string            `yaml:"name"`
+	Addr     string            `yaml:"addr"`
+	Port     int               `yaml:"port"`
+	User     string            `yaml:"user"`
+	Password string            `yaml:"password"`
+	Database int               `yaml:"database"`
+	SSLMode  string            `yaml:"ssl_mode"`
+	SSLCert  string            `yaml:"ssl_cert"`
+	Args     map[string]string `yaml:"args"`
+}
+
+// ============ End of configuration items ============= //
+
+type Option struct {
 	Addr                  string
 	Name                  string
 	Mode                  string
@@ -38,6 +95,7 @@ type ApiServer struct {
 	locker                sync.Mutex
 	router                *ApiRouter
 	apps                  map[string]App
+	option                *Option
 	conf                  *Config
 }
 
@@ -61,8 +119,8 @@ func init() {
 	apiServers = make(map[string]*ApiServer)
 }
 
-func NewConfig() *Config {
-	conf := &Config{
+func NewOption() *Option {
+	conf := &Option{
 		Addr:                  appDefaultAddr,
 		Name:                  appDefaultName,
 		Restart:               appDefaultRestart,
@@ -76,7 +134,7 @@ func NewConfig() *Config {
 }
 
 func Default() *ApiServer {
-	return New(NewConfig())
+	return New(NewOption())
 }
 
 func GetDefaultApiServer() *ApiServer {
@@ -93,7 +151,7 @@ func GetApiServer(name string) *ApiServer {
 	return nil
 }
 
-func New(conf *Config) *ApiServer {
+func New(conf *Option) *ApiServer {
 	apiServerSafeLocker.Lock()
 	defer apiServerSafeLocker.Unlock()
 	apiServer, ok := apiServers[conf.Name]
@@ -119,7 +177,7 @@ func New(conf *Config) *ApiServer {
 		ApiPrefix:             conf.ApiPrefix,
 		ApiVersion:            conf.ApiVersion,
 		apps:                  make(map[string]App),
-		conf:                  conf,
+		option:                conf,
 	}
 	httpRouter.router = httpRouter.server.Group(apiServer.ApiPrefix)
 	apiServer.router = httpRouter
