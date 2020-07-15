@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path"
 	"plugin"
+	"strings"
 	"sync"
 	"syscall"
 )
@@ -35,7 +36,9 @@ type ServerOption struct {
 	Mode                  string
 	Restart               string
 	ApiPrefix             string
-	PluginAppName         string
+	PluginDir             string
+	PluginSymbolName      string
+	PluginSymbolSuffix    string
 	StartBeforeHandler    func(server *ApiHostServer) error
 	ShutDownBeforeHandler func(server *ApiHostServer) error
 }
@@ -54,7 +57,8 @@ var (
 	appDefaultRestart               = "always"
 	appDefaultMode                  = "debug"
 	appDefaultApiPrefix             = "api/v1"
-	appDefaultPluginAppName         = "AppPlugin"
+	appDefaultPluginSymbolName      = "AppPlugin"
+	appDefaultPluginSymbolSuffix    = ".so"
 	appDefaultApiVersion            = "Version 1.0"
 	appDefaultStartBeforeHandler    = func(server *ApiHostServer) error { return nil }
 	appDefaultShutDownBeforeHandler = func(server *ApiHostServer) error { return nil }
@@ -76,7 +80,8 @@ func NewServerOption() *ServerOption {
 		Restart:               appDefaultRestart,
 		Mode:                  appDefaultMode,
 		ApiPrefix:             appDefaultApiPrefix,
-		PluginAppName:         appDefaultPluginAppName,
+		PluginSymbolName:      appDefaultPluginSymbolName,
+		PluginSymbolSuffix:    appDefaultPluginSymbolSuffix,
 		StartBeforeHandler:    appDefaultStartBeforeHandler,
 		ShutDownBeforeHandler: appDefaultShutDownBeforeHandler,
 	}
@@ -153,19 +158,23 @@ func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
 			if fi.IsDir() {
 				server.RegisterByPluginDir(pn)
 			} else {
+				if !strings.HasSuffix(fi.Name(), server.option.PluginSymbolSuffix) {
+					logger.Info("suffix not is %s, skipping file: %s, err: %v", server.option.PluginSymbolSuffix, pn)
+					continue
+				}
 				p, err := plugin.Open(pn)
 				if err != nil {
 					logger.Error("load plugin file: %s, err: %v", pn, err)
 					continue
 				}
-				sym, err := p.Lookup(server.option.PluginAppName)
+				sym, err := p.Lookup(server.option.PluginSymbolName)
 				if err != nil {
 					logger.Error("file %s, err: %v", pn, err)
 					continue
 				}
 				app, ok := sym.(App)
 				if !ok {
-					logger.Error("symbol %s in file %s did not is app.App interface.", server.option.PluginAppName, pn)
+					logger.Error("symbol %s in file %s did not is app.App interface.", server.option.PluginSymbolName, pn)
 					continue
 				}
 				server.Register(app)
