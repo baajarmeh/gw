@@ -8,8 +8,8 @@ import (
 type App struct {
 }
 
-func New() *App {
-	return &App{}
+func New() App {
+	return App{}
 }
 
 func (u App) Name() string {
