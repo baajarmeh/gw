@@ -159,7 +159,7 @@ func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
 				server.RegisterByPluginDir(pn)
 			} else {
 				if !strings.HasSuffix(fi.Name(), server.option.PluginSymbolSuffix) {
-					logger.Info("suffix not is %s, skipping file: %s, err: %v", server.option.PluginSymbolSuffix, pn)
+					logger.Info("suffix not is %s, skipping file: %s", server.option.PluginSymbolSuffix, pn)
 					continue
 				}
 				p, err := plugin.Open(pn)
@@ -172,6 +172,7 @@ func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
 					logger.Error("file %s, err: %v", pn, err)
 					continue
 				}
+				// TODO(Ocean): If symbol are pointer, how to conversions ?
 				app, ok := sym.(App)
 				if !ok {
 					logger.Error("symbol %s in file %s did not is app.App interface.", server.option.PluginSymbolName, pn)
