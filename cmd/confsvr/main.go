@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	conf := app.NewOption()
+	conf := app.NewServerOption()
 	conf.Name = "confsvr"
 	conf.Addr = ":8090"
 	conf.Mode = "debug"
@@ -16,6 +16,6 @@ func main() {
 	server.Serve()
 }
 
-func registerApps(server *app.ApiServer) {
+func registerApps(server *app.ApiHostServer) {
 	server.Register(confsvr.New())
 }

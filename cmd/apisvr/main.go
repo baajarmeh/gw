@@ -12,7 +12,7 @@ func main() {
 	server.Serve()
 }
 
-func registerApps(server *app.ApiServer) {
+func registerApps(server *app.ApiHostServer) {
 	server.Register(uap.New())
 	server.Register(stor.New())
 }

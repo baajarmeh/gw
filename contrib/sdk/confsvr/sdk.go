@@ -43,6 +43,9 @@ func Initial(conf *SdkSetting) {
 }
 
 func SyncConf() ([]byte, error) {
+	if sdk == nil {
+		panic("should be call confsvr.Initial(...) At first.")
+	}
 	updateToken()
 	updateConf()
 	return []byte(sdk.currentConfigData), nil
