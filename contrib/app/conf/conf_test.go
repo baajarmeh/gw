@@ -1,5 +1,15 @@
-app:
-  name: "My App"
+package conf
+
+import (
+	"encoding/json"
+	"gopkg.in/yaml.v2"
+	"reflect"
+	"testing"
+)
+
+var f = `
+service:
+  name: "confsvr"
   prefix: "api/v1"
   version: "Version 1.0"
   remarks: "User Account Platform API Services."
@@ -7,10 +17,7 @@ app:
     auth:
       disable: False
     allow-urls:
-      - RE:POST:${API_PREFIX}/ucp/account/login
-  services:
-    plugin: "/apps/dylib/apis/*.so"
-
+      - POST:${API_PREFIX}/ucp/account/login
 common:
   backend:
     db:
@@ -37,11 +44,20 @@ common:
         user: ocean
         database: 1
         password: oceanho
-
-# Any Your custom configuration item at here.
-# More: https://github.com/oceanho/gw/master/docs/configuration#custom
 custom:
-#  user: OceanHo
-#  tags:
-#    - body
-#    - programmer
+  user: OceanHo
+  tags:
+  - body
+  - programmer
+`
+
+func TestConfig(t *testing.T) {
+	var cnf = &Config{}
+	yaml.Unmarshal([]byte(f), cnf)
+	j, _ := json.Marshal(cnf.Custom)
+	t.Logf("%s", string(j))
+	for k, v := range cnf.Custom {
+		t.Logf("%v=%v, v type is. %v", k, v, reflect.TypeOf(v))
+	}
+	t.Logf("%v", cnf)
+}

@@ -12,7 +12,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/yaml.v2 v2.3.0 // indirect
+	gopkg.in/yaml.v2 v2.3.0
 	gorm.io/driver/mysql v0.2.9
 	gorm.io/driver/postgres v0.2.5 // indirect
 	gorm.io/driver/sqlite v1.0.8 // indirect
