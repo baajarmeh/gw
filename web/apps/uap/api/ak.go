@@ -8,12 +8,13 @@ import (
 
 func GetAK(c *app.ApiContext) {
 	db := c.Store.GetDbStore()
-	row := db.Exec("select 1").Row()
+	row := db.Raw("select 1 from DUAL").Row()
 	var result uint64 = 0
-	_ = row.Scan(result)
+	err := row.Scan(&result)
 
 	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s, db result: %d", c.RequestId, c.Query("uid"), result),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s, db result: %d, db err: %v",
+			c.RequestId, c.Query("uid"), result, err),
 	})
 }
 func CreateAK(c *app.ApiContext) {

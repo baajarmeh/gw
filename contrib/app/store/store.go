@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -28,7 +29,7 @@ type internalBackendWrapper struct {
 }
 
 func (b internalBackendWrapper) GetDbStore() *gorm.DB {
-	db := b.backend.GetDbStore()
+	db := b.backend.GetDbStore().WithContext(context.Background())
 	if db == nil {
 		panic("got db store fail, ret is nil.")
 	}
@@ -36,7 +37,7 @@ func (b internalBackendWrapper) GetDbStore() *gorm.DB {
 }
 
 func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
-	db := b.backend.GetDbStoreByName(name)
+	db := b.backend.GetDbStoreByName(name).WithContext(context.Background())
 	if db == nil {
 		panic("got db store by name fail, ret is nil.")
 	}
