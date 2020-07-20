@@ -66,8 +66,10 @@ type Config struct {
 }
 
 type AllowedUrl struct {
+	Name     string   `yaml:"name" toml:"name" json:"name"`
 	Urls     []string `yaml:"urls" toml:"urls" json:"urls"`
-	IPsLimit []string `yaml:"ips" toml:"ips" json:"ips"`
+	Patterns []string `yaml:"patterns" toml:"patterns" json:"patterns"`
+	IPs      []string `yaml:"ips" toml:"ips" json:"ips"`
 }
 
 type Backend struct {
