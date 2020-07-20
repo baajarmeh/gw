@@ -24,6 +24,6 @@ func (u App) BaseRouter() string {
 }
 
 func (u App) Register(router *app.ApiRouteGroup) {
-	router.GET("/get", api.CreateObject)
-	router.POST("/modify", api.ModifyObject)
+	router.GET("object/create", api.CreateObject)
+	router.POST("object/modify", api.ModifyObject)
 }

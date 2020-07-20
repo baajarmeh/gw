@@ -19,7 +19,14 @@ type ApiContext struct {
 }
 
 func (c *ApiContext) Query(key string) string {
-	return c.queries[key][0]
+	val := c.Context.Query(key)
+	if val == "" {
+		queries := c.QueryArray(key)
+		if len(queries) > 0 {
+			val = queries[0]
+		}
+	}
+	return val
 }
 
 func (c *ApiContext) QueryArray(key string) []string {
@@ -118,21 +125,21 @@ func handle(c *gin.Context, handler Handler) {
 //  sp, reg, str, uint64
 // ===========================
 //
-//func handleBySubPath(c *gin.Context, handler Handler) {
-//	handler(makeApiCtx(c))
-//}
+// func handleBySubPath(c *gin.Context, handler Handler) {
+// 	handler(makeApiCtx(c))
+// }
 //
-//func handleByUint64(c *gin.Context, handler Handler) {
-//	handler(makeApiCtx(c))
-//}
+// func handleByUint64(c *gin.Context, handler Handler) {
+// 	handler(makeApiCtx(c))
+// }
 //
-//func handleByStr(c *gin.Context, handler Handler) {
-//	handler(makeApiCtx(c))
-//}
+// func handleByStr(c *gin.Context, handler Handler) {
+// 	handler(makeApiCtx(c))
+// }
 //
-//func handleByRegex(c *gin.Context, handler Handler) {
-//	handler(makeApiCtx(c))
-//}
+// func handleByRegex(c *gin.Context, handler Handler) {
+// 	handler(makeApiCtx(c))
+// }
 
 func makeApiCtx(c *gin.Context) *ApiContext {
 	user := auth.GetUser(c)

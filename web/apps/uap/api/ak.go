@@ -7,8 +7,13 @@ import (
 )
 
 func GetAK(c *app.ApiContext) {
+	db := c.Store.GetDbStore()
+	row := db.Exec("select 1").Row()
+	var result uint64 = 0
+	_ = row.Scan(result)
+
 	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s, db result: %d", c.RequestId, c.Query("uid"), result),
 	})
 }
 func CreateAK(c *app.ApiContext) {

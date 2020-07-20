@@ -24,9 +24,9 @@ common:
         driver: mysql
         addr: 127.0.0.1
         port: 3306
-        user: root
-        password: oceanho
-        database: djdb
+        user: gw
+        password: gw@123
+        database: gwdb
         ssl_mode: on
         ssl_cert: ap
         args:

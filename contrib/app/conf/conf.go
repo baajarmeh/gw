@@ -6,7 +6,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/oceanho/gw/contrib/app/logger"
 	"gopkg.in/yaml.v3"
-	"gorm.io/gorm"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -54,8 +53,8 @@ type Config struct {
 		Remarks  string `yaml:"remarks" toml:"remarks" json:"remarks"`
 		Security struct {
 			Auth struct {
-				Disable     bool         `yaml:"disable" toml:"disable" json:"disable"`
-				AllowedUrls []AllowedUrl `yaml:"allow-urls" toml:"allow-urls" json:"allow-urls"`
+				Disable   bool       `yaml:"disable" toml:"disable" json:"disable"`
+				AllowUrls []AllowUrl `yaml:"allow-urls" toml:"allow-urls" json:"allow-urls"`
 			}
 		} `yaml:"security" toml:"security" json:"security"`
 	} `yaml:"service" toml:"service" json:"service"`
@@ -65,7 +64,7 @@ type Config struct {
 	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
 }
 
-type AllowedUrl struct {
+type AllowUrl struct {
 	Name     string   `yaml:"name" toml:"name" json:"name"`
 	Urls     []string `yaml:"urls" toml:"urls" json:"urls"`
 	Patterns []string `yaml:"patterns" toml:"patterns" json:"patterns"`
@@ -73,8 +72,8 @@ type AllowedUrl struct {
 }
 
 type Backend struct {
-	Db    *[]Db    `yaml:"db"`
-	Cache *[]Cache `yaml:"cache"`
+	Db    []Db    `yaml:"db"`
+	Cache []Cache `yaml:"cache"`
 }
 
 type Db struct {
@@ -88,9 +87,6 @@ type Db struct {
 	SSLMode  string            `yaml:"ssl_mode" toml:"ssl_mode" json:"ssl_mode"`
 	SSLCert  string            `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
 	Args     map[string]string `yaml:"args" toml:"args" json:"args"`
-	//
-	// internal database objects.
-	db *gorm.DB
 }
 
 type Cache struct {
@@ -105,10 +101,6 @@ type Cache struct {
 	SSLCert          string            `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
 	SSLCertFormatter string            `yaml:"ssl_cert_fmt" toml:"ssl_cert_fmt" json:"ssl_cert_fmt"`
 	Args             map[string]string `yaml:"args" toml:"args" json:"args"`
-
-	//
-	// internal database objects.
-	db *gorm.DB
 }
 
 // ============ End of configuration items ============= //
@@ -122,17 +114,17 @@ type AllowUrlPattern struct {
 	regMatchPattern *regexp.Regexp
 }
 
-func ParseAllowedUrlToPatterns(urls []AllowedUrl) []AllowUrlPattern {
+func ParseAllowedUrlToPatterns(urls []AllowUrl) []AllowUrlPattern {
 	panic("impl me please.")
 	patterns := make([]AllowUrlPattern, len(urls))
 	// TODO(Ocean): implementation.
-	//for _, url := range urls {
-	//	p := AllowUrlPattern{}
-	//	s := strings.Split(url.Urls, ":")
-	//	p.Method = strings.ToUpper(s[0])
-	//	p.IPLimit = ""
-	//	patterns = append(patterns, p)
-	//}
+	// for _, url := range urls {
+	// 	p := AllowUrlPattern{}
+	// 	s := strings.Split(url.Urls, ":")
+	// 	p.Method = strings.ToUpper(s[0])
+	// 	p.IPLimit = ""
+	// 	patterns = append(patterns, p)
+	// }
 	return patterns
 }
 
