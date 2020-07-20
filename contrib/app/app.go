@@ -6,6 +6,7 @@ import (
 	"github.com/oceanho/gw/contrib/app/conf"
 	_ "github.com/oceanho/gw/contrib/app/conf"
 	"github.com/oceanho/gw/contrib/app/logger"
+	"github.com/oceanho/gw/contrib/app/store"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -30,6 +31,9 @@ type App interface {
 	Register(router *ApiRouteGroup)
 }
 
+type ServerConfig struct {
+}
+
 type ServerOption struct {
 	Addr                  string
 	Name                  string
@@ -39,8 +43,11 @@ type ServerOption struct {
 	PluginDir             string
 	PluginSymbolName      string
 	PluginSymbolSuffix    string
+	svrConfig             *ServerConfig
 	StartBeforeHandler    func(server *ApiHostServer) error
 	ShutDownBeforeHandler func(server *ApiHostServer) error
+	BackendStoreHandler   func(cnf conf.Config) store.Backend
+	ConfigLoadHandler     func(cnf ServerConfig) *conf.Config
 }
 
 type ApiHostServer struct {
@@ -63,6 +70,9 @@ var (
 	appDefaultApiVersion            = "Version 1.0"
 	appDefaultStartBeforeHandler    = func(server *ApiHostServer) error { return nil }
 	appDefaultShutDownBeforeHandler = func(server *ApiHostServer) error { return nil }
+	appDefaultBackendHandler        = func(cnf conf.Config) store.Backend {
+		return store.Default(cnf)
+	}
 )
 
 var (
@@ -74,7 +84,11 @@ func init() {
 	servers = make(map[string]*ApiHostServer)
 }
 
-func NewServerOption() *ServerOption {
+func NewServerConfig() *ServerConfig {
+	return &ServerConfig{}
+}
+
+func NewServerOption(cnf *ServerConfig) *ServerOption {
 	conf := &ServerOption{
 		Addr:                  appDefaultAddr,
 		Name:                  appDefaultName,
@@ -85,12 +99,15 @@ func NewServerOption() *ServerOption {
 		PluginSymbolSuffix:    appDefaultPluginSymbolSuffix,
 		StartBeforeHandler:    appDefaultStartBeforeHandler,
 		ShutDownBeforeHandler: appDefaultShutDownBeforeHandler,
+		BackendStoreHandler:   appDefaultBackendHandler,
+		svrConfig:             cnf,
 	}
 	return conf
 }
 
 func Default() *ApiHostServer {
-	return New(NewServerOption())
+	svrConf := NewServerConfig()
+	return New(NewServerOption(svrConf))
 }
 
 func GetDefaultApiServer() *ApiHostServer {
@@ -128,6 +145,13 @@ func New(conf *ServerOption) *ApiHostServer {
 		apps:    make(map[string]App),
 		Options: conf,
 	}
+	//
+	// All of internal components AT here.
+	appConf := *server.conf
+	// backend initial
+	store.Initial(appConf, server.Options.BackendStoreHandler)
+
+	// initial routes.
 	httpRouter.router = httpRouter.server.Group(server.Options.ApiPrefix)
 	server.router = httpRouter
 	servers[conf.Name] = server

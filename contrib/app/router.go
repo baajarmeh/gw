@@ -14,6 +14,16 @@ type ApiContext struct {
 	RequestId string
 	User      auth.User
 	Store     store.Backend
+	queries   map[string][]string
+	params    map[string]interface{}
+}
+
+func (c *ApiContext) Query(key string) string {
+	return c.queries[key][0]
+}
+
+func (c *ApiContext) QueryArray(key string) []string {
+	return c.queries[key]
 }
 
 type ApiRouter struct {
@@ -95,9 +105,34 @@ func (router *ApiRouter) Group(relativePath string, handler Handler) *ApiRouteGr
 	return rg
 }
 
+func reflectRouter(relativePath string, handler Handler) {
+	// prefix  pattern   suffix.
+}
+
 func handle(c *gin.Context, handler Handler) {
 	handler(makeApiCtx(c))
 }
+
+//
+// TODO(Ocean): impl it.
+//  sp, reg, str, uint64
+// ===========================
+//
+//func handleBySubPath(c *gin.Context, handler Handler) {
+//	handler(makeApiCtx(c))
+//}
+//
+//func handleByUint64(c *gin.Context, handler Handler) {
+//	handler(makeApiCtx(c))
+//}
+//
+//func handleByStr(c *gin.Context, handler Handler) {
+//	handler(makeApiCtx(c))
+//}
+//
+//func handleByRegex(c *gin.Context, handler Handler) {
+//	handler(makeApiCtx(c))
+//}
 
 func makeApiCtx(c *gin.Context) *ApiContext {
 	user := auth.GetUser(c)
@@ -105,9 +140,15 @@ func makeApiCtx(c *gin.Context) *ApiContext {
 	backendStore := store.GetBackend(c, user)
 	ctx := &ApiContext{
 		User:      user,
-		Store:     backendStore,
 		RequestId: requestId,
+		Store:     backendStore,
 		Context:   c,
+		queries:   make(map[string][]string),
+		params:    make(map[string]interface{}),
 	}
 	return ctx
+}
+
+func parseParams() map[string]interface{} {
+	panic("impl please.")
 }
