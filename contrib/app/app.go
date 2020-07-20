@@ -111,6 +111,7 @@ func New(conf *ServerOption) *ApiHostServer {
 	defer serverSafeLocker.Unlock()
 	server, ok := servers[conf.Name]
 	if ok {
+		logger.Warn("duplicated server, name: %s", conf.Name)
 		return server
 	}
 	gin.SetMode(conf.Mode)

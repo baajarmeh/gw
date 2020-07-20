@@ -73,6 +73,10 @@ type Cache struct {
 	SSLCert          string            `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
 	SSLCertFormatter string            `yaml:"ssl_cert_fmt" toml:"ssl_cert_fmt" json:"ssl_cert_fmt"`
 	Args             map[string]string `yaml:"args" toml:"args" json:"args"`
+
+	//
+	// internal database objects.
+	db *gorm.DB
 }
 
 // ============ End of configuration items ============= //
