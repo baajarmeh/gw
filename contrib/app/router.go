@@ -73,6 +73,10 @@ func (router *ApiRouter) Any(relativePath string, handler Handler) {
 	})
 }
 
+func (router *ApiRouter) Use(middleware ...gin.HandlerFunc) {
+	router.currentRouter.Use(middleware...)
+}
+
 func (router *ApiRouter) Handlers() gin.HandlersChain {
 	return router.currentRouter.Handlers
 }
@@ -98,7 +102,7 @@ func handle(c *gin.Context, handler Handler) {
 func makeApiCtx(c *gin.Context) *ApiContext {
 	user := auth.GetUser(c)
 	requestId := req.GetRequestId(c)
-	backendStore := store.GetBackend(user)
+	backendStore := store.GetBackend(c, user)
 	ctx := &ApiContext{
 		User:      user,
 		Store:     backendStore,

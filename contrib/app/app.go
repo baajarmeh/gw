@@ -44,10 +44,11 @@ type ServerOption struct {
 }
 
 type ApiHostServer struct {
+	Options *ServerOption
+	// private properties.
 	locker sync.Mutex
 	router *ApiRouter
 	apps   map[string]App
-	option *ServerOption
 	conf   *conf.Config
 }
 
@@ -124,10 +125,10 @@ func New(conf *ServerOption) *ApiHostServer {
 		server: engine,
 	}
 	server = &ApiHostServer{
-		apps:   make(map[string]App),
-		option: conf,
+		apps:    make(map[string]App),
+		Options: conf,
 	}
-	httpRouter.router = httpRouter.server.Group(server.option.ApiPrefix)
+	httpRouter.router = httpRouter.server.Group(server.Options.ApiPrefix)
 	server.router = httpRouter
 	servers[conf.Name] = server
 	return server
@@ -159,8 +160,8 @@ func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
 			if fi.IsDir() {
 				server.RegisterByPluginDir(pn)
 			} else {
-				if !strings.HasSuffix(fi.Name(), server.option.PluginSymbolSuffix) {
-					logger.Info("suffix not is %s, skipping file: %s", server.option.PluginSymbolSuffix, pn)
+				if !strings.HasSuffix(fi.Name(), server.Options.PluginSymbolSuffix) {
+					logger.Info("suffix not is %s, skipping file: %s", server.Options.PluginSymbolSuffix, pn)
 					continue
 				}
 				p, err := plugin.Open(pn)
@@ -168,7 +169,7 @@ func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
 					logger.Error("load plugin file: %s, err: %v", pn, err)
 					continue
 				}
-				sym, err := p.Lookup(server.option.PluginSymbolName)
+				sym, err := p.Lookup(server.Options.PluginSymbolName)
 				if err != nil {
 					logger.Error("file %s, err: %v", pn, err)
 					continue
@@ -176,7 +177,7 @@ func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
 				// TODO(Ocean): If symbol are pointer, how to conversions ?
 				app, ok := sym.(App)
 				if !ok {
-					logger.Error("symbol %s in file %s did not is app.App interface.", server.option.PluginSymbolName, pn)
+					logger.Error("symbol %s in file %s did not is app.App interface.", server.Options.PluginSymbolName, pn)
 					continue
 				}
 				server.Register(app)
@@ -187,22 +188,22 @@ func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
 
 func (server *ApiHostServer) Serve() {
 	sigs := make(chan os.Signal, 1)
-	handler := server.option.StartBeforeHandler
+	handler := server.Options.StartBeforeHandler
 	if handler != nil {
-		err := server.option.StartBeforeHandler(server)
+		err := server.Options.StartBeforeHandler(server)
 		if err != nil {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-	err := server.router.server.Run(server.option.Addr)
+	err := server.router.server.Run(server.Options.Addr)
 	if err != nil {
 		panic(fmt.Errorf("call server.router.Run, %v", err))
 	}
 	signal.Notify(sigs, syscall.SIGKILL, syscall.SIGTERM)
 	<-sigs
-	handler = server.option.ShutDownBeforeHandler
+	handler = server.Options.ShutDownBeforeHandler
 	if handler != nil {
-		err := server.option.ShutDownBeforeHandler(server)
+		err := server.Options.ShutDownBeforeHandler(server)
 		if err != nil {
 			fmt.Printf("call app.ShutDownBeforeHandler, %v", err)
 		}
