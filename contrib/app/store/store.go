@@ -27,36 +27,44 @@ type internalBackendWrapper struct {
 	backend Backend
 }
 
-func (ibw internalBackendWrapper) GetDbStore() *gorm.DB {
-	db := ibw.backend.GetDbStore()
+func (b internalBackendWrapper) GetDbStore() *gorm.DB {
+	db := b.backend.GetDbStore()
 	if db == nil {
 		panic("got db store fail, ret is nil.")
 	}
-	return db
+	return b.addGlobalDbFilter(db)
 }
 
-func (ibw internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
-	db := ibw.backend.GetDbStoreByName(name)
+func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
+	db := b.backend.GetDbStoreByName(name)
 	if db == nil {
 		panic("got db store by name fail, ret is nil.")
 	}
+	return b.addGlobalDbFilter(db)
+}
+
+func (b internalBackendWrapper) addGlobalDbFilter(db *gorm.DB) *gorm.DB{
 	return db
 }
 
-func (ibw internalBackendWrapper) GetCacheStore() *redis.Client {
-	db := ibw.backend.GetCacheStore()
+func (b internalBackendWrapper) addGlobalCacheSettings(db *redis.Client) *redis.Client{
+	return db
+}
+
+func (b internalBackendWrapper) GetCacheStore() *redis.Client {
+	db := b.backend.GetCacheStore()
 	if db == nil {
 		panic("got cache store fail, ret is nil.")
 	}
-	return db
+	return b.addGlobalCacheSettings(db)
 }
 
-func (ibw internalBackendWrapper) GetCacheStoreByName(name string) *redis.Client {
-	db := ibw.backend.GetCacheStoreByName(name)
+func (b internalBackendWrapper) GetCacheStoreByName(name string) *redis.Client {
+	db := b.backend.GetCacheStoreByName(name)
 	if db == nil {
 		panic("got cache store by name fail, ret is nil.")
 	}
-	return db
+	return b.addGlobalCacheSettings(db)
 }
 
 type DefaultBackendImpl struct {
