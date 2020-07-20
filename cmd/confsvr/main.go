@@ -2,11 +2,13 @@ package main
 
 import (
 	"github.com/oceanho/gw/contrib/app"
+	appConf "github.com/oceanho/gw/contrib/app/conf"
 	"github.com/oceanho/gw/web/apps/confsvr"
 )
 
 func main() {
-	conf := app.NewServerOption()
+	bc := appConf.DefaultBootStrapConfig()
+	conf := app.NewServerOption(bc)
 	conf.Name = "confsvr"
 	conf.Addr = ":8090"
 	conf.Mode = "debug"
