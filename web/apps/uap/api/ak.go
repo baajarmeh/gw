@@ -7,6 +7,7 @@ import (
 )
 
 func GetAK(c *app.ApiContext) {
+	c.B
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})

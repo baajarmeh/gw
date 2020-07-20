@@ -1,20 +1,50 @@
 package conf
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/BurntSushi/toml"
+	"github.com/oceanho/gw/contrib/app/logger"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
+	"io/ioutil"
+	"path/filepath"
 	"regexp"
 )
 
-type ConfigReader interface {
-	Read(out *Config) error
-	Auth(ak string, secret string) (token string)
+type ConfigProvider interface {
+	Provide(out *Config) error
 }
 
-// ======================================== //
-//                                          //
-//    Define all of configuration Items     //
-//                                          //
-// ======================================== //
+// ========================================================== //
+//                                                            //
+//    Define all of configuration Items for app BootStrap     //
+//                                                            //                                                              ////                                                              ////
+// ========================================================== //
+
+type BootStrapConfig struct {
+	AppCnf struct {
+		Provider string `yaml:"provider" toml:"provider" json:"provider"`
+		Section  string `yaml:"section" toml:"section" json:"section"`
+	} `yaml:"appconf" toml:"appconf" json:"appconf"`
+	GWConf struct {
+		Addr     string            `yaml:"addr" toml:"addr" json:"addr"`
+		AppID    string            `yaml:"appid" toml:"appid" json:"appid"`
+		Secret   string            `yaml:"secret" toml:"secret" json:"secret"`
+		Provider string            `yaml:"provider" toml:"provider" json:"provider"`
+		Args     map[string]string `yaml:"args" toml:"args" json:"args"`
+	} `yaml:"gwconf" toml:"gwconf" json:"gwconf"`
+	LocalFS struct {
+		Path string `yaml:"path" toml:"path" json:"path"`
+	} `yaml:"localfs" toml:"localfs" json:"localfs"`
+	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
+}
+
+// ======================================================= //
+//                                                         //
+//    Define all of configuration Items for Application    //
+//                                                         //
+// ======================================================= //
 
 type Config struct {
 	Service struct {
@@ -102,4 +132,83 @@ func ParseAllowedUrlToPatterns(urls []AllowedUrl) []AllowUrlPattern {
 	//	patterns = append(patterns, p)
 	//}
 	return patterns
+}
+
+var (
+	defaultBootStrapConfigLocalFS = "config/boot.yaml"
+	localfsCnfSerializers         map[string]func(b []byte, out interface{}) error
+	configProviders               map[string]ConfigProvider
+)
+
+func init() {
+	configProviders = make(map[string]ConfigProvider)
+	localfsCnfSerializers = make(map[string]func(b []byte, out interface{}) error)
+	initialDefaultConfProvider()
+	initialDefaultConfSerializers()
+}
+
+func initialDefaultConfProvider() {
+	configProviders["gwconf"] = &GWHttpSvrConfig{}
+}
+
+func initialDefaultConfSerializers() {
+	localfsCnfSerializers[".yaml"] = func(b []byte, out interface{}) error {
+		err := yaml.Unmarshal(b, out)
+		return err
+	}
+	localfsCnfSerializers[".yml"] = localfsCnfSerializers[".yaml"]
+	localfsCnfSerializers[".toml"] = func(b []byte, out interface{}) error {
+		err := toml.Unmarshal(b, out)
+		return err
+	}
+	localfsCnfSerializers[".tml"] = localfsCnfSerializers[".toml"]
+	localfsCnfSerializers[".json"] = func(b []byte, out interface{}) error {
+		err := json.Unmarshal(b, out)
+		return err
+	}
+}
+
+func DefaultFromGWConfSvr(cnf BootStrapConfig) *Config {
+	panic("impl me.")
+}
+
+func Default(cnf BootStrapConfig) *Config {
+	ext := filepath.Ext(cnf.LocalFS.Path)
+	p, o := localfsCnfSerializers[ext]
+	if !o {
+		panic(fmt.Sprintf("not supports app config suffix: %s.", ext))
+	}
+	b, e := ioutil.ReadFile(cnf.LocalFS.Path)
+	if e != nil {
+		panic(fmt.Sprintf("read app config file: %s, err: %v", cnf.LocalFS.Path, e))
+	}
+	out := &Config{}
+	err := p(b, out)
+	if err != nil {
+		panic(fmt.Sprintf("Unmarshal app conf, err: %v", err))
+	}
+	return out
+}
+
+func LoadBootStrapFromLocalFS(path string) *BootStrapConfig {
+	logger.Debug("exec LoadBootStrapFromLocalFS(...) path: %s", path)
+	ext := filepath.Ext(path)
+	p, o := localfsCnfSerializers[ext]
+	if !o {
+		panic(fmt.Sprintf("not supports bootstrap config suffix: %s.", ext))
+	}
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(fmt.Sprintf("read boostrap conf, err: %v", err))
+	}
+	out := &BootStrapConfig{}
+	err = p(b, out)
+	if err != nil {
+		panic(fmt.Sprintf("read boostrap conf, err: %v", err))
+	}
+	return out
+}
+
+func DefaultBootStrapConfig() *BootStrapConfig {
+	return LoadBootStrapFromLocalFS(defaultBootStrapConfigLocalFS)
 }

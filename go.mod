@@ -3,6 +3,7 @@ module github.com/oceanho/gw
 go 1.14
 
 require (
+	github.com/BurntSushi/toml v0.3.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-playground/validator/v10 v10.3.0 // indirect
 	github.com/go-redis/redis/v8 v8.0.0-beta.6
@@ -14,6 +15,7 @@ require (
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 	gorm.io/driver/mysql v0.2.9
 	gorm.io/driver/postgres v0.2.5 // indirect
 	gorm.io/driver/sqlite v1.0.8 // indirect

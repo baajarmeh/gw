@@ -31,9 +31,6 @@ type App interface {
 	Register(router *ApiRouteGroup)
 }
 
-type ServerConfig struct {
-}
-
 type ServerOption struct {
 	Addr                  string
 	Name                  string
@@ -43,11 +40,11 @@ type ServerOption struct {
 	PluginDir             string
 	PluginSymbolName      string
 	PluginSymbolSuffix    string
-	svrConfig             *ServerConfig
+	bootConf              *conf.BootStrapConfig
 	StartBeforeHandler    func(server *ApiHostServer) error
 	ShutDownBeforeHandler func(server *ApiHostServer) error
 	BackendStoreHandler   func(cnf conf.Config) store.Backend
-	ConfigLoadHandler     func(cnf ServerConfig) *conf.Config
+	AppConfigHandler      func(cnf conf.BootStrapConfig) *conf.Config
 }
 
 type ApiHostServer struct {
@@ -73,6 +70,9 @@ var (
 	appDefaultBackendHandler        = func(cnf conf.Config) store.Backend {
 		return store.Default(cnf)
 	}
+	appAppConfigHandler = func(cnf conf.BootStrapConfig) *conf.Config {
+		return conf.Default(cnf)
+	}
 )
 
 var (
@@ -84,11 +84,7 @@ func init() {
 	servers = make(map[string]*ApiHostServer)
 }
 
-func NewServerConfig() *ServerConfig {
-	return &ServerConfig{}
-}
-
-func NewServerOption(cnf *ServerConfig) *ServerOption {
+func NewServerOption(cnf *conf.BootStrapConfig) *ServerOption {
 	conf := &ServerOption{
 		Addr:                  appDefaultAddr,
 		Name:                  appDefaultName,
@@ -100,13 +96,14 @@ func NewServerOption(cnf *ServerConfig) *ServerOption {
 		StartBeforeHandler:    appDefaultStartBeforeHandler,
 		ShutDownBeforeHandler: appDefaultShutDownBeforeHandler,
 		BackendStoreHandler:   appDefaultBackendHandler,
-		svrConfig:             cnf,
+		AppConfigHandler:      appAppConfigHandler,
+		bootConf:              cnf,
 	}
 	return conf
 }
 
 func Default() *ApiHostServer {
-	svrConf := NewServerConfig()
+	svrConf := conf.DefaultBootStrapConfig()
 	return New(NewServerOption(svrConf))
 }
 
@@ -144,6 +141,7 @@ func New(conf *ServerOption) *ApiHostServer {
 	server = &ApiHostServer{
 		apps:    make(map[string]App),
 		Options: conf,
+		conf:    appAppConfigHandler(*conf.bootConf),
 	}
 	//
 	// All of internal components AT here.

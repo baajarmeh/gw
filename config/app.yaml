@@ -1,0 +1,50 @@
+app:
+  name: "My App"
+  prefix: "api/v1"
+  version: "Version 1.0"
+  remarks: "User Account Platform API Services."
+  security:
+    auth:
+      disable: False
+    allow-urls:
+      url: POST:RE:${API_PREFIX}/ucp/account/login
+      ips:
+        - 127.0.0.1/32
+        - 192.168.0.0/24
+  services:
+    plugin: "/apps/dylib/apis/*.so"
+
+common:
+  backend:
+    db:
+      - name: primary
+        driver: mysql
+        addr: 127.0.0.1
+        port: 3306
+        user: root
+        password: oceanho
+        database: djdb
+        ssl_mode: on
+        ssl_cert: ap
+        args:
+          charset: utf8
+          parseTime: True
+    cache:
+      - name: primary
+        driver: redis
+        addr: 127.0.0.1
+        port: 6379
+        type: redis
+        auth:
+          disable: True
+          user: ocean
+          database: 1
+          password: oceanho
+
+# Any Your custom configuration item at here.
+# More: https://github.com/oceanho/gw/master/docs/configuration#custom
+custom:
+#  user: OceanHo
+#  tags:
+#    - body
+#    - programmer

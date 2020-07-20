@@ -36,7 +36,7 @@ func (u App) Register(router *app.ApiRouteGroup) {
 	router.POST("user/modify", api.ModifyUser)
 	router.POST("user/destroy", api.DeleteUser)
 
-	router.GET("ak/:id", api.GetAK)
+	router.GET("ak", api.GetAK)
 	router.GET("ak/query", api.QueryAK)
 	router.POST("ak/create", api.CreateAK)
 	router.POST("ak/modify", api.ModifyAK)
