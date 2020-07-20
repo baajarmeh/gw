@@ -7,5 +7,5 @@ import (
 var AppPlugin confsvr.App
 
 func init() {
-	AppPlugin =  confsvr.New()
+	AppPlugin = confsvr.New()
 }

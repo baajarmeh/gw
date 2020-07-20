@@ -7,7 +7,10 @@ app:
     auth:
       disable: False
     allow-urls:
-      - RE:POST:${API_PREFIX}/ucp/account/login
+      - POST:RE:${API_PREFIX}/ucp/account/login
+        - ips:
+          - 127.0.0.1/32
+          - 192.168.0.0/24
   services:
     plugin: "/apps/dylib/apis/*.so"
 
