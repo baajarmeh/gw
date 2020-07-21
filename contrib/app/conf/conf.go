@@ -13,7 +13,8 @@ import (
 )
 
 type ConfigProvider interface {
-	Provide(out *Config) error
+	Name() string
+	Provide(bcs BootStrapConfig, out *Config) error
 }
 
 // ========================================================== //
@@ -35,15 +36,15 @@ type BootStrapConfig struct {
 		Args     map[string]string `yaml:"args" toml:"args" json:"args"`
 	} `yaml:"gwconf" toml:"gwconf" json:"gwconf"`
 	LocalFS struct {
-		Path string `yaml:"path" toml:"path" json:"path"`
-		Type string `yaml:"type" toml:"type" json:"type"`
+		Path      string `yaml:"path" toml:"path" json:"path"`
+		Type      string `yaml:"type" toml:"type" json:"type"`
 		Formatter string `yaml:"formatter" toml:"formatter" json:"formatter"`
 	} `yaml:"localfs" toml:"localfs" json:"localfs"`
 	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
 }
 
-func (bsc BootStrapConfig) String() string  {
-	b,_ := json.MarshalIndent(bsc, "", "  ")
+func (bsc BootStrapConfig) String() string {
+	b, _ := json.MarshalIndent(bsc, "", "  ")
 	return string(b)
 }
 
@@ -111,6 +112,11 @@ type Cache struct {
 	Args             map[string]string `yaml:"args" toml:"args" json:"args"`
 }
 
+func (cnf Config) String() string {
+	b, _ := json.MarshalIndent(cnf, "", "  ")
+	return string(b)
+}
+
 // ============ End of configuration items ============= //
 
 // Extension defines.
@@ -136,67 +142,79 @@ func ParseAllowUrlToPatterns(urls []AllowUrl) []AllowUrlPattern {
 	return patterns
 }
 
+var defaultBSCLocalFileData = `
+appconf:
+  provider: localfs
+  section: localfs
+localfs:
+  path: "config/app.yaml"
+  type: plaintext
+  formatter: yaml
+`
 var (
 	defaultBootStrapConfigFileName = "config/boot.yaml"
-	localfsCnfSerializers          map[string]func(b []byte, out interface{}) error
+	formatterDecoders              map[string]func(b []byte, out interface{}) error
 	configProviders                map[string]ConfigProvider
 )
 
 func init() {
 	configProviders = make(map[string]ConfigProvider)
-	localfsCnfSerializers = make(map[string]func(b []byte, out interface{}) error)
-	initialDefaultConfProvider()
-	initialDefaultConfSerializers()
+	formatterDecoders = make(map[string]func(b []byte, out interface{}) error)
+	initialFormatterDecoders()
+
+	// config provider initialization
+	RegisterProvider(newLocalFileConfigProvider())
+	RegisterProvider(newGWHttpConfSvrConfigProvider())
 }
 
-func initialDefaultConfProvider() {
-	configProviders["gwconf"] = &GWHttpSvrConfig{}
-}
-
-func initialDefaultConfSerializers() {
-	localfsCnfSerializers[".yaml"] = func(b []byte, out interface{}) error {
+func initialFormatterDecoders() {
+	formatterDecoders[".yaml"] = func(b []byte, out interface{}) error {
 		err := yaml.Unmarshal(b, out)
 		return err
 	}
-	localfsCnfSerializers[".yml"] = localfsCnfSerializers[".yaml"]
-	localfsCnfSerializers[".toml"] = func(b []byte, out interface{}) error {
+	formatterDecoders[".yml"] = formatterDecoders[".yaml"]
+	formatterDecoders[".toml"] = func(b []byte, out interface{}) error {
 		err := toml.Unmarshal(b, out)
 		return err
 	}
-	localfsCnfSerializers[".tml"] = localfsCnfSerializers[".toml"]
-	localfsCnfSerializers[".json"] = func(b []byte, out interface{}) error {
+	formatterDecoders[".tml"] = formatterDecoders[".toml"]
+	formatterDecoders[".json"] = func(b []byte, out interface{}) error {
 		err := json.Unmarshal(b, out)
 		return err
 	}
+}
+
+func RegisterProvider(provider ConfigProvider) {
+	configProviders[provider.Name()] = provider
 }
 
 func DefaultFromGWConfSvr(cnf BootStrapConfig) *Config {
 	panic("impl me.")
 }
 
-func Default(cnf BootStrapConfig) *Config {
-	ext := filepath.Ext(cnf.LocalFS.Path)
-	p, o := localfsCnfSerializers[ext]
-	if !o {
-		panic(fmt.Sprintf("not supports app config suffix: %s.", ext))
-	}
-	b, e := ioutil.ReadFile(cnf.LocalFS.Path)
-	if e != nil {
-		panic(fmt.Sprintf("read app config file: %s, err: %v", cnf.LocalFS.Path, e))
-	}
-	out := &Config{}
-	err := p(b, out)
-	if err != nil {
-		panic(fmt.Sprintf("Unmarshal app conf, err: %v", err))
-	}
-	return out
+func NewConfigFromLocalFile(filename string) *Config {
+	bcs := LoadBootStrapConfigFromBytes("yaml", []byte(defaultBSCLocalFileData))
+	return NewConfigByBootStrapConfig(bcs)
 }
 
-func LoadBootStrapFromBytes(formatter string, bytes []byte) *BootStrapConfig {
-	logger.Debug("exec LoadBootStrapFromStream(...), formatter: %s", formatter)
+func NewConfigByBootStrapConfig(bcs *BootStrapConfig) *Config {
+	cp, ok := configProviders[bcs.AppCnf.Provider]
+	if !ok {
+		panic(fmt.Sprintf("provider: %s are not support. you can added by conf.RegisterProvider(...).", bcs.AppCnf.Provider))
+	}
+	cnf := &Config{}
+	err := cp.Provide(*bcs, cnf)
+	if err != nil {
+		panic(fmt.Sprintf("config provider: %s call Provide(...) fail.", bcs.AppCnf.Provider))
+	}
+	return cnf
+}
+
+func LoadBootStrapConfigFromBytes(formatter string, bytes []byte) *BootStrapConfig {
+	logger.Debug("exec LoadBootStrapConfigFromBytes(...), formatter: %s", formatter)
 	formatter = strings.TrimLeft(formatter, ".")
 	ext := fmt.Sprintf(".%s", formatter)
-	p, o := localfsCnfSerializers[ext]
+	p, o := formatterDecoders[ext]
 	if !o {
 		panic(fmt.Sprintf("not supports bootstrap config suffix: %s.", ext))
 	}
@@ -208,16 +226,16 @@ func LoadBootStrapFromBytes(formatter string, bytes []byte) *BootStrapConfig {
 	return out
 }
 
-func LoadBootStrapFromFile(filename string) *BootStrapConfig {
-	logger.Debug("exec LoadBootStrapFromLocalFS(...) path: %s", filename)
+func LoadBootStrapConfigFromFile(filename string) *BootStrapConfig {
+	logger.Debug("exec LoadBootStrapConfigFromFile(...) path: %s", filename)
 	ext := filepath.Ext(filename)
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("read boostrap conf file: %s, err: %v", filename, err))
 	}
-	return LoadBootStrapFromBytes(ext, b)
+	return LoadBootStrapConfigFromBytes(ext, b)
 }
 
 func DefaultBootStrapConfig() *BootStrapConfig {
-	return LoadBootStrapFromFile(defaultBootStrapConfigFileName)
+	return LoadBootStrapConfigFromFile(defaultBootStrapConfigFileName)
 }

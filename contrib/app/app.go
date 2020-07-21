@@ -40,7 +40,7 @@ type ServerOption struct {
 	PluginDir             string
 	PluginSymbolName      string
 	PluginSymbolSuffix    string
-	bootConf              *conf.BootStrapConfig
+	bcs                   *conf.BootStrapConfig
 	StartBeforeHandler    func(server *ApiHostServer) error
 	ShutDownBeforeHandler func(server *ApiHostServer) error
 	BackendStoreHandler   func(cnf conf.Config) store.Backend
@@ -71,7 +71,7 @@ var (
 		return store.Default(cnf)
 	}
 	appAppConfigHandler = func(cnf conf.BootStrapConfig) *conf.Config {
-		return conf.Default(cnf)
+		return conf.NewConfigByBootStrapConfig(&cnf)
 	}
 )
 
@@ -84,7 +84,7 @@ func init() {
 	servers = make(map[string]*ApiHostServer)
 }
 
-func NewServerOption(cnf *conf.BootStrapConfig) *ServerOption {
+func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 	conf := &ServerOption{
 		Addr:                  appDefaultAddr,
 		Name:                  appDefaultName,
@@ -97,14 +97,14 @@ func NewServerOption(cnf *conf.BootStrapConfig) *ServerOption {
 		ShutDownBeforeHandler: appDefaultShutDownBeforeHandler,
 		BackendStoreHandler:   appDefaultBackendHandler,
 		AppConfigHandler:      appAppConfigHandler,
-		bootConf:              cnf,
+		bcs:                   bcs,
 	}
 	return conf
 }
 
 func Default() *ApiHostServer {
-	svrConf := conf.DefaultBootStrapConfig()
-	return New(NewServerOption(svrConf))
+	bcs := conf.DefaultBootStrapConfig()
+	return New(NewServerOption(bcs))
 }
 
 func GetDefaultApiServer() *ApiHostServer {
@@ -121,18 +121,18 @@ func GetApiServer(name string) *ApiHostServer {
 	return nil
 }
 
-func New(conf *ServerOption) *ApiHostServer {
+func New(sopt *ServerOption) *ApiHostServer {
 	serverSafeLocker.Lock()
 	defer serverSafeLocker.Unlock()
-	server, ok := servers[conf.Name]
+	server, ok := servers[sopt.Name]
 	if ok {
-		logger.Warn("duplicated server, name: %s", conf.Name)
+		logger.Warn("duplicated server, name: %s", sopt.Name)
 		return server
 	}
-	gin.SetMode(conf.Mode)
+	gin.SetMode(sopt.Mode)
 	engine := gin.New()
 	engine.Use(gin.Recovery())
-	if conf.Mode == "debug" {
+	if sopt.Mode == "debug" {
 		engine.Use(gin.Logger())
 	}
 	httpRouter := &ApiRouter{
@@ -140,19 +140,19 @@ func New(conf *ServerOption) *ApiHostServer {
 	}
 	server = &ApiHostServer{
 		apps:    make(map[string]App),
-		Options: conf,
-		conf:    appAppConfigHandler(*conf.bootConf),
+		Options: sopt,
+		conf:    appAppConfigHandler(*sopt.bcs),
 	}
 	//
-	// All of internal components AT here.
+	// Initial all of internal components AT here.
 	appConf := *server.conf
-	// backend initial
+	// backend initialization
 	store.Initial(appConf, server.Options.BackendStoreHandler)
 
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(server.Options.ApiPrefix)
 	server.router = httpRouter
-	servers[conf.Name] = server
+	servers[sopt.Name] = server
 	return server
 }
 

@@ -8,7 +8,7 @@ import (
 
 func main() {
 	bc := appConf.DefaultBootStrapConfig()
-	conf := app.NewServerOption(bc)
+	conf := app.NewServerOption(&bc)
 	conf.Name = "confsvr"
 	conf.Addr = ":8090"
 	conf.Mode = "debug"

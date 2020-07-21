@@ -67,6 +67,11 @@ localfs:
 `
 
 func TestLoadBootStrapFromBytes_ShouldBe_OK(t *testing.T) {
-	bsc := LoadBootStrapFromBytes("yaml", []byte(bf))
+	bsc := LoadBootStrapConfigFromBytes("yaml", []byte(bf))
+	t.Logf("%v", bsc)
+}
+
+func TestLoadConfig_ShouldBe_OK(t *testing.T) {
+	bsc := LoadBootStrapConfigFromBytes("yaml", []byte(bf))
 	t.Logf("%v", bsc)
 }
