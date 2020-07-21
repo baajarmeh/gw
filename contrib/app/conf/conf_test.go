@@ -1,9 +1,6 @@
 package conf
 
 import (
-	"encoding/json"
-	"gopkg.in/yaml.v2"
-	"reflect"
 	"testing"
 )
 
@@ -51,13 +48,25 @@ custom:
   - programmer
 `
 
-func TestConfig(t *testing.T) {
-	var cnf = &Config{}
-	yaml.Unmarshal([]byte(f), cnf)
-	j, _ := json.Marshal(cnf.Custom)
-	t.Logf("%s", string(j))
-	for k, v := range cnf.Custom {
-		t.Logf("%v=%v, v type is. %v", k, v, reflect.TypeOf(v))
-	}
-	t.Logf("%v", cnf)
+var bf = `
+appconf:
+  provider: localfs
+  section: localfs
+gwconf:
+  addr: "https://configsvr.oceanho.com"
+  appid: ""
+  secret: ""
+  type: plaintext
+  provider: defaultHttpProvider
+  args:
+    salt: Salt$#NB
+localfs:
+  path: "config/app.yaml"
+  type: plaintext
+  formatter: yaml
+`
+
+func TestLoadBootStrapFromBytes_ShouldBe_OK(t *testing.T) {
+	bsc := LoadBootStrapFromBytes("yaml", []byte(bf))
+	t.Logf("%v", bsc)
 }

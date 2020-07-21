@@ -1,21 +1,15 @@
 appconf:
-  provider: gwhttpconf
-  section: gwconf
+  provider: localfs
+  section: localfs
 gwconf:
   addr: "https://configsvr.oceanho.com"
   appid: ""
   secret: ""
   type: plaintext
   provider: defaultHttpProvider
-  decryptor:
-    algs: plugins/security/configsvr/lh-conf-manger.so
-    args:
-      - --salt Salt$#NB
+  args:
+    salt: Salt$#NB
 localfs:
   path: "config/app.yaml"
   type: plaintext
-  provider: defaultHttpProvider
-  decryptor:
-    algs: plugins/security/configsvr/lh-conf-manger.so
-    args:
-      - --salt Salt$#NB
+  formatter: yaml

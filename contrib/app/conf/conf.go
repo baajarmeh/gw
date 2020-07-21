@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 type ConfigProvider interface {
@@ -35,8 +36,15 @@ type BootStrapConfig struct {
 	} `yaml:"gwconf" toml:"gwconf" json:"gwconf"`
 	LocalFS struct {
 		Path string `yaml:"path" toml:"path" json:"path"`
+		Type string `yaml:"type" toml:"type" json:"type"`
+		Formatter string `yaml:"formatter" toml:"formatter" json:"formatter"`
 	} `yaml:"localfs" toml:"localfs" json:"localfs"`
 	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
+}
+
+func (bsc BootStrapConfig) String() string  {
+	b,_ := json.MarshalIndent(bsc, "", "  ")
+	return string(b)
 }
 
 // ======================================================= //
@@ -114,7 +122,7 @@ type AllowUrlPattern struct {
 	regMatchPattern *regexp.Regexp
 }
 
-func ParseAllowedUrlToPatterns(urls []AllowUrl) []AllowUrlPattern {
+func ParseAllowUrlToPatterns(urls []AllowUrl) []AllowUrlPattern {
 	panic("impl me please.")
 	patterns := make([]AllowUrlPattern, len(urls))
 	// TODO(Ocean): implementation.
@@ -129,9 +137,9 @@ func ParseAllowedUrlToPatterns(urls []AllowUrl) []AllowUrlPattern {
 }
 
 var (
-	defaultBootStrapConfigLocalFS = "config/boot.yaml"
-	localfsCnfSerializers         map[string]func(b []byte, out interface{}) error
-	configProviders               map[string]ConfigProvider
+	defaultBootStrapConfigFileName = "config/boot.yaml"
+	localfsCnfSerializers          map[string]func(b []byte, out interface{}) error
+	configProviders                map[string]ConfigProvider
 )
 
 func init() {
@@ -184,25 +192,32 @@ func Default(cnf BootStrapConfig) *Config {
 	return out
 }
 
-func LoadBootStrapFromLocalFS(path string) *BootStrapConfig {
-	logger.Debug("exec LoadBootStrapFromLocalFS(...) path: %s", path)
-	ext := filepath.Ext(path)
+func LoadBootStrapFromBytes(formatter string, bytes []byte) *BootStrapConfig {
+	logger.Debug("exec LoadBootStrapFromStream(...), formatter: %s", formatter)
+	formatter = strings.TrimLeft(formatter, ".")
+	ext := fmt.Sprintf(".%s", formatter)
 	p, o := localfsCnfSerializers[ext]
 	if !o {
 		panic(fmt.Sprintf("not supports bootstrap config suffix: %s.", ext))
 	}
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		panic(fmt.Sprintf("read boostrap conf, err: %v", err))
-	}
 	out := &BootStrapConfig{}
-	err = p(b, out)
+	err := p(bytes, out)
 	if err != nil {
 		panic(fmt.Sprintf("read boostrap conf, err: %v", err))
 	}
 	return out
 }
 
+func LoadBootStrapFromFile(filename string) *BootStrapConfig {
+	logger.Debug("exec LoadBootStrapFromLocalFS(...) path: %s", filename)
+	ext := filepath.Ext(filename)
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(fmt.Sprintf("read boostrap conf file: %s, err: %v", filename, err))
+	}
+	return LoadBootStrapFromBytes(ext, b)
+}
+
 func DefaultBootStrapConfig() *BootStrapConfig {
-	return LoadBootStrapFromLocalFS(defaultBootStrapConfigLocalFS)
+	return LoadBootStrapFromFile(defaultBootStrapConfigFileName)
 }

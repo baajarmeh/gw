@@ -44,11 +44,11 @@ func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
 	return b.addGlobalDbFilter(db)
 }
 
-func (b internalBackendWrapper) addGlobalDbFilter(db *gorm.DB) *gorm.DB{
+func (b internalBackendWrapper) addGlobalDbFilter(db *gorm.DB) *gorm.DB {
 	return db
 }
 
-func (b internalBackendWrapper) addGlobalCacheSettings(db *redis.Client) *redis.Client{
+func (b internalBackendWrapper) addGlobalCacheSettings(db *redis.Client) *redis.Client {
 	return db
 }
 
