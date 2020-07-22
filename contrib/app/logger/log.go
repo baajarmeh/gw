@@ -6,12 +6,27 @@ import (
 	"time"
 )
 
+type LogLevel uint
+
+const (
+	ERROR LogLevel = iota
+	WARN
+	DEBUG
+	INFO
+)
+
 var logPrefix = "Ocean-GW"
+var logLevel = INFO
 var logFormatter = "\n[$prefix] - $level,$time - $msg\n"
 
 func SetLogPrefix(prefix string) {
 	logPrefix = prefix
 }
+
+func SetLogLevel(level LogLevel) {
+	logLevel = level
+}
+
 func SetLogFormatter(formatter string) {
 	logFormatter = formatter
 }
@@ -27,17 +42,25 @@ func formatLog(level, format string, a ...interface{}) string {
 }
 
 func Info(format string, a ...interface{}) {
-	fmt.Printf(formatLog("INFO", format, a...))
+	if logLevel >= INFO {
+		fmt.Printf(formatLog("INFO", format, a...))
+	}
 }
 
 func Error(format string, a ...interface{}) {
-	fmt.Printf(formatLog("ERROR", format, a...))
+	if logLevel >= ERROR {
+		fmt.Printf(formatLog("ERROR", format, a...))
+	}
 }
 
 func Warn(format string, a ...interface{}) {
-	fmt.Printf(formatLog("WARN", format, a...))
+	if logLevel >= WARN {
+		fmt.Printf(formatLog("WARN", format, a...))
+	}
 }
 
 func Debug(format string, a ...interface{}) {
-	fmt.Printf(formatLog("DEBUG", format, a...))
+	if logLevel >= DEBUG {
+		fmt.Printf(formatLog("DEBUG", format, a...))
+	}
 }
