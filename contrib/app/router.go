@@ -2,9 +2,6 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/contrib/app/auth"
-	"github.com/oceanho/gw/contrib/app/req"
-	"github.com/oceanho/gw/contrib/app/store"
 )
 
 type Handler func(ctx *ApiContext)
@@ -12,8 +9,8 @@ type Handler func(ctx *ApiContext)
 type ApiContext struct {
 	*gin.Context
 	RequestId string
-	User      auth.User
-	Store     store.Backend
+	User      User
+	Store     Backend
 	queries   map[string][]string
 	params    map[string]interface{}
 }
@@ -142,9 +139,9 @@ func handle(c *gin.Context, handler Handler) {
 // }
 
 func makeApiCtx(c *gin.Context) *ApiContext {
-	user := auth.GetUser(c)
-	requestId := req.GetRequestId(c)
-	backendStore := store.GetBackend(c, user)
+	user := GetUser(c)
+	requestId := GetRequestId(c)
+	backendStore := GetBackend(c, user)
 	ctx := &ApiContext{
 		User:      user,
 		RequestId: requestId,

@@ -15,14 +15,14 @@ func TestLogAll(t *testing.T) {
 	Error("Error tester\n")
 
 	SetLogLevel(WARN)
-	Info("Info tester") // should be not output.
+	Info("Info tester")   // should be not output.
 	Debug("Debug tester") // should be not output.
 	Warn("Warn tester")
 	Error("Error tester\n")
 
 	SetLogLevel(ERROR)
-	Info("Info tester") // should be not output.
+	Info("Info tester")   // should be not output.
 	Debug("Debug tester") // should be not output.
-	Warn("Warn tester") // should be not output.
+	Warn("Warn tester")   // should be not output.
 	Error("Error tester\n")
 }

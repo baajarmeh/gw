@@ -1,12 +1,11 @@
-package auth
-
-import (
-	"github.com/gin-gonic/gin"
-	// "strconv"
-)
+package app
 
 type IAuth interface {
-	Auth(c *gin.Context) (User, error)
+	Auth(passport, secret string,store Backend) (User, error)
+}
+
+type IPerm interface {
+	HasPerms(user User, store Backend, perm string) (bool, error)
 }
 
 const UserKey = "gw-user"
