@@ -7,8 +7,9 @@ import (
 )
 
 func GetDept(c *app.ApiContext) {
+	db := c.Store.GetDbStore()
 	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, Dept ID is %s", c.RequestId, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, Dept ID is %s, db: %v", c.RequestId, c.Query("uid"), db),
 	})
 }
 func CreateDept(c *app.ApiContext) {

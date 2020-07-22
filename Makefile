@@ -7,3 +7,7 @@ dylib:
 
 dylibsvr:
 	@go build -ldflags "-s -w" -o build/cmd/dylibsvr cmd/dylibsvr/main.go
+
+apisvr:
+	@go build -ldflags "-s -w" -o build/cmd/apisvr cmd/apisvr/main.go
+	@cp -r config build/cmd
