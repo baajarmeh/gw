@@ -16,11 +16,11 @@ func New() App {
 }
 
 func (u App) Name() string {
-	return "oceanho.stor"
+	return "gw.event-hub"
 }
 
 func (u App) BaseRouter() string {
-	return "stor"
+	return "event-hub"
 }
 
 func (u App) Register(router *gw.RouteGroup) {
