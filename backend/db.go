@@ -26,3 +26,8 @@ type HasSoftDeletionState struct {
 type HasActivationState struct {
 	IsActive *bool
 }
+
+type HasEffectivePeriodState struct {
+	EffectiveFrom *time.Time
+	EffectiveTo   *time.Time
+}
