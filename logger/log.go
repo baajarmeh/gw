@@ -15,7 +15,7 @@ const (
 	INFO
 )
 
-var logPrefix = "Ocean-GW"
+var logPrefix = "GW"
 var logLevel = INFO
 var logFormatter = "\n[$prefix] - $level,$time - $msg\n"
 

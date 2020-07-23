@@ -136,7 +136,7 @@ func (c *Context) OK(obj interface{}) {
 // JSON response a JSON formatter to client.
 func (c *Context) JSON(code int, obj interface{}) {
 	payload := gin.H{
-		"ok": code >= 200 && code <= 202,
+		"ok":      code >= 200 && code <= 202,
 		"payload": obj,
 	}
 	c.Context.JSON(code, payload)

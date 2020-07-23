@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 // App represents a application, Should be implement this.
@@ -62,7 +63,7 @@ type HostServer struct {
 }
 
 var (
-	appDefaultAddr                  = "0.0.0.0:8080"
+	appDefaultAddr                  = ":8080"
 	appDefaultName                  = "gw.app"
 	appDefaultRestart               = "always"
 	appDefaultMode                  = "debug"
@@ -238,13 +239,19 @@ func (server *HostServer) Serve() {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-	logger.Info("Starting Server Listen on Addr: %s", server.Options.Addr)
-	err := server.router.server.Run(server.Options.Addr)
+	logger.Info("Listening and serving HTTP on: %s", server.Options.Addr)
+	var err error
+	go func() {
+		err = server.router.server.Run(server.Options.Addr)
+	}()
+	// TODO(Ocean): has no better solution that can be waiting for gin.Serve() completed with non-block state?
+	time.Sleep(time.Second * 1)
 	if err != nil {
 		panic(fmt.Errorf("call server.router.Run, %v", err))
 	}
-	signal.Notify(sigs, syscall.SIGKILL, syscall.SIGTERM)
-	<-sigs
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
+	s := <-sigs
+	logger.Info("Shutdown server: %v", s)
 	handler = server.Options.ShutDownBeforeHandler
 	if handler != nil {
 		err := server.Options.ShutDownBeforeHandler(server)
@@ -252,4 +259,5 @@ func (server *HostServer) Serve() {
 			fmt.Printf("call app.ShutDownBeforeHandler, %v", err)
 		}
 	}
+	logger.Info("Shutdown server: %s", server.Options.Name)
 }
