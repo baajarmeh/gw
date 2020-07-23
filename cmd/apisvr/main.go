@@ -9,7 +9,6 @@ import (
 
 func main() {
 	// server := app.Default()
-
 	bcs := conf.DefaultBootStrapConfig()
 	opts := gw.NewServerOption(bcs)
 	opts.Name = "my api"

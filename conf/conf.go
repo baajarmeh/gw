@@ -236,6 +236,7 @@ func LoadBootStrapConfigFromFile(filename string) *BootStrapConfig {
 	return LoadBootStrapConfigFromBytes(ext, b)
 }
 
+// DefaultBootStrapConfig returns a bcs from local file config/boot.yaml
 func DefaultBootStrapConfig() *BootStrapConfig {
 	return LoadBootStrapConfigFromFile(defaultBootStrapConfigFileName)
 }
