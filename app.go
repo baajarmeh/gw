@@ -3,8 +3,10 @@ package gw
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
+	"gorm.io/gorm"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -31,19 +33,21 @@ type App interface {
 
 // ServerOption represents a Server Options.
 type ServerOption struct {
-	Addr                  string
-	Name                  string
-	Mode                  string
-	Restart               string
-	Prefix                string
-	PluginDir             string
-	PluginSymbolName      string
-	PluginSymbolSuffix    string
-	bcs                   *conf.BootStrapConfig
-	StartBeforeHandler    func(server *HostServer) error
-	ShutDownBeforeHandler func(server *HostServer) error
-	BackendStoreHandler   func(cnf conf.Config) Store
-	AppConfigHandler      func(cnf conf.BootStrapConfig) *conf.Config
+	Addr                   string
+	Name                   string
+	Mode                   string
+	Restart                string
+	Prefix                 string
+	PluginDir              string
+	PluginSymbolName       string
+	PluginSymbolSuffix     string
+	bcs                    *conf.BootStrapConfig
+	StartBeforeHandler     func(server *HostServer) error
+	ShutDownBeforeHandler  func(server *HostServer) error
+	BackendStoreHandler    func(cnf conf.Config) Store
+	AppConfigHandler       func(cnf conf.BootStrapConfig) *conf.Config
+	StoreDbSetupHandler    StoreCacheSetupHandler
+	StoreCacheSetupHandler StoreCacheSetupHandler
 }
 
 // HostServer represents a  Host Server.
@@ -71,8 +75,14 @@ var (
 	appDefaultBackendHandler        = func(cnf conf.Config) Store {
 		return DefaultBackend(cnf)
 	}
-	appAppConfigHandler = func(cnf conf.BootStrapConfig) *conf.Config {
+	appDefaultAppConfigHandler = func(cnf conf.BootStrapConfig) *conf.Config {
 		return conf.NewConfigByBootStrapConfig(&cnf)
+	}
+	appDefaultStoreDbSetupHandler = func(c gin.Context, db *gorm.DB, user User) *gorm.DB {
+		return db
+	}
+	appDefaultStoreCacheSetupHandler = func(c gin.Context, client *redis.Client, user User) *redis.Client {
+		return client
 	}
 )
 
@@ -88,18 +98,20 @@ func init() {
 // NewServerOption returns a *ServerOption with bcs.
 func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 	conf := &ServerOption{
-		Addr:                  appDefaultAddr,
-		Name:                  appDefaultName,
-		Restart:               appDefaultRestart,
-		Mode:                  appDefaultMode,
-		Prefix:                appDefaultPrefix,
-		PluginSymbolName:      appDefaultPluginSymbolName,
-		PluginSymbolSuffix:    appDefaultPluginSymbolSuffix,
-		StartBeforeHandler:    appDefaultStartBeforeHandler,
-		ShutDownBeforeHandler: appDefaultShutDownBeforeHandler,
-		BackendStoreHandler:   appDefaultBackendHandler,
-		AppConfigHandler:      appAppConfigHandler,
-		bcs:                   bcs,
+		Addr:                   appDefaultAddr,
+		Name:                   appDefaultName,
+		Restart:                appDefaultRestart,
+		Mode:                   appDefaultMode,
+		Prefix:                 appDefaultPrefix,
+		AppConfigHandler:       appDefaultAppConfigHandler,
+		PluginSymbolName:       appDefaultPluginSymbolName,
+		PluginSymbolSuffix:     appDefaultPluginSymbolSuffix,
+		StartBeforeHandler:     appDefaultStartBeforeHandler,
+		ShutDownBeforeHandler:  appDefaultShutDownBeforeHandler,
+		BackendStoreHandler:    appDefaultBackendHandler,
+		StoreDbSetupHandler:    appDefaultStoreCacheSetupHandler,
+		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
+		bcs:                    bcs,
 	}
 	return conf
 }
@@ -147,7 +159,7 @@ func New(sopt *ServerOption) *HostServer {
 	server = &HostServer{
 		apps:    make(map[string]App),
 		Options: sopt,
-		conf:    appAppConfigHandler(*sopt.bcs),
+		conf:    sopt.AppConfigHandler(*sopt.bcs),
 	}
 	//
 	// Initial all of internal components AT here.

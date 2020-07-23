@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/oceanho/gw"
-	conf2 "github.com/oceanho/gw/conf"
+	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/web/apps/stor"
 	"github.com/oceanho/gw/web/apps/uap"
 )
@@ -10,12 +10,12 @@ import (
 func main() {
 	// server := app.Default()
 
-	bc := conf2.DefaultBootStrapConfig()
-	conf := gw.NewServerOption(bc)
-	conf.Name = "confsvr"
-	conf.Addr = ":8080"
-	conf.Mode = "release"
-	server := gw.New(conf)
+	bcs := conf.DefaultBootStrapConfig()
+	opts := gw.NewServerOption(bcs)
+	opts.Name = "confsvr"
+	opts.Addr = ":8080"
+	opts.Mode = "release"
+	server := gw.New(opts)
 	registerApps(server)
 	server.Serve()
 }
