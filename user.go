@@ -7,6 +7,6 @@ type User struct {
 	TenantId uint64
 }
 
-func GetUser(c *gin.Context) User {
+func getUser(c *gin.Context) User {
 	return User{}
 }

@@ -22,13 +22,18 @@ type Store interface {
 	GetCacheStoreByName(name string) *redis.Client
 }
 
-// StoreDbHandler defines a database ORM object handler.
-type StoreDbHandler func(ctx *gin.Context, user User) *gorm.DB
+// StoreDbSetupHandler defines a database ORM object handler.
+type StoreDbSetupHandler func(ctx *gin.Context, db *gorm.DB, user User) *gorm.DB
+
+// StoreCacheSetupHandler defines a redis Client object handler.
+type StoreCacheSetupHandler func(ctx *gin.Context, client *redis.Client, user User) *redis.Client
 
 type internalBackendWrapper struct {
-	ctx   *gin.Context
-	user  User
-	store Store
+	ctx                    *gin.Context
+	user                   User
+	store                  Store
+	storeDbSetupHandler    StoreDbSetupHandler
+	storeCacheSetupHandler StoreCacheSetupHandler
 }
 
 func (b internalBackendWrapper) GetDbStore() *gorm.DB {
@@ -36,7 +41,7 @@ func (b internalBackendWrapper) GetDbStore() *gorm.DB {
 	if db == nil {
 		panic("got db store fail, ret is nil.")
 	}
-	return b.addGlobalDbFilter(db)
+	return b.globalDbStep(db)
 }
 
 func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
@@ -44,14 +49,20 @@ func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
 	if db == nil {
 		panic("got db store by name fail, ret is nil.")
 	}
-	return b.addGlobalDbFilter(db)
+	return b.globalDbStep(db)
 }
 
-func (b internalBackendWrapper) addGlobalDbFilter(db *gorm.DB) *gorm.DB {
+func (b internalBackendWrapper) globalDbStep(db *gorm.DB) *gorm.DB {
+	if b.storeDbSetupHandler != nil {
+		return b.storeDbSetupHandler(b.ctx, db, b.user)
+	}
 	return db
 }
 
-func (b internalBackendWrapper) addGlobalCacheSettings(db *redis.Client) *redis.Client {
+func (b internalBackendWrapper) globalCacheSetup(db *redis.Client) *redis.Client {
+	if b.storeCacheSetupHandler != nil {
+		return b.storeCacheSetupHandler(b.ctx, db, b.user)
+	}
 	return db
 }
 
@@ -60,7 +71,7 @@ func (b internalBackendWrapper) GetCacheStore() *redis.Client {
 	if db == nil {
 		panic("got cache store fail, ret is nil.")
 	}
-	return b.addGlobalCacheSettings(db)
+	return b.globalCacheSetup(db)
 }
 
 func (b internalBackendWrapper) GetCacheStoreByName(name string) *redis.Client {
@@ -68,7 +79,7 @@ func (b internalBackendWrapper) GetCacheStoreByName(name string) *redis.Client {
 	if db == nil {
 		panic("got cache store by name fail, ret is nil.")
 	}
-	return b.addGlobalCacheSettings(db)
+	return b.globalCacheSetup(db)
 }
 
 type DefaultBackendImpl struct {
@@ -158,7 +169,7 @@ func createCache(db conf.Cache) *redis.Client {
 	return nil
 }
 
-func GetBackend(ctx *gin.Context, user User) Store {
+func getStore(ctx *gin.Context, user User) Store {
 	bk := &internalBackendWrapper{
 		ctx:   ctx,
 		user:  user,

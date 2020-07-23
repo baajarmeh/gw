@@ -157,9 +157,9 @@ func handle(c *gin.Context, handler Handler) {
 // }
 
 func makeCtx(c *gin.Context) *Context {
-	user := GetUser(c)
+	user := getUser(c)
 	requestID := getRequestID(c)
-	backendStore := GetBackend(c, user)
+	backendStore := getStore(c, user)
 	ctx := &Context{
 		User:      user,
 		RequestID: requestID,
