@@ -16,7 +16,7 @@ func New() App {
 }
 
 func (u App) Name() string {
-	return "oceanho.stor"
+	return "gw.stor"
 }
 
 func (u App) BaseRouter() string {
@@ -26,4 +26,8 @@ func (u App) BaseRouter() string {
 func (u App) Register(router *gw.RouteGroup) {
 	router.GET("object/create", api.CreateObject)
 	router.POST("object/modify", api.ModifyObject)
+}
+
+func (u App) Migrate(store gw.Store) {
+	// db := store.GetDbStore()
 }

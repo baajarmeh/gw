@@ -16,7 +16,7 @@ func New() App {
 }
 
 func (u App) Name() string {
-	return "oceanho.uap"
+	return "gw.uap"
 }
 
 func (u App) BaseRouter() string {
@@ -71,4 +71,8 @@ func (u App) Register(router *gw.RouteGroup) {
 	router.POST("perms/user/create", api.CreateUserPerms)
 	router.POST("perms/user/modify", api.ModifyUserPerms)
 	router.POST("perms/user/destroy", api.DeleteUserPerms)
+}
+
+func (u App) Migrate(store gw.Store) {
+	// db := store.GetDbStore()
 }

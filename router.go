@@ -2,7 +2,6 @@ package gw
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 // Handler defines a http handler for gw framework.
@@ -126,63 +125,6 @@ func (router *Router) Group(relativePath string, handler Handler) *RouteGroup {
 		rg.currentRouter = rg.router.Group(relativePath)
 	}
 	return rg
-}
-
-// OK response a JSON formatter to client with http status = 200.
-func (c *Context) OK(payload interface{}) {
-	c.JSON(http.StatusOK, 0, payload)
-}
-
-// Err400 response a JSON formatter to client with http status = 400.
-func (c *Context) Err400(status int, outs ...interface{}) {
-	c.Context.JSON(http.StatusBadRequest, resp(status, outs...))
-}
-
-// Err401 response a JSON formatter to client with http status = 401.
-func (c *Context) Err401(status int, outs ...interface{}) {
-	c.Context.JSON(http.StatusUnauthorized, resp(status, outs...))
-}
-
-// Err403 response a JSON formatter to client with http status = 403.
-func (c *Context) Err403(status int, outs ...interface{}) {
-	c.Context.JSON(http.StatusForbidden, resp(status, outs...))
-}
-
-// Err404 response a JSON formatter to client with http status = 404.
-func (c *Context) Err404(status int, outs ...interface{}) {
-	c.Context.JSON(http.StatusNotFound, resp(status, outs...))
-}
-
-// Err500 response a JSON formatter to client with http status = 500.
-func (c *Context) Err500(status int, outs ...interface{}) {
-	c.Context.JSON(http.StatusInternalServerError, resp(status, outs...))
-}
-
-// JSON response a JSON formatter to client.
-func (c *Context) JSON(code int, outs ...interface{}) {
-	c.JSONStatus(code, 0, outs)
-}
-
-// JSON response a JSON formatter to client.
-func (c *Context) JSONStatus(code int, status int, outs ...interface{}) {
-	c.Context.JSON(code, resp(status, outs...))
-}
-
-func resp(status int, outs ...interface{}) interface{} {
-	var errMsg interface{}
-	var payload interface{}
-	if len(outs) == 2 {
-		errMsg = outs[0]
-		payload = outs[1]
-	} else if len(outs) == 1 {
-		errMsg = nil
-		payload = outs[0]
-	}
-	return gin.H{
-		"status":  status,
-		"err":     errMsg,
-		"payload": payload,
-	}
 }
 
 func reflectRouter(relativePath string, handler Handler) {

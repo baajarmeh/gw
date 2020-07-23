@@ -53,7 +53,7 @@ appconf:
   provider: localfs
   section: localfs
 gwconf:
-  addr: "https://configsvr.oceanho.com"
+  addr: "https://configsvr.gw.com"
   appid: ""
   secret: ""
   type: plaintext

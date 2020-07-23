@@ -2,7 +2,7 @@ appconf:
   provider: gwhttpconf
   section: gwconf
 gwconf:
-  addr: "https://configsvr.oceanho.com"
+  addr: "https://configsvr.gw.com"
   appid: ""
   secret: ""
   type: plaintext

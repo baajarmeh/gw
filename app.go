@@ -28,8 +28,11 @@ type App interface {
 	// It's will be to create a new *RouteGroup object and that used by Register(...) .
 	BaseRouter() string
 
-	// Register define a  that for register your app router inside.
+	// Register define a API that for register your app router inside.
 	Register(router *RouteGroup)
+
+	// Migrate define a API that for create your app database migrations inside.
+	Migrate(store Store)
 }
 
 // ServerOption represents a Server Options.
@@ -47,7 +50,7 @@ type ServerOption struct {
 	ShutDownBeforeHandler  func(server *HostServer) error
 	BackendStoreHandler    func(cnf conf.Config) Store
 	AppConfigHandler       func(cnf conf.BootStrapConfig) *conf.Config
-	StoreDbSetupHandler    StoreCacheSetupHandler
+	StoreDbSetupHandler    StoreDbSetupHandler
 	StoreCacheSetupHandler StoreCacheSetupHandler
 }
 
@@ -113,7 +116,7 @@ func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 		StartBeforeHandler:     appDefaultStartBeforeHandler,
 		ShutDownBeforeHandler:  appDefaultShutDownBeforeHandler,
 		BackendStoreHandler:    appDefaultBackendHandler,
-		StoreDbSetupHandler:    appDefaultStoreCacheSetupHandler,
+		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
 		bcs:                    bcs,
 	}
@@ -150,22 +153,27 @@ func New(sopt *ServerOption) *HostServer {
 	gin.SetMode(sopt.Mode)
 	engine := gin.New()
 	engine.Use(gin.Recovery())
+	engine.Use(gwState(sopt.Name))
 	if sopt.Mode == "debug" {
 		engine.Use(gin.Logger())
 	}
 	httpRouter := &Router{
 		server: engine,
 	}
+	cnf := sopt.AppConfigHandler(*sopt.bcs)
 	server = &HostServer{
-		apps:    make(map[string]App),
 		Options: sopt,
-		conf:    sopt.AppConfigHandler(*sopt.bcs),
+		apps:    make(map[string]App),
+		conf:    cnf,
+		store:   sopt.BackendStoreHandler(*cnf),
 	}
-	//
-	// Initial all of internal components AT here.
-	appConf := *server.conf
-	// backend initialization
-	Initial(appConf, server.Options.BackendStoreHandler)
+	// Must ensure store handler is not nil.
+	if server.Options.StoreDbSetupHandler == nil {
+		server.Options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
+	}
+	if server.Options.StoreCacheSetupHandler == nil {
+		server.Options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
+	}
 
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(server.Options.Prefix)
@@ -230,6 +238,13 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 
 // Serve represents start the Server.
 func (server *HostServer) Serve() {
+
+	// before server starting. Try migrates for all registered Apps.
+	for _, p := range server.apps {
+		p.Migrate(server.store)
+	}
+
+	// signal watch.
 	sigs := make(chan os.Signal, 1)
 	handler := server.Options.StartBeforeHandler
 	if handler != nil {

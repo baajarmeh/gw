@@ -13,7 +13,7 @@ func New() App {
 }
 
 func (u App) Name() string {
-	return "oceanho.confsvr"
+	return "gw.confsvr"
 }
 
 func (u App) BaseRouter() string {
@@ -38,4 +38,8 @@ func (u App) Register(router *gw.RouteGroup) {
 	router.GET("ns/create", api.CreateNS)
 	router.GET("ns/modify", api.ModifyNS)
 	router.GET("ns/destroy", api.DestroyNS)
+}
+
+func (u App) Migrate(store gw.Store) {
+	// db := store.GetDbStore()
 }

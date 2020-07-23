@@ -8,7 +8,7 @@ import (
 func GetAuth(c *gw.Context) {
 	//accessKeyId := c.GetHeader("X-Access-KeyId")
 	//accessSecret := c.GetHeader("X-Access-Secret")
-	c.JSON(200, gin.H{
+	c.OK( gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -19,7 +19,7 @@ func GetAuth(c *gw.Context) {
 func CreateAuth(c *gw.Context) {
 	//accessKeyId := c.GetHeader("X-Access-KeyId")
 	//accessSecret := c.GetHeader("X-Access-Secret")
-	c.JSON(200, gin.H{
+	c.OK( gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -30,7 +30,7 @@ func CreateAuth(c *gw.Context) {
 func ModifyAuth(c *gw.Context) {
 	//accessKeyId := c.GetHeader("X-Access-KeyId")
 	//accessSecret := c.GetHeader("X-Access-Secret")
-	c.JSON(200, gin.H{
+	c.OK( gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -41,7 +41,7 @@ func ModifyAuth(c *gw.Context) {
 func DestroyAuth(c *gw.Context) {
 	//accessKeyId := c.GetHeader("X-Access-KeyId")
 	//accessSecret := c.GetHeader("X-Access-Secret")
-	c.JSON(200, gin.H{
+	c.OK( gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",

@@ -1,8 +1,8 @@
-package stor
+package tester
 
 import (
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/web/apps/stor/api"
+	"github.com/oceanho/gw/web/apps/tester/api"
 )
 
 func init() {
@@ -16,16 +16,16 @@ func New() App {
 }
 
 func (u App) Name() string {
-	return "gw.event-hub"
+	return "gw.tester"
 }
 
 func (u App) BaseRouter() string {
-	return "event-hub"
+	return "tester"
 }
 
 func (u App) Register(router *gw.RouteGroup) {
-	router.GET("object/create", api.CreateObject)
-	router.POST("object/modify", api.ModifyObject)
+	router.GET("test/200", api.GetTester)
+	router.GET("test/500", api.GetTester500)
 }
 
 func (u App) Migrate(store gw.Store) {

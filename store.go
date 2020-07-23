@@ -11,7 +11,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strconv"
-	"sync"
 )
 
 // Store represents a Store engine of gw framework.
@@ -53,17 +52,11 @@ func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
 }
 
 func (b internalBackendWrapper) globalDbStep(db *gorm.DB) *gorm.DB {
-	if b.storeDbSetupHandler != nil {
-		return b.storeDbSetupHandler(b.ctx, db, b.user)
-	}
-	return db
+	return b.storeDbSetupHandler(b.ctx, db, b.user)
 }
 
 func (b internalBackendWrapper) globalCacheSetup(db *redis.Client) *redis.Client {
-	if b.storeCacheSetupHandler != nil {
-		return b.storeCacheSetupHandler(b.ctx, db, b.user)
-	}
-	return db
+	return b.storeCacheSetupHandler(b.ctx, db, b.user)
 }
 
 func (b internalBackendWrapper) GetCacheStore() *redis.Client {
@@ -109,15 +102,6 @@ func (d DefaultBackendImpl) GetCacheStoreByName(name string) *redis.Client {
 		logger.Warn("got cache: %s fail. not found.", name)
 	}
 	return db
-}
-
-var backend Store
-var once sync.Once
-
-func Initial(conf conf.Config, initial func(conf conf.Config) Store) {
-	once.Do(func() {
-		backend = initial(conf)
-	})
 }
 
 func DefaultBackend(cnf conf.Config) Store {
@@ -170,10 +154,13 @@ func createCache(db conf.Cache) *redis.Client {
 }
 
 func getStore(ctx *gin.Context, user User) Store {
+	server := getHostServer(ctx)
 	bk := &internalBackendWrapper{
-		ctx:   *ctx,
-		user:  user,
-		store: backend,
+		ctx:                    *ctx,
+		user:                   user,
+		store:                  server.store,
+		storeDbSetupHandler:    server.Options.StoreDbSetupHandler,
+		storeCacheSetupHandler: server.Options.StoreCacheSetupHandler,
 	}
 	return bk
 }
