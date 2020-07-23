@@ -2,7 +2,7 @@ package confsvr
 
 import (
 	"fmt"
-	"github.com/oceanho/gw/contrib/sdk/confsvr/req"
+	"github.com/oceanho/gw/sdk/confsvr/req"
 	"sync"
 	"time"
 )

@@ -1,11 +1,13 @@
 package api
 
-import "github.com/oceanho/gw/contrib/app"
+import (
+	gw2 "github.com/oceanho/gw"
+)
 
-func GrantPerms(c *app.ApiContext) {
+func GrantPerms(c *gw2.ApiContext) {
 
 }
 
-func RevokePerms(c *app.ApiContext) {
+func RevokePerms(c *gw2.ApiContext) {
 
 }

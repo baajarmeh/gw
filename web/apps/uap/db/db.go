@@ -1,8 +1,10 @@
 package db
 
-import "github.com/oceanho/gw/contrib/app"
+import (
+	"github.com/oceanho/gw/conf"
+)
 
-func Migrate(backend app.Backend) {
+func Migrate(backend conf.Backend) {
 	dbStore := backend.GetDbStore()
 	dbStore.AutoMigrate(&Tenant{})
 }

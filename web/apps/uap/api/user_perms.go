@@ -3,34 +3,34 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/contrib/app"
+	gw2 "github.com/oceanho/gw"
 )
 
-func GetUserPerms(c *app.ApiContext) {
+func GetUserPerms(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, UserPerms ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func CreateUserPerms(c *app.ApiContext) {
+func CreateUserPerms(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, UserPerms ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func ModifyUserPerms(c *app.ApiContext) {
+func ModifyUserPerms(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, UserPerms ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func DeleteUserPerms(c *app.ApiContext) {
+func DeleteUserPerms(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, UserPerms ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func QueryUserPerms(c *app.ApiContext) {
+func QueryUserPerms(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, UserPerms ID is %s", c.RequestId, c.Query("uid")),
 	})

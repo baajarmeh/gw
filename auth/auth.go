@@ -1,11 +1,15 @@
-package app
+package auth
+
+import (
+	"github.com/oceanho/gw/conf"
+)
 
 type IAuth interface {
-	Auth(passport, secret string,store Backend) (User, error)
+	Auth(passport, secret string,store conf.Backend) (User, error)
 }
 
 type IPerm interface {
-	HasPerms(user User, store Backend, perm string) (bool, error)
+	HasPerms(user User, store conf.Backend, perm string) (bool, error)
 }
 
 const UserKey = "gw-user"

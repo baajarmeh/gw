@@ -3,10 +3,10 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/contrib/app"
+	gw2 "github.com/oceanho/gw"
 )
 
-func GetAK(c *app.ApiContext) {
+func GetAK(c *gw2.ApiContext) {
 	db := c.Store.GetDbStore()
 	row := db.Raw("select 1 from DUAL").Row()
 	var result uint64 = 0
@@ -17,25 +17,25 @@ func GetAK(c *app.ApiContext) {
 			c.RequestId, c.Query("uid"), result, err),
 	})
 }
-func CreateAK(c *app.ApiContext) {
+func CreateAK(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func ModifyAK(c *app.ApiContext) {
+func ModifyAK(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func DeleteAK(c *app.ApiContext) {
+func DeleteAK(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func QueryAK(c *app.ApiContext) {
+func QueryAK(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})

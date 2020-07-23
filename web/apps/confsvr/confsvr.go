@@ -1,7 +1,7 @@
 package confsvr
 
 import (
-	"github.com/oceanho/gw/contrib/app"
+	gw2 "github.com/oceanho/gw"
 	"github.com/oceanho/gw/web/apps/confsvr/api"
 )
 
@@ -20,7 +20,7 @@ func (u App) BaseRouter() string {
 	return "confsvr"
 }
 
-func (u App) Register(router *app.ApiRouteGroup) {
+func (u App) Register(router *gw2.ApiRouteGroup) {
 	// Auth service routers.
 	router.GET("auth/auth", api.GetAuth)
 	router.GET("auth/create", api.CreateEnv)

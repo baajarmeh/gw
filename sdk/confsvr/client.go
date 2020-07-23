@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/oceanho/gw/contrib/sdk/confsvr/req"
+	"github.com/oceanho/gw/sdk/confsvr/req"
 	"io"
 	"io/ioutil"
 	"net/http"

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/oceanho/gw/contrib/app/logger"
+	"github.com/oceanho/gw/logger"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"path/filepath"

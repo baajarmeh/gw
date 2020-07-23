@@ -1,7 +1,7 @@
 package confsvr
 
 import (
-	"github.com/oceanho/gw/contrib/sdk/confsvr/req"
+	"github.com/oceanho/gw/sdk/confsvr/req"
 	"testing"
 )
 

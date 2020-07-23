@@ -3,45 +3,45 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/contrib/app"
+	gw2 "github.com/oceanho/gw"
 )
 
-func GetPermission(c *app.ApiContext) {
+func GetPermission(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
-func CreatePermission(c *app.ApiContext) {
-	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
-	})
-}
-
-func ModifyPermission(c *app.ApiContext) {
+func CreatePermission(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func DeletePermission(c *app.ApiContext) {
+func ModifyPermission(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func QueryPermission(c *app.ApiContext) {
+func DeletePermission(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func Grant(c *app.ApiContext) {
+func QueryPermission(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})
 }
 
-func Revoke(c *app.ApiContext) {
+func Grant(c *gw2.ApiContext) {
+	c.JSON(200, gin.H{
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+	})
+}
+
+func Revoke(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
 	})

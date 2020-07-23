@@ -1,4 +1,4 @@
-package app
+package store
 
 import (
 	"context"
@@ -6,8 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	dbMySQL "github.com/go-sql-driver/mysql"
-	"github.com/oceanho/gw/contrib/app/conf"
-	"github.com/oceanho/gw/contrib/app/logger"
+	"github.com/oceanho/gw/auth"
+	"github.com/oceanho/gw/conf"
+	"github.com/oceanho/gw/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strconv"
@@ -23,7 +24,7 @@ type Backend interface {
 
 type internalBackendWrapper struct {
 	ctx     *gin.Context
-	user    User
+	user    auth.User
 	backend Backend
 }
 
@@ -99,7 +100,7 @@ func (d DefaultBackendImpl) GetCacheStoreByName(name string) *redis.Client {
 var backend Backend
 var once sync.Once
 
-func InitialStore(conf conf.Config, initial func(conf conf.Config) Backend) {
+func Initial(conf conf.Config, initial func(conf conf.Config) Backend) {
 	once.Do(func() {
 		backend = initial(conf)
 	})
@@ -162,7 +163,7 @@ func Check() {
 	}
 }
 
-func GetBackend(ctx *gin.Context, user User) Backend {
+func GetBackend(ctx *gin.Context, user auth.User) Backend {
 	bk := &internalBackendWrapper{
 		ctx:     ctx,
 		user:    user,

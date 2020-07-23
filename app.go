@@ -1,11 +1,11 @@
-package app
+package gw
 
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/contrib/app/conf"
-	_ "github.com/oceanho/gw/contrib/app/conf"
-	"github.com/oceanho/gw/contrib/app/logger"
+	"github.com/oceanho/gw/conf"
+	"github.com/oceanho/gw/logger"
+	"github.com/oceanho/gw/store"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -42,7 +42,7 @@ type ServerOption struct {
 	bcs                   *conf.BootStrapConfig
 	StartBeforeHandler    func(server *ApiHostServer) error
 	ShutDownBeforeHandler func(server *ApiHostServer) error
-	BackendStoreHandler   func(cnf conf.Config) Backend
+	BackendStoreHandler   func(cnf conf.Config) store.Backend
 	AppConfigHandler      func(cnf conf.BootStrapConfig) *conf.Config
 }
 
@@ -66,8 +66,8 @@ var (
 	appDefaultApiVersion            = "Version 1.0"
 	appDefaultStartBeforeHandler    = func(server *ApiHostServer) error { return nil }
 	appDefaultShutDownBeforeHandler = func(server *ApiHostServer) error { return nil }
-	appDefaultBackendHandler        = func(cnf conf.Config) Backend {
-		return DefaultBackend(cnf)
+	appDefaultBackendHandler        = func(cnf conf.Config) store.Backend {
+		return store.DefaultBackend(cnf)
 	}
 	appAppConfigHandler = func(cnf conf.BootStrapConfig) *conf.Config {
 		return conf.NewConfigByBootStrapConfig(&cnf)
@@ -146,7 +146,7 @@ func New(sopt *ServerOption) *ApiHostServer {
 	// Initial all of internal components AT here.
 	appConf := *server.conf
 	// backend initialization
-	InitialStore(appConf, server.Options.BackendStoreHandler)
+	store.Initial(appConf, server.Options.BackendStoreHandler)
 
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(server.Options.ApiPrefix)

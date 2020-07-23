@@ -2,16 +2,16 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/contrib/app"
+	gw2 "github.com/oceanho/gw"
 )
 
-func CreateObject(c *app.ApiContext) {
+func CreateObject(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": "CreateObject",
 	})
 }
 
-func ModifyObject(c *app.ApiContext) {
+func ModifyObject(c *gw2.ApiContext) {
 	c.JSON(200, gin.H{
 		"payload": "ModifyObject",
 	})

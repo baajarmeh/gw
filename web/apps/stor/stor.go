@@ -1,7 +1,7 @@
 package stor
 
 import (
-	"github.com/oceanho/gw/contrib/app"
+	gw2 "github.com/oceanho/gw"
 	"github.com/oceanho/gw/web/apps/stor/api"
 )
 
@@ -23,7 +23,7 @@ func (u App) BaseRouter() string {
 	return "stor"
 }
 
-func (u App) Register(router *app.ApiRouteGroup) {
+func (u App) Register(router *gw2.ApiRouteGroup) {
 	router.GET("object/create", api.CreateObject)
 	router.POST("object/modify", api.ModifyObject)
 }

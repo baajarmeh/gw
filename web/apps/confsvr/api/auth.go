@@ -2,10 +2,10 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/contrib/app"
+	gw2 "github.com/oceanho/gw"
 )
 
-func GetAuth(c *app.ApiContext) {
+func GetAuth(c *gw2.ApiContext) {
 	//accessKeyId := c.GetHeader("X-Access-KeyId")
 	//accessSecret := c.GetHeader("X-Access-Secret")
 	c.JSON(200, gin.H{
@@ -16,7 +16,7 @@ func GetAuth(c *app.ApiContext) {
 	})
 }
 
-func CreateAuth(c *app.ApiContext) {
+func CreateAuth(c *gw2.ApiContext) {
 	//accessKeyId := c.GetHeader("X-Access-KeyId")
 	//accessSecret := c.GetHeader("X-Access-Secret")
 	c.JSON(200, gin.H{
@@ -27,7 +27,7 @@ func CreateAuth(c *app.ApiContext) {
 	})
 }
 
-func ModifyAuth(c *app.ApiContext) {
+func ModifyAuth(c *gw2.ApiContext) {
 	//accessKeyId := c.GetHeader("X-Access-KeyId")
 	//accessSecret := c.GetHeader("X-Access-Secret")
 	c.JSON(200, gin.H{
@@ -38,7 +38,7 @@ func ModifyAuth(c *app.ApiContext) {
 	})
 }
 
-func DestroyAuth(c *app.ApiContext) {
+func DestroyAuth(c *gw2.ApiContext) {
 	//accessKeyId := c.GetHeader("X-Access-KeyId")
 	//accessSecret := c.GetHeader("X-Access-Secret")
 	c.JSON(200, gin.H{

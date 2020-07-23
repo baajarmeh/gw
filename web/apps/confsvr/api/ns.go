@@ -2,10 +2,10 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/contrib/app"
+	gw2 "github.com/oceanho/gw"
 )
 
-func GetNS(c *app.ApiContext) {
+func GetNS(c *gw2.ApiContext) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -15,7 +15,7 @@ func GetNS(c *app.ApiContext) {
 	})
 }
 
-func CreateNS(c *app.ApiContext) {
+func CreateNS(c *gw2.ApiContext) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -25,7 +25,7 @@ func CreateNS(c *app.ApiContext) {
 	})
 }
 
-func ModifyNS(c *app.ApiContext) {
+func ModifyNS(c *gw2.ApiContext) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -35,7 +35,7 @@ func ModifyNS(c *app.ApiContext) {
 	})
 }
 
-func DestroyNS(c *app.ApiContext) {
+func DestroyNS(c *gw2.ApiContext) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
