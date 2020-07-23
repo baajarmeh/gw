@@ -1,7 +1,7 @@
 package uap
 
 import (
-	gw2 "github.com/oceanho/gw"
+	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/web/apps/uap/api"
 )
 
@@ -23,7 +23,7 @@ func (u App) BaseRouter() string {
 	return "uap"
 }
 
-func (u App) Register(router *gw2.RouteGroup) {
+func (u App) Register(router *gw.RouteGroup) {
 	router.GET("tenant/get", api.GetTenant)
 	router.GET("tenant/query", api.QueryTenant)
 	router.POST("tenant/create", api.CreateTenant)

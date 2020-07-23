@@ -62,8 +62,8 @@ type HostServer struct {
 }
 
 var (
-	appDefaultAddr                  = ":8080"
-	appDefaultName                  = "oceanho.app"
+	appDefaultAddr                  = "0.0.0.0:8080"
+	appDefaultName                  = "gw.app"
 	appDefaultRestart               = "always"
 	appDefaultMode                  = "debug"
 	appDefaultPrefix                = "/v1"
@@ -238,6 +238,7 @@ func (server *HostServer) Serve() {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
+	logger.Info("Starting Server Listen on Addr: %s", server.Options.Addr)
 	err := server.router.server.Run(server.Options.Addr)
 	if err != nil {
 		panic(fmt.Errorf("call server.router.Run, %v", err))

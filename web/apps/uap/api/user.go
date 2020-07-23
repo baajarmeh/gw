@@ -3,33 +3,33 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	gw2 "github.com/oceanho/gw"
+	"github.com/oceanho/gw"
 )
 
-func GetUser(c *gw2.Context) {
+func GetUser(c *gw.Context) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
-func CreateUser(c *gw2.Context) {
-	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
-	})
-}
-
-func ModifyUser(c *gw2.Context) {
+func CreateUser(c *gw.Context) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
-func DeleteUser(c *gw2.Context) {
+func ModifyUser(c *gw.Context) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
-func QueryUser(c *gw2.Context) {
+func DeleteUser(c *gw.Context) {
+	c.JSON(200, gin.H{
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+	})
+}
+
+func QueryUser(c *gw.Context) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})

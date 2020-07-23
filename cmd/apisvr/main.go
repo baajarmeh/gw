@@ -13,7 +13,6 @@ func main() {
 	bcs := conf.DefaultBootStrapConfig()
 	opts := gw.NewServerOption(bcs)
 	opts.Name = "confsvr"
-	opts.Addr = ":8080"
 	opts.Mode = "release"
 	server := gw.New(opts)
 	registerApps(server)

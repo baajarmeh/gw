@@ -3,11 +3,11 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	gw2 "github.com/oceanho/gw"
+	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/logger"
 )
 
-func GetTenant(c *gw2.Context) {
+func GetTenant(c *gw.Context) {
 	db := c.Store.GetDbStore()
 	sqlDb, err := db.DB()
 	if err != nil {
@@ -23,25 +23,25 @@ func GetTenant(c *gw2.Context) {
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
-func CreateTenant(c *gw2.Context) {
+func CreateTenant(c *gw.Context) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
-func ModifyTenant(c *gw2.Context) {
+func ModifyTenant(c *gw.Context) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
-func DeleteTenant(c *gw2.Context) {
+func DeleteTenant(c *gw.Context) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
-func QueryTenant(c *gw2.Context) {
+func QueryTenant(c *gw.Context) {
 	c.JSON(200, gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})

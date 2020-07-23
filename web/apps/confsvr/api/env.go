@@ -2,10 +2,10 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	gw2 "github.com/oceanho/gw"
+	"github.com/oceanho/gw"
 )
 
-func GetEnv(c *gw2.Context) {
+func GetEnv(c *gw.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -15,7 +15,7 @@ func GetEnv(c *gw2.Context) {
 	})
 }
 
-func CreateEnv(c *gw2.Context) {
+func CreateEnv(c *gw.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -25,7 +25,7 @@ func CreateEnv(c *gw2.Context) {
 	})
 }
 
-func ModifyEnv(c *gw2.Context) {
+func ModifyEnv(c *gw.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -35,7 +35,7 @@ func ModifyEnv(c *gw2.Context) {
 	})
 }
 
-func DestroyEnv(c *gw2.Context) {
+func DestroyEnv(c *gw.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",

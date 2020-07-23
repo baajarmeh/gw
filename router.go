@@ -2,6 +2,7 @@ package gw
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 // Handler defines a http handler for gw framework.
@@ -125,6 +126,20 @@ func (router *Router) Group(relativePath string, handler Handler) *RouteGroup {
 		rg.currentRouter = rg.router.Group(relativePath)
 	}
 	return rg
+}
+
+// OK response a JSON formatter to client with http status = 200.
+func (c *Context) OK(obj interface{}) {
+	c.JSON(http.StatusOK, obj)
+}
+
+// JSON response a JSON formatter to client.
+func (c *Context) JSON(code int, obj interface{}) {
+	payload := gin.H{
+		"ok": code >= 200 && code <= 202,
+		"payload": obj,
+	}
+	c.Context.JSON(code, payload)
 }
 
 func reflectRouter(relativePath string, handler Handler) {
