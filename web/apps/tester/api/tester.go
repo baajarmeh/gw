@@ -1,9 +1,37 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/web/apps/tester/biz"
+	"github.com/oceanho/gw/web/apps/tester/dto"
 )
+
+func CreateMyTester(c *gw.Context) {
+	obj := &dto.MyTester{}
+	err := c.Bind(obj)
+	if err != nil {
+		c.Err400Msg(4000, fmt.Sprintf("invalid request params, err: %v", err))
+		return
+	}
+	err = biz.CreateMyTester(c.Store.GetDbStore(), obj)
+	if err != nil {
+		c.Err500Msg(5000, err)
+	} else {
+		c.OK(obj.ID)
+	}
+}
+
+func QueryMyTester(c *gw.Context) {
+	query := &gw.QueryExpr{}
+	if c.Bind(query) != nil {
+		return
+	}
+	objs := make([]dto.MyTester, 0)
+	err := biz.QueryMyTester(c.Store.GetDbStore(), &objs)
+	c.JSON(err, objs)
+}
 
 func GetTester(c *gw.Context) {
 	c.OK(struct {

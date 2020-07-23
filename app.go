@@ -46,6 +46,7 @@ type ServerOption struct {
 	PluginSymbolName       string
 	PluginSymbolSuffix     string
 	bcs                    *conf.BootStrapConfig
+	cnf                    *conf.Config
 	StartBeforeHandler     func(server *HostServer) error
 	ShutDownBeforeHandler  func(server *HostServer) error
 	BackendStoreHandler    func(cnf conf.Config) Store
@@ -88,6 +89,7 @@ var (
 	appDefaultStoreCacheSetupHandler = func(c gin.Context, client *redis.Client, user User) *redis.Client {
 		return client
 	}
+	internLogFormatter = "[$prefix-$level] - $msg\n"
 )
 
 var (
@@ -96,6 +98,7 @@ var (
 
 func init() {
 	servers = make(map[string]*HostServer)
+	logger.SetLogFormatter(internLogFormatter)
 }
 
 // NewServerOption returns a *ServerOption with bcs.
@@ -161,6 +164,7 @@ func New(sopt *ServerOption) *HostServer {
 		server: engine,
 	}
 	cnf := sopt.AppConfigHandler(*sopt.bcs)
+	sopt.cnf = cnf
 	server = &HostServer{
 		Options: sopt,
 		apps:    make(map[string]App),
@@ -241,6 +245,7 @@ func (server *HostServer) Serve() {
 
 	// before server starting. Try migrates for all registered Apps.
 	for _, p := range server.apps {
+		logger.Info("Migrate app: %s", p.Name())
 		p.Migrate(server.store)
 	}
 
@@ -254,6 +259,7 @@ func (server *HostServer) Serve() {
 		}
 	}
 	logger.Info("Listening and serving HTTP on: %s", server.Options.Addr)
+	logger.ResetLogFormatter()
 	var err error
 	go func() {
 		err = server.router.server.Run(server.Options.Addr)

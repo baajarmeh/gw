@@ -1,0 +1,43 @@
+{
+    payload: {
+        pager: {
+            pageSize: 10,
+            pageNumber: 1,
+        }
+        expr: {
+            equal: [
+                {
+                    field: "id",
+                    fields: []
+                    value: "",
+                }
+            ],
+            range: [
+                {
+                    field: "",
+                    fields: [],
+                    left: 1000,
+                    right: 2000,
+                }
+            ],
+            search: [
+                {
+                    field: "",
+                    fields: [],
+                    keyword: "",
+                    mode: "l/r/f"
+                }
+            ]
+        },
+        order: [
+            {
+                field: "id",
+                direction: "desc"
+            },
+            {
+                field: "created_at",
+                direction: "asc"
+            }
+        ]
+    }
+}

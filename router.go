@@ -1,7 +1,10 @@
 package gw
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/oceanho/gw/conf"
+	"time"
 )
 
 // Handler defines a http handler for gw framework.
@@ -13,12 +16,13 @@ type Context struct {
 	RequestID string
 	User      User
 	Store     Store
+	startTime time.Time
 	queries   map[string][]string
 	params    map[string]interface{}
 }
 
 // Query returns a string from queries.
-func (c *Context) Query(key string) string {
+func (c Context) Query(key string) string {
 	val := c.Context.Query(key)
 	if val == "" {
 		queries := c.QueryArray(key)
@@ -30,8 +34,13 @@ func (c *Context) Query(key string) string {
 }
 
 // QueryArray returns a string array from queries.
-func (c *Context) QueryArray(key string) []string {
+func (c Context) QueryArray(key string) []string {
 	return c.queries[key]
+}
+
+// StartTime returns the Context start *time.Time
+func (c Context) StartTime() *time.Time {
+	return &c.startTime
 }
 
 // Router represents a gw's Router info.
@@ -127,6 +136,20 @@ func (router *Router) Group(relativePath string, handler Handler) *RouteGroup {
 	return rg
 }
 
+// Config returns a snapshot of the current Context's conf.Config object.
+func (c *Context) Config() conf.Config {
+	return getConfig(c.Context)
+}
+
+// Bind represent a Api that can be bind data to out object by gin.Context's Bind(...) APIs.
+func (c *Context) Bind(out interface{}) error {
+	if err := c.Context.Bind(out); err != nil {
+		c.Err400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))
+		return err
+	}
+	return nil
+}
+
 func reflectRouter(relativePath string, handler Handler) {
 	// prefix  pattern   suffix.
 }
@@ -165,6 +188,7 @@ func makeCtx(c *gin.Context) *Context {
 		RequestID: requestID,
 		Store:     backendStore,
 		Context:   c,
+		startTime: time.Now(),
 		queries:   make(map[string][]string),
 		params:    make(map[string]interface{}),
 	}

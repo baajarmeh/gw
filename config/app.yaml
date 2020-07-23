@@ -6,14 +6,17 @@ service:
   security:
     auth:
       disable: False
-    allow-urls:
-      - name: auth-
+    allowUrls:
+      - name: auth-apis
         patterns:
           - POST:RE:${_PREFIX}/ucp/account/login
           - POST:RE:${_PREFIX}/ucp/account/login
         ips:
           - 127.0.0.1/32
           - 192.168.0.0/24
+    queryLimit:
+      minPageSize: 20
+      maxPageSize: 2000
   services:
     plugin: "/apps/dylib/s/*.so"
 

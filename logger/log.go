@@ -17,7 +17,8 @@ const (
 
 var logPrefix = "GW"
 var logLevel = INFO
-var logFormatter = "\n[$prefix] - $level,$time - $msg\n"
+var logDefFormatter = "\n[$prefix-$level] - $time - $msg\n"
+var logFormatter = logDefFormatter
 
 func SetLogPrefix(prefix string) {
 	logPrefix = prefix
@@ -25,6 +26,10 @@ func SetLogPrefix(prefix string) {
 
 func SetLogLevel(level LogLevel) {
 	logLevel = level
+}
+
+func ResetLogFormatter() {
+	SetLogFormatter(logDefFormatter)
 }
 
 func SetLogFormatter(formatter string) {

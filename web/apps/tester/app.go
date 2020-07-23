@@ -3,6 +3,7 @@ package tester
 import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/web/apps/tester/api"
+	"github.com/oceanho/gw/web/apps/tester/dto"
 )
 
 func init() {
@@ -24,6 +25,10 @@ func (u App) BaseRouter() string {
 }
 
 func (u App) Register(router *gw.RouteGroup) {
+
+	router.GET("test/create", api.CreateMyTester)
+	router.GET("test/query", api.QueryMyTester)
+
 	router.GET("test/200", api.GetTester)
 
 	router.GET("test/400", api.GetTester400)
@@ -53,5 +58,6 @@ func (u App) Register(router *gw.RouteGroup) {
 }
 
 func (u App) Migrate(store gw.Store) {
-	// db := store.GetDbStore()
+	db := store.GetDbStore()
+	db.AutoMigrate(&dto.MyTester{})
 }

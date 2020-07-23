@@ -63,8 +63,12 @@ type Config struct {
 		Security struct {
 			Auth struct {
 				Disable   bool       `yaml:"disable" toml:"disable" json:"disable"`
-				AllowUrls []AllowUrl `yaml:"allow-urls" toml:"allow-urls" json:"allow-urls"`
-			}
+				AllowUrls []AllowUrl `yaml:"allowUrls" toml:"allowUrls" json:"allowUrls"`
+			} `yaml:"auth" toml:"auth" json:"auth"`
+			QueryLimit struct {
+				MinPageSize int `yaml:"minPageSize" toml:"minPageSize" json:"minPageSize"`
+				MaxPageSize int `yaml:"maxPageSize" toml:"maxPageSize" json:"maxPageSize"`
+			} `yaml:"queryLimit" toml:"queryLimit" json:"queryLimit"`
 		} `yaml:"security" toml:"security" json:"security"`
 	} `yaml:"service" toml:"service" json:"service"`
 	Common struct {
