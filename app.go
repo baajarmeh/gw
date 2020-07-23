@@ -88,7 +88,7 @@ var (
 )
 
 var (
-	servers          map[string]*HostServer
+	servers map[string]*HostServer
 )
 
 func init() {
@@ -249,8 +249,7 @@ func (server *HostServer) Serve() {
 		panic(fmt.Errorf("call server.router.Run, %v", err))
 	}
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
-	s := <-sigs
-	logger.Info("Shutdown server: %v", s)
+	<-sigs
 	handler = server.Options.ShutDownBeforeHandler
 	if handler != nil {
 		err := server.Options.ShutDownBeforeHandler(server)
@@ -258,5 +257,5 @@ func (server *HostServer) Serve() {
 			fmt.Printf("call app.ShutDownBeforeHandler, %v", err)
 		}
 	}
-	logger.Info("Shutdown server: %s", server.Options.Name)
+	logger.Info("Shutdown server: %s, Addr: %s", server.Options.Name, server.Options.Addr)
 }

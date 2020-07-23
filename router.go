@@ -133,23 +133,28 @@ func (c *Context) OK(payload interface{}) {
 	c.JSON(http.StatusOK, 0, payload)
 }
 
-// Fault403 response a JSON formatter to client with http status = 403.
-func (c *Context) Fault403(status int, errMsg, payload interface{}) {
-	result := gin.H{
-		"status":  status,
-		"msg":     errMsg,
-		"payload": payload,
-	}
-	c.Context.JSON(403, result)
+// Err400 response a JSON formatter to client with http status = 400.
+func (c *Context) Err400(status int, outs ...interface{}) {
+	c.Context.JSON(http.StatusBadRequest, resp(status, outs...))
 }
 
-// Fault404 response a JSON formatter to client with http status = 404.
-func (c *Context) Fault404(status int, outs ...interface{}) {
+// Err401 response a JSON formatter to client with http status = 401.
+func (c *Context) Err401(status int, outs ...interface{}) {
+	c.Context.JSON(http.StatusUnauthorized, resp(status, outs...))
+}
+
+// Err403 response a JSON formatter to client with http status = 403.
+func (c *Context) Err403(status int, outs ...interface{}) {
+	c.Context.JSON(http.StatusForbidden, resp(status, outs...))
+}
+
+// Err404 response a JSON formatter to client with http status = 404.
+func (c *Context) Err404(status int, outs ...interface{}) {
 	c.Context.JSON(http.StatusNotFound, resp(status, outs...))
 }
 
-// Fault500 response a JSON formatter to client with http status = 500.
-func (c *Context) Fault500(status int, outs ...interface{}) {
+// Err500 response a JSON formatter to client with http status = 500.
+func (c *Context) Err500(status int, outs ...interface{}) {
 	c.Context.JSON(http.StatusInternalServerError, resp(status, outs...))
 }
 
