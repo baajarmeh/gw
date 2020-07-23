@@ -6,7 +6,7 @@ func main() {
 	r := gin.New()
 	g := r.Group("//v1")
 	g.GET("/version", func(c *gin.Context) {
-		c.OK( gin.H{
+		c.OK(gin.H{
 			"payload": "welcome.",
 		})
 	})

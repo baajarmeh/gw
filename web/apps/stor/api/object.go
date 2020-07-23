@@ -6,13 +6,13 @@ import (
 )
 
 func CreateObject(c *gw.Context) {
-	c.OK( gin.H{
+	c.OK(gin.H{
 		"payload": "CreateObject",
 	})
 }
 
 func ModifyObject(c *gw.Context) {
-	c.OK( gin.H{
+	c.OK(gin.H{
 		"payload": "ModifyObject",
 	})
 }
