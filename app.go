@@ -29,11 +29,6 @@ type App interface {
 	Register(router *RouteGroup)
 }
 
-type backendStore struct {
-	store         Store
-	filterHandler StoreDbHandler
-}
-
 // ServerOption represents a Server Options.
 type ServerOption struct {
 	Addr                  string

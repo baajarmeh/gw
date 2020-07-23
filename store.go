@@ -23,14 +23,14 @@ type Store interface {
 }
 
 // StoreDbSetupHandler defines a database ORM object handler.
-type StoreDbSetupHandler func(ctx *gin.Context, db *gorm.DB, user User) *gorm.DB
+type StoreDbSetupHandler func(ctx *gin.Context, db *gorm.DB, user *User) *gorm.DB
 
 // StoreCacheSetupHandler defines a redis Client object handler.
-type StoreCacheSetupHandler func(ctx *gin.Context, client *redis.Client, user User) *redis.Client
+type StoreCacheSetupHandler func(ctx *gin.Context, client *redis.Client, user *User) *redis.Client
 
 type internalBackendWrapper struct {
 	ctx                    *gin.Context
-	user                   User
+	user                   *User
 	store                  Store
 	storeDbSetupHandler    StoreDbSetupHandler
 	storeCacheSetupHandler StoreCacheSetupHandler
@@ -172,7 +172,7 @@ func createCache(db conf.Cache) *redis.Client {
 func getStore(ctx *gin.Context, user User) Store {
 	bk := &internalBackendWrapper{
 		ctx:   ctx,
-		user:  user,
+		user:  &user,
 		store: backend,
 	}
 	return bk
