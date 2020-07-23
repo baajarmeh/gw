@@ -67,7 +67,7 @@ var (
 	appDefaultName                  = "gw.app"
 	appDefaultRestart               = "always"
 	appDefaultMode                  = "debug"
-	appDefaultPrefix                = "/v1"
+	appDefaultPrefix                = "/api/v1"
 	appDefaultPluginSymbolName      = "AppPlugin"
 	appDefaultPluginSymbolSuffix    = ".so"
 	appDefaultVersion               = "Version 1.0"
@@ -89,7 +89,6 @@ var (
 
 var (
 	servers          map[string]*HostServer
-	serverSafeLocker sync.Mutex
 )
 
 func init() {
@@ -98,11 +97,15 @@ func init() {
 
 // NewServerOption returns a *ServerOption with bcs.
 func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
+	mode := os.Getenv(gin.EnvGinMode)
+	if mode == "" {
+		mode = appDefaultMode
+	}
 	conf := &ServerOption{
+		Mode:                   mode,
 		Addr:                   appDefaultAddr,
 		Name:                   appDefaultName,
 		Restart:                appDefaultRestart,
-		Mode:                   appDefaultMode,
 		Prefix:                 appDefaultPrefix,
 		AppConfigHandler:       appDefaultAppConfigHandler,
 		PluginSymbolName:       appDefaultPluginSymbolName,
@@ -130,8 +133,6 @@ func GetDefaultHostServer() *HostServer {
 
 // GetGwServer return a default  Server by name of has registered.
 func GetGwServer(name string) *HostServer {
-	serverSafeLocker.Lock()
-	defer serverSafeLocker.Unlock()
 	server, ok := servers[name]
 	if ok {
 		return server
@@ -141,8 +142,6 @@ func GetGwServer(name string) *HostServer {
 
 // New return a  Server with ServerOptions.
 func New(sopt *ServerOption) *HostServer {
-	serverSafeLocker.Lock()
-	defer serverSafeLocker.Unlock()
 	server, ok := servers[sopt.Name]
 	if ok {
 		logger.Warn("duplicated server, name: %s", sopt.Name)

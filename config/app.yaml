@@ -1,6 +1,6 @@
 service:
   name: "My App"
-  prefix: "/v1"
+  prefix: "/api/v1"
   version: "Version 1.0"
   remarks: "User Account Platform  Services."
   security:

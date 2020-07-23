@@ -129,17 +129,55 @@ func (router *Router) Group(relativePath string, handler Handler) *RouteGroup {
 }
 
 // OK response a JSON formatter to client with http status = 200.
-func (c *Context) OK(obj interface{}) {
-	c.JSON(http.StatusOK, obj)
+func (c *Context) OK(payload interface{}) {
+	c.JSON(http.StatusOK, 0, payload)
+}
+
+// Fault403 response a JSON formatter to client with http status = 403.
+func (c *Context) Fault403(status int, errMsg, payload interface{}) {
+	result := gin.H{
+		"status":  status,
+		"msg":     errMsg,
+		"payload": payload,
+	}
+	c.Context.JSON(403, result)
+}
+
+// Fault404 response a JSON formatter to client with http status = 404.
+func (c *Context) Fault404(status int, outs ...interface{}) {
+	c.Context.JSON(http.StatusNotFound, resp(status, outs...))
+}
+
+// Fault500 response a JSON formatter to client with http status = 500.
+func (c *Context) Fault500(status int, outs ...interface{}) {
+	c.Context.JSON(http.StatusInternalServerError, resp(status, outs...))
 }
 
 // JSON response a JSON formatter to client.
-func (c *Context) JSON(code int, obj interface{}) {
-	payload := gin.H{
-		"ok":      code >= 200 && code <= 202,
-		"payload": obj,
+func (c *Context) JSON(code int, outs ...interface{}) {
+	c.JSONStatus(code, 0, outs)
+}
+
+// JSON response a JSON formatter to client.
+func (c *Context) JSONStatus(code int, status int, outs ...interface{}) {
+	c.Context.JSON(code, resp(status, outs...))
+}
+
+func resp(status int, outs ...interface{}) interface{} {
+	var errMsg interface{}
+	var payload interface{}
+	if len(outs) == 2 {
+		errMsg = outs[0]
+		payload = outs[1]
+	} else if len(outs) == 1 {
+		errMsg = nil
+		payload = outs[0]
 	}
-	c.Context.JSON(code, payload)
+	return gin.H{
+		"status":  status,
+		"err":     errMsg,
+		"payload": payload,
+	}
 }
 
 func reflectRouter(relativePath string, handler Handler) {
