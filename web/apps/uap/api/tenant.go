@@ -7,7 +7,7 @@ import (
 	"github.com/oceanho/gw/logger"
 )
 
-func GetTenant(c *gw2.ApiContext) {
+func GetTenant(c *gw2.Context) {
 	db := c.Store.GetDbStore()
 	sqlDb, err := db.DB()
 	if err != nil {
@@ -20,29 +20,29 @@ func GetTenant(c *gw2.ApiContext) {
 		return
 	}
 	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
-func CreateTenant(c *gw2.ApiContext) {
+func CreateTenant(c *gw2.Context) {
 	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
-	})
-}
-
-func ModifyTenant(c *gw2.ApiContext) {
-	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
-func DeleteTenant(c *gw2.ApiContext) {
+func ModifyTenant(c *gw2.Context) {
 	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
-func QueryTenant(c *gw2.ApiContext) {
+func DeleteTenant(c *gw2.Context) {
 	c.JSON(200, gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+	})
+}
+
+func QueryTenant(c *gw2.Context) {
+	c.JSON(200, gin.H{
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }

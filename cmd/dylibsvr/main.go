@@ -17,7 +17,7 @@ func main() {
 	server.Serve()
 }
 
-func registerApps(server *gw.ApiHostServer) {
+func registerApps(server *gw.HostServer) {
 	dir := "./build/dylib"
 	server.RegisterByPluginDir(dir)
 }

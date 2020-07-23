@@ -65,7 +65,7 @@ func (c *Client) Do(reqobj req.IRequest, output interface{}) (int, error) {
 
 var (
 	defaultAddr         = "https://127.0.0.1:8080"
-	defaultVersion      = "/api/v1"
+	defaultVersion      = "//v1"
 	defaultService      = "confsvr"
 	defaultProto        = "http"
 	defaultMaxRetries   = 10

@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-func GetRequestId(c *gin.Context) string {
-	requestId := c.GetHeader("X-Request-Id")
-	if requestId == "" {
-		requestId = internalGenRequestId()
+func getRequestID(c *gin.Context) string {
+	requestID := c.GetHeader("X-Request-Id")
+	if requestID == "" {
+		requestID = internalGenRequestID()
 	}
-	return requestId
+	return requestID
 }
 
-func internalGenRequestId() string {
+func internalGenRequestID() string {
 	return fmt.Sprintf("gw-%d", time.Now().UnixNano())
 }

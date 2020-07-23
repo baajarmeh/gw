@@ -1,18 +1,18 @@
 app:
   name: "My App"
-  prefix: "api/v1"
+  prefix: "/v1"
   version: "Version 1.0"
-  remarks: "User Account Platform API Services."
+  remarks: "User Account Platform  Services."
   security:
     auth:
       disable: False
     allow-urls:
-      - POST:RE:${API_PREFIX}/ucp/account/login
+      - POST:RE:${_PREFIX}/ucp/account/login
         - ips:
           - 127.0.0.1/32
           - 192.168.0.0/24
   services:
-    plugin: "/apps/dylib/apis/*.so"
+    plugin: "/apps/dylib/s/*.so"
 
 common:
   backend:

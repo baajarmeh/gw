@@ -7,14 +7,14 @@ import (
 var f = `
 service:
   name: "confsvr"
-  prefix: "api/v1"
+  prefix: "/v1"
   version: "Version 1.0"
-  remarks: "User Account Platform API Services."
+  remarks: "User Account Platform  Services."
   security:
     auth:
       disable: False
     allow-urls:
-      - POST:${API_PREFIX}/ucp/account/login
+      - POST:${_PREFIX}/ucp/account/login
 common:
   backend:
     db:

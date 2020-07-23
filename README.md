@@ -1,8 +1,14 @@
 # gw
 
-## how to use it.
+## Step by step.
 
-Create Database.
+dependencies
+
+- mysql
+- golint
+- redis
+
+Database(MySQL)
 
 ``` shell
 mysql> create database gwdb;
@@ -16,4 +22,14 @@ Query OK, 0 rows affected (0.00 sec)
 
 mysql> flush privileges;
 Query OK, 0 rows affected (0.01 sec)
+```
+
+
+golint
+
+``` shell
+go get -u golang.org/x/lint/golint
+
+# references
+# https://github.com/golang/lint
 ```

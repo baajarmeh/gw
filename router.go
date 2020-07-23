@@ -2,22 +2,23 @@ package gw
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/auth"
-	"github.com/oceanho/gw/store"
 )
 
-type Handler func(ctx *ApiContext)
+// Handler defines a http handler for gw framework.
+type Handler func(ctx *Context)
 
-type ApiContext struct {
+// Context represents a gw Context object, it's extension from gin.Context.
+type Context struct {
 	*gin.Context
-	RequestId string
-	User      auth.User
-	Store     store.Backend
+	RequestID string
+	User      User
+	Store     Store
 	queries   map[string][]string
 	params    map[string]interface{}
 }
 
-func (c *ApiContext) Query(key string) string {
+// Query returns a string from queries.
+func (c *Context) Query(key string) string {
 	val := c.Context.Query(key)
 	if val == "" {
 		queries := c.QueryArray(key)
@@ -28,77 +29,92 @@ func (c *ApiContext) Query(key string) string {
 	return val
 }
 
-func (c *ApiContext) QueryArray(key string) []string {
+// QueryArray returns a string array from queries.
+func (c *Context) QueryArray(key string) []string {
 	return c.queries[key]
 }
 
-type ApiRouter struct {
+// Router represents a gw's Router info.
+type Router struct {
 	server        *gin.Engine
 	router        *gin.RouterGroup
 	currentRouter *gin.RouterGroup
 }
 
-type ApiRouteGroup struct {
-	*ApiRouter
+// RouteGroup represents a gw's Group Router info.
+type RouteGroup struct {
+	*Router
 }
 
-func (router *ApiRouter) GET(relativePath string, handler Handler) {
+// GET register a http Get router of handler.
+func (router *Router) GET(relativePath string, handler Handler) {
 	router.currentRouter.GET(relativePath, func(c *gin.Context) {
 		handle(c, handler)
 	})
 }
 
-func (router *ApiRouter) POST(relativePath string, handler Handler) {
+// POST register a http POST router of handler.
+func (router *Router) POST(relativePath string, handler Handler) {
 	router.currentRouter.POST(relativePath, func(c *gin.Context) {
 		handle(c, handler)
 	})
 }
 
-func (router *ApiRouter) PUT(relativePath string, handler Handler) {
+// PUT register a http PUT router of handler.
+func (router *Router) PUT(relativePath string, handler Handler) {
 	router.currentRouter.PUT(relativePath, func(c *gin.Context) {
 		handle(c, handler)
 	})
 }
-func (router *ApiRouter) HEAD(relativePath string, handler Handler) {
+
+// HEAD register a http HEAD router of handler.
+func (router *Router) HEAD(relativePath string, handler Handler) {
 	router.currentRouter.HEAD(relativePath, func(c *gin.Context) {
 		handle(c, handler)
 	})
 }
 
-func (router *ApiRouter) DELETE(relativePath string, handler Handler) {
+// DELETE register a http DELETE router of handler.
+func (router *Router) DELETE(relativePath string, handler Handler) {
 	router.currentRouter.DELETE(relativePath, func(c *gin.Context) {
 		handle(c, handler)
 	})
 }
 
-func (router *ApiRouter) OPTIONS(relativePath string, handler Handler) {
+// OPTIONS register a http OPTIONS router of handler.
+func (router *Router) OPTIONS(relativePath string, handler Handler) {
 	router.currentRouter.OPTIONS(relativePath, func(c *gin.Context) {
 		handle(c, handler)
 	})
 }
 
-func (router *ApiRouter) PATCH(relativePath string, handler Handler) {
+// PATCH register a http PATCH router of handler.
+func (router *Router) PATCH(relativePath string, handler Handler) {
 	router.currentRouter.PATCH(relativePath, func(c *gin.Context) {
 		handle(c, handler)
 	})
 }
 
-func (router *ApiRouter) Any(relativePath string, handler Handler) {
+// Any register a any HTTP method router of handler.
+func (router *Router) Any(relativePath string, handler Handler) {
 	router.currentRouter.Any(relativePath, func(c *gin.Context) {
 		handle(c, handler)
 	})
 }
 
-func (router *ApiRouter) Use(middleware ...gin.HandlerFunc) {
+// Use register a gin Middleware of handler.
+func (router *Router) Use(middleware ...gin.HandlerFunc) {
 	router.currentRouter.Use(middleware...)
 }
 
-func (router *ApiRouter) Handlers() gin.HandlersChain {
+// Handlers returns the current router of gin.HandlersChain
+func (router *Router) Handlers() gin.HandlersChain {
 	return router.currentRouter.Handlers
 }
 
-func (router *ApiRouter) Group(relativePath string, handler Handler) *ApiRouteGroup {
-	rg := &ApiRouteGroup{
+// Group returns a new route group.
+func (router *Router) Group(relativePath string, handler Handler) *RouteGroup {
+	rg := &RouteGroup{
 		router,
 	}
 	if handler != nil {
@@ -116,7 +132,7 @@ func reflectRouter(relativePath string, handler Handler) {
 }
 
 func handle(c *gin.Context, handler Handler) {
-	handler(makeApiCtx(c))
+	handler(makeCtx(c))
 }
 
 //
@@ -125,28 +141,28 @@ func handle(c *gin.Context, handler Handler) {
 // ===========================
 //
 // func handleBySubPath(c *gin.Context, handler Handler) {
-// 	handler(makeApiCtx(c))
+// 	handler(makeCtx(c))
 // }
 //
 // func handleByUint64(c *gin.Context, handler Handler) {
-// 	handler(makeApiCtx(c))
+// 	handler(makeCtx(c))
 // }
 //
 // func handleByStr(c *gin.Context, handler Handler) {
-// 	handler(makeApiCtx(c))
+// 	handler(makeCtx(c))
 // }
 //
 // func handleByRegex(c *gin.Context, handler Handler) {
-// 	handler(makeApiCtx(c))
+// 	handler(makeCtx(c))
 // }
 
-func makeApiCtx(c *gin.Context) *ApiContext {
-	user := auth.GetUser(c)
-	requestId := GetRequestId(c)
-	backendStore := store.GetBackend(c, user)
-	ctx := &ApiContext{
+func makeCtx(c *gin.Context) *Context {
+	user := GetUser(c)
+	requestID := getRequestID(c)
+	backendStore := GetBackend(c, user)
+	ctx := &Context{
 		User:      user,
-		RequestId: requestId,
+		RequestID: requestID,
 		Store:     backendStore,
 		Context:   c,
 		queries:   make(map[string][]string),

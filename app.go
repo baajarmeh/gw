@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
-	"github.com/oceanho/gw/store"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -19,40 +18,48 @@ import (
 // App represents a application, Should be implement this.
 type App interface {
 
-	// Name define a API that return as your app name.
+	// Name define a  that return as your app name.
 	Name() string
 
-	// BaseRouter define a API that should be return your app base route path.
-	// It's will be to create a new *ApiRouteGroup object and that used by Register(...) API.
+	// BaseRouter define a  that should be return your app base route path.
+	// It's will be to create a new *RouteGroup object and that used by Register(...) .
 	BaseRouter() string
 
-	// Register define a API that for register your app router inside.
-	Register(router *ApiRouteGroup)
+	// Register define a  that for register your app router inside.
+	Register(router *RouteGroup)
 }
 
+type backendStore struct {
+	store         Store
+	filterHandler StoreDbHandler
+}
+
+// ServerOption represents a Server Options.
 type ServerOption struct {
 	Addr                  string
 	Name                  string
 	Mode                  string
 	Restart               string
-	ApiPrefix             string
+	Prefix                string
 	PluginDir             string
 	PluginSymbolName      string
 	PluginSymbolSuffix    string
 	bcs                   *conf.BootStrapConfig
-	StartBeforeHandler    func(server *ApiHostServer) error
-	ShutDownBeforeHandler func(server *ApiHostServer) error
-	BackendStoreHandler   func(cnf conf.Config) store.Backend
+	StartBeforeHandler    func(server *HostServer) error
+	ShutDownBeforeHandler func(server *HostServer) error
+	BackendStoreHandler   func(cnf conf.Config) Store
 	AppConfigHandler      func(cnf conf.BootStrapConfig) *conf.Config
 }
 
-type ApiHostServer struct {
+// HostServer represents a  Host Server.
+type HostServer struct {
 	Options *ServerOption
 	// private properties.
 	locker sync.Mutex
-	router *ApiRouter
+	router *Router
 	apps   map[string]App
 	conf   *conf.Config
+	store  Store
 }
 
 var (
@@ -60,14 +67,14 @@ var (
 	appDefaultName                  = "oceanho.app"
 	appDefaultRestart               = "always"
 	appDefaultMode                  = "debug"
-	appDefaultApiPrefix             = "api/v1"
+	appDefaultPrefix                = "/v1"
 	appDefaultPluginSymbolName      = "AppPlugin"
 	appDefaultPluginSymbolSuffix    = ".so"
-	appDefaultApiVersion            = "Version 1.0"
-	appDefaultStartBeforeHandler    = func(server *ApiHostServer) error { return nil }
-	appDefaultShutDownBeforeHandler = func(server *ApiHostServer) error { return nil }
-	appDefaultBackendHandler        = func(cnf conf.Config) store.Backend {
-		return store.DefaultBackend(cnf)
+	appDefaultVersion               = "Version 1.0"
+	appDefaultStartBeforeHandler    = func(server *HostServer) error { return nil }
+	appDefaultShutDownBeforeHandler = func(server *HostServer) error { return nil }
+	appDefaultBackendHandler        = func(cnf conf.Config) Store {
+		return DefaultBackend(cnf)
 	}
 	appAppConfigHandler = func(cnf conf.BootStrapConfig) *conf.Config {
 		return conf.NewConfigByBootStrapConfig(&cnf)
@@ -75,21 +82,22 @@ var (
 )
 
 var (
-	servers          map[string]*ApiHostServer
+	servers          map[string]*HostServer
 	serverSafeLocker sync.Mutex
 )
 
 func init() {
-	servers = make(map[string]*ApiHostServer)
+	servers = make(map[string]*HostServer)
 }
 
+// NewServerOption returns a *ServerOption with bcs.
 func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 	conf := &ServerOption{
 		Addr:                  appDefaultAddr,
 		Name:                  appDefaultName,
 		Restart:               appDefaultRestart,
 		Mode:                  appDefaultMode,
-		ApiPrefix:             appDefaultApiPrefix,
+		Prefix:                appDefaultPrefix,
 		PluginSymbolName:      appDefaultPluginSymbolName,
 		PluginSymbolSuffix:    appDefaultPluginSymbolSuffix,
 		StartBeforeHandler:    appDefaultStartBeforeHandler,
@@ -101,16 +109,19 @@ func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 	return conf
 }
 
-func Default() *ApiHostServer {
+// Default returns a default HostServer(the server instance's bcs,svr are default config items.)
+func Default() *HostServer {
 	bcs := conf.DefaultBootStrapConfig()
 	return New(NewServerOption(bcs))
 }
 
-func GetDefaultApiServer() *ApiHostServer {
-	return GetApiServer(appDefaultName)
+// GetDefaultHostServer return a default  Server of has registered.
+func GetDefaultHostServer() *HostServer {
+	return GetGwServer(appDefaultName)
 }
 
-func GetApiServer(name string) *ApiHostServer {
+// GetGwServer return a default  Server by name of has registered.
+func GetGwServer(name string) *HostServer {
 	serverSafeLocker.Lock()
 	defer serverSafeLocker.Unlock()
 	server, ok := servers[name]
@@ -120,7 +131,8 @@ func GetApiServer(name string) *ApiHostServer {
 	return nil
 }
 
-func New(sopt *ServerOption) *ApiHostServer {
+// New return a  Server with ServerOptions.
+func New(sopt *ServerOption) *HostServer {
 	serverSafeLocker.Lock()
 	defer serverSafeLocker.Unlock()
 	server, ok := servers[sopt.Name]
@@ -134,10 +146,10 @@ func New(sopt *ServerOption) *ApiHostServer {
 	if sopt.Mode == "debug" {
 		engine.Use(gin.Logger())
 	}
-	httpRouter := &ApiRouter{
+	httpRouter := &Router{
 		server: engine,
 	}
-	server = &ApiHostServer{
+	server = &HostServer{
 		apps:    make(map[string]App),
 		Options: sopt,
 		conf:    appAppConfigHandler(*sopt.bcs),
@@ -146,16 +158,17 @@ func New(sopt *ServerOption) *ApiHostServer {
 	// Initial all of internal components AT here.
 	appConf := *server.conf
 	// backend initialization
-	store.Initial(appConf, server.Options.BackendStoreHandler)
+	Initial(appConf, server.Options.BackendStoreHandler)
 
 	// initial routes.
-	httpRouter.router = httpRouter.server.Group(server.Options.ApiPrefix)
+	httpRouter.router = httpRouter.server.Group(server.Options.Prefix)
 	server.router = httpRouter
 	servers[sopt.Name] = server
 	return server
 }
 
-func (server *ApiHostServer) Register(apps ...App) {
+// Register register app instances into the server.
+func (server *HostServer) Register(apps ...App) {
 	server.locker.Lock()
 	defer server.locker.Unlock()
 	for _, app := range apps {
@@ -169,7 +182,8 @@ func (server *ApiHostServer) Register(apps ...App) {
 	}
 }
 
-func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
+// RegisterByPluginDir register app instances into the server with gw plugin mode.
+func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 	for _, d := range dirs {
 		rd, err := ioutil.ReadDir(d)
 		if err != nil {
@@ -207,7 +221,8 @@ func (server *ApiHostServer) RegisterByPluginDir(dirs ...string) {
 	}
 }
 
-func (server *ApiHostServer) Serve() {
+// Serve represents start the Server.
+func (server *HostServer) Serve() {
 	sigs := make(chan os.Signal, 1)
 	handler := server.Options.StartBeforeHandler
 	if handler != nil {

@@ -1,13 +1,15 @@
 package db
 
-import "github.com/oceanho/gw/contrib/backend/models"
+import (
+	"github.com/oceanho/gw/backend"
+)
 
 type Tenant struct {
-	models.Model
-	models.HasCreationState
-	models.HasModificationState
-	models.HasSoftDeletionState
-	models.HasActivationState
+	backend.Model
+	backend.HasCreationState
+	backend.HasModificationState
+	backend.HasSoftDeletionState
+	backend.HasActivationState
 	Name string
 }
 

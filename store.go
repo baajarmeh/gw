@@ -1,4 +1,4 @@
-package store
+package gw
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	dbMySQL "github.com/go-sql-driver/mysql"
-	"github.com/oceanho/gw/auth"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
 	"gorm.io/driver/mysql"
@@ -15,21 +14,25 @@ import (
 	"sync"
 )
 
-type Backend interface {
+// Store represents a Store engine of gw framework.
+type Store interface {
 	GetDbStore() *gorm.DB
 	GetDbStoreByName(name string) *gorm.DB
 	GetCacheStore() *redis.Client
 	GetCacheStoreByName(name string) *redis.Client
 }
 
+// StoreDbHandler defines a database ORM object handler.
+type StoreDbHandler func(ctx *gin.Context, user User) *gorm.DB
+
 type internalBackendWrapper struct {
-	ctx     *gin.Context
-	user    auth.User
-	backend Backend
+	ctx   *gin.Context
+	user  User
+	store Store
 }
 
 func (b internalBackendWrapper) GetDbStore() *gorm.DB {
-	db := b.backend.GetDbStore().WithContext(context.Background())
+	db := b.store.GetDbStore().WithContext(context.Background())
 	if db == nil {
 		panic("got db store fail, ret is nil.")
 	}
@@ -37,7 +40,7 @@ func (b internalBackendWrapper) GetDbStore() *gorm.DB {
 }
 
 func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
-	db := b.backend.GetDbStoreByName(name).WithContext(context.Background())
+	db := b.store.GetDbStoreByName(name).WithContext(context.Background())
 	if db == nil {
 		panic("got db store by name fail, ret is nil.")
 	}
@@ -53,7 +56,7 @@ func (b internalBackendWrapper) addGlobalCacheSettings(db *redis.Client) *redis.
 }
 
 func (b internalBackendWrapper) GetCacheStore() *redis.Client {
-	db := b.backend.GetCacheStore()
+	db := b.store.GetCacheStore()
 	if db == nil {
 		panic("got cache store fail, ret is nil.")
 	}
@@ -61,7 +64,7 @@ func (b internalBackendWrapper) GetCacheStore() *redis.Client {
 }
 
 func (b internalBackendWrapper) GetCacheStoreByName(name string) *redis.Client {
-	db := b.backend.GetCacheStoreByName(name)
+	db := b.store.GetCacheStoreByName(name)
 	if db == nil {
 		panic("got cache store by name fail, ret is nil.")
 	}
@@ -97,16 +100,16 @@ func (d DefaultBackendImpl) GetCacheStoreByName(name string) *redis.Client {
 	return db
 }
 
-var backend Backend
+var backend Store
 var once sync.Once
 
-func Initial(conf conf.Config, initial func(conf conf.Config) Backend) {
+func Initial(conf conf.Config, initial func(conf conf.Config) Store) {
 	once.Do(func() {
 		backend = initial(conf)
 	})
 }
 
-func DefaultBackend(cnf conf.Config) Backend {
+func DefaultBackend(cnf conf.Config) Store {
 	storeBackend := DefaultBackendImpl{
 		dbs:    make(map[string]*gorm.DB),
 		caches: make(map[string]*redis.Client),
@@ -155,19 +158,11 @@ func createCache(db conf.Cache) *redis.Client {
 	return nil
 }
 
-// Check represents a API that for check the store package requires has been initialed
-// Throw a exception if your has been not call the Initial(...) API.
-func Check() {
-	if backend == nil {
-		panic("store.backend is null. call store.Initial(...) please.")
-	}
-}
-
-func GetBackend(ctx *gin.Context, user auth.User) Backend {
+func GetBackend(ctx *gin.Context, user User) Store {
 	bk := &internalBackendWrapper{
-		ctx:     ctx,
-		user:    user,
-		backend: backend,
+		ctx:   ctx,
+		user:  user,
+		store: backend,
 	}
 	return bk
 }

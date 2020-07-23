@@ -43,7 +43,7 @@ func (c LocalFileConfigProvider) Provide(bcs BootStrapConfig, out *Config) error
 	b, err := ioutil.ReadFile(bcs.LocalFS.Path)
 	err = provider(b, out)
 	if err != nil {
-		return fmt.Errorf("provider api. %v", err)
+		return fmt.Errorf("provider . %v", err)
 	}
 	return nil
 }

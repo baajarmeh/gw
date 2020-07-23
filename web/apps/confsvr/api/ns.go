@@ -5,7 +5,7 @@ import (
 	gw2 "github.com/oceanho/gw"
 )
 
-func GetNS(c *gw2.ApiContext) {
+func GetNS(c *gw2.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -15,7 +15,7 @@ func GetNS(c *gw2.ApiContext) {
 	})
 }
 
-func CreateNS(c *gw2.ApiContext) {
+func CreateNS(c *gw2.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -25,7 +25,7 @@ func CreateNS(c *gw2.ApiContext) {
 	})
 }
 
-func ModifyNS(c *gw2.ApiContext) {
+func ModifyNS(c *gw2.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -35,7 +35,7 @@ func ModifyNS(c *gw2.ApiContext) {
 	})
 }
 
-func DestroyNS(c *gw2.ApiContext) {
+func DestroyNS(c *gw2.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",

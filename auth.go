@@ -1,20 +1,16 @@
-package auth
-
-import (
-	"github.com/oceanho/gw/conf"
-)
+package gw
 
 type IAuth interface {
-	Auth(passport, secret string,store conf.Backend) (User, error)
+	Auth(passport, secret string, store Store) (User, error)
 }
 
-type IPerm interface {
-	HasPerms(user User, store conf.Backend, perm string) (bool, error)
+type IPermission interface {
+	HasPerms(user User, store Store, perms ...string) (bool, error)
 }
 
 const UserKey = "gw-user"
 
-// func ApiAuth(a IAuth, realm string) gin.HandlerFunc {
+// func Auth(a IAuth, realm string) gin.HandlerFunc {
 //
 // 	if realm == "" {
 // 		realm = "Authorization Required"

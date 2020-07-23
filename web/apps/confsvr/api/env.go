@@ -5,7 +5,7 @@ import (
 	gw2 "github.com/oceanho/gw"
 )
 
-func GetEnv(c *gw2.ApiContext) {
+func GetEnv(c *gw2.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -15,7 +15,7 @@ func GetEnv(c *gw2.ApiContext) {
 	})
 }
 
-func CreateEnv(c *gw2.ApiContext) {
+func CreateEnv(c *gw2.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -25,7 +25,7 @@ func CreateEnv(c *gw2.ApiContext) {
 	})
 }
 
-func ModifyEnv(c *gw2.ApiContext) {
+func ModifyEnv(c *gw2.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
@@ -35,7 +35,7 @@ func ModifyEnv(c *gw2.ApiContext) {
 	})
 }
 
-func DestroyEnv(c *gw2.ApiContext) {
+func DestroyEnv(c *gw2.Context) {
 	//user := c.User
 	c.JSON(200, gin.H{
 		"status": "succ",
