@@ -10,9 +10,9 @@ var tablePrefix = "uap"
 
 type User struct {
 	backend.Model
-	Passport  string `gorm:"type:varchar(128);unique_index"`
+	Passport  string `gorm:"type:varchar(32);unique_index;not null"`
 	Secret    string `gorm:"type:varchar(128)"`
-	IsTenancy bool
+	IsTenancy bool   `gorm:"default:0;not null"`
 	backend.HasTenantState
 	backend.HasLockState
 	backend.HasCreationState
@@ -27,13 +27,12 @@ func (User) TableName() string {
 
 type Profile struct {
 	backend.Model
-	Gender   uint8
-	UserID   uint64 `gorm:"INDEX"`
-	Name     string `gorm:"type:varchar(64);INDEX"`
-	Email    string `gorm:"type:varchar(128);INDEX"`
-	Phone    string `gorm:"type:varchar(16);INDEX"`
-	Avatar   string `gorm:"type:varchar(256);INDEX"`
-	CardNo   string `gorm:"type:varchar(18);INDEX"`
+	Gender   uint8  `gorm:"default:1"`  // 1.man, 2.woman, 3.custom, 4.unknown
+	UserID   uint64 `gorm:"index"`
+	Name     string `gorm:"type:varchar(64);index"`
+	Email    string `gorm:"type:varchar(128);index"`
+	Phone    string `gorm:"type:varchar(16);index"`
+	Avatar   string `gorm:"type:varchar(256)"`
 	Address  string `gorm:"type:varchar(256)"`
 	PostCode string `gorm:"type:varchar(16)"`
 	BirthDay *time.Time
