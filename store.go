@@ -115,7 +115,8 @@ func DefaultBackend(cnf conf.Config) Store {
 		storeBackend.dbs[v.Name] = createDb(v)
 	}
 	for _, v := range caches {
-		storeBackend.caches[v.Name] = createCache(v)
+		db := createCache(v)
+		storeBackend.caches[v.Name] = db
 	}
 	return storeBackend
 }

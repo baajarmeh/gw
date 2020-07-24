@@ -237,7 +237,6 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 
 // Serve represents start the Server.
 func (server *HostServer) Serve() {
-
 	// before server starting. Try migrates for all registered Apps.
 	for _, p := range server.apps {
 		logger.Info("Migrate app: %s", p.Name())

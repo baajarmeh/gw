@@ -17,6 +17,7 @@ func GetAK(c *gw.Context) {
 			c.RequestID, c.Query("uid"), result, err),
 	})
 }
+
 func CreateAK(c *gw.Context) {
 	c.OK(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),

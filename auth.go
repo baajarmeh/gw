@@ -6,6 +6,7 @@ type IAuth interface {
 
 type IPermission interface {
 	HasPerms(user User, store Store, perms ...string) (bool, error)
+	HasAnyPerms(user User, store Store, perms ...string) (bool, error)
 }
 
 const UserKey = "gw-user"

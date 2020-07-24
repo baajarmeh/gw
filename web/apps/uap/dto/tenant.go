@@ -1,5 +1,5 @@
 package dto
 
 type TenantDto struct {
-	Name string ``
+	Name string `json:"name"`
 }

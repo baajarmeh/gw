@@ -3,7 +3,7 @@ package backend
 import "time"
 
 type Model struct {
-	ID uint64 `gorm:"primary_key;auto_increment:true"`
+	ID uint64 `gorm:"primary_key;auto_increment:true;NOT NULL"`
 }
 
 type HasTenantState struct {
@@ -21,6 +21,12 @@ type HasModificationState struct {
 type HasSoftDeletionState struct {
 	IsDeleted *bool
 	DeletedAt *time.Time
+}
+
+type HasLockState struct {
+	IsLocked   *bool
+	LockedAt   *time.Time
+	LockReason string
 }
 
 type HasActivationState struct {

@@ -23,6 +23,7 @@ func GetTenant(c *gw.Context) {
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
+
 func CreateTenant(c *gw.Context) {
 	c.OK(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),

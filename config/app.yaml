@@ -29,6 +29,8 @@ common:
       port: 3306
       user: gw
       password: gw@123
+      adminUser: gw
+      adminPassword: gw@123
       database: gwdb
       ssl_mode: on
       ssl_cert: ap
