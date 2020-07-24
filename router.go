@@ -142,6 +142,8 @@ func (c *Context) Config() conf.Config {
 }
 
 // Bind represent a Api that can be bind data to out object by gin.Context's Bind(...) APIs.
+// It's auto response 400, invalid request parameter to client if bind fail.
+// returns a error message for c.Bind(...).
 func (c *Context) Bind(out interface{}) error {
 	if err := c.Context.Bind(out); err != nil {
 		c.Err400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/web/apps/tester/biz"
@@ -10,17 +9,11 @@ import (
 
 func CreateMyTester(c *gw.Context) {
 	obj := &dto.MyTester{}
-	err := c.Bind(obj)
-	if err != nil {
-		c.Err400Msg(4000, fmt.Sprintf("invalid request params, err: %v", err))
+	if c.Bind(obj) != nil {
 		return
 	}
-	err = biz.CreateMyTester(c.Store.GetDbStore(), obj)
-	if err != nil {
-		c.Err500Msg(5000, err)
-	} else {
-		c.OK(obj.ID)
-	}
+	err := biz.CreateMyTester(c.Store.GetDbStore(), obj)
+	c.JSON(err, obj.ID)
 }
 
 func QueryMyTester(c *gw.Context) {

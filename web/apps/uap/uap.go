@@ -19,7 +19,7 @@ func (u App) Name() string {
 	return "gw.uap"
 }
 
-func (u App) BaseRouter() string {
+func (u App) Router() string {
 	return "uap"
 }
 

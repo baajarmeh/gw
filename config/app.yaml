@@ -7,13 +7,13 @@ service:
     auth:
       disable: False
     allowUrls:
-      - name: auth-apis
-        patterns:
-          - POST:RE:${_PREFIX}/ucp/account/login
-          - POST:RE:${_PREFIX}/ucp/account/login
-        ips:
-          - 127.0.0.1/32
-          - 192.168.0.0/24
+    - name: auth-apis
+      patterns:
+      - POST:RE:${_PREFIX}/ucp/account/login
+      - POST:RE:${_PREFIX}/ucp/account/login
+      ips:
+      - 127.0.0.1/32
+      - 192.168.0.0/24
     queryLimit:
       minPageSize: 20
       maxPageSize: 2000
@@ -23,29 +23,29 @@ service:
 common:
   backend:
     db:
-      - name: primary
-        driver: mysql
-        addr: 127.0.0.1
-        port: 3306
-        user: gw
-        password: gw@123
-        database: gwdb
-        ssl_mode: on
-        ssl_cert: ap
-        args:
-          charset: utf8
-          parseTime: True
+    - name: primary
+      driver: mysql
+      addr: 127.0.0.1
+      port: 3306
+      user: gw
+      password: gw@123
+      database: gwdb
+      ssl_mode: on
+      ssl_cert: ap
+      args:
+        charset: utf8
+        parseTime: True
     cache:
-      - name: primary
-        driver: redis
-        addr: 127.0.0.1
-        port: 6379
-        type: redis
-        auth:
-          disable: True
-          user: ocean
-          database: 1
-          password: oceanho
+    - name: primary
+      driver: redis
+      addr: 127.0.0.1
+      port: 6379
+      type: redis
+      auth:
+        disable: True
+        user: ocean
+        database: 1
+        password: oceanho
 
 # Any Your custom configuration item at here.
 # More: https://github.com/oceanho/gw/master/docs/configuration#custom

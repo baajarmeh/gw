@@ -159,8 +159,8 @@ func getStore(ctx *gin.Context, user User) Store {
 		ctx:                    *ctx,
 		user:                   user,
 		store:                  server.store,
-		storeDbSetupHandler:    server.Options.StoreDbSetupHandler,
-		storeCacheSetupHandler: server.Options.StoreCacheSetupHandler,
+		storeDbSetupHandler:    server.options.StoreDbSetupHandler,
+		storeCacheSetupHandler: server.options.StoreCacheSetupHandler,
 	}
 	return bk
 }

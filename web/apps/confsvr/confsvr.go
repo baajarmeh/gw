@@ -16,7 +16,7 @@ func (u App) Name() string {
 	return "gw.confsvr"
 }
 
-func (u App) BaseRouter() string {
+func (u App) Router() string {
 	return "confsvr"
 }
 

@@ -20,7 +20,7 @@ func (u App) Name() string {
 	return "gw.tester"
 }
 
-func (u App) BaseRouter() string {
+func (u App) Router() string {
 	return "tester"
 }
 

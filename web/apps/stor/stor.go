@@ -19,7 +19,7 @@ func (u App) Name() string {
 	return "gw.stor"
 }
 
-func (u App) BaseRouter() string {
+func (u App) Router() string {
 	return "stor"
 }
 

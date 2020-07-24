@@ -13,20 +13,19 @@ import (
 	"path"
 	"plugin"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 )
 
-// App represents a application, Should be implement this.
+// App represents a application.
 type App interface {
 
-	// Name define a  that return as your app name.
+	// Name define a API that return as your app name.
 	Name() string
 
-	// BaseRouter define a  that should be return your app base route path.
-	// It's will be to create a new *RouteGroup object and that used by Register(...) .
-	BaseRouter() string
+	// Router define a API that should be return your app base route path.
+	// It's will be used to create a new *RouteGroup object and that used by Register(...) .
+	Router() string
 
 	// Register define a API that for register your app router inside.
 	Register(router *RouteGroup)
@@ -45,25 +44,23 @@ type ServerOption struct {
 	PluginDir              string
 	PluginSymbolName       string
 	PluginSymbolSuffix     string
-	bcs                    *conf.BootStrapConfig
-	cnf                    *conf.Config
 	StartBeforeHandler     func(server *HostServer) error
 	ShutDownBeforeHandler  func(server *HostServer) error
 	BackendStoreHandler    func(cnf conf.Config) Store
 	AppConfigHandler       func(cnf conf.BootStrapConfig) *conf.Config
 	StoreDbSetupHandler    StoreDbSetupHandler
 	StoreCacheSetupHandler StoreCacheSetupHandler
+	cnf                    *conf.Config
+	bcs                    *conf.BootStrapConfig
 }
 
 // HostServer represents a  Host Server.
 type HostServer struct {
-	Options *ServerOption
-	// private properties.
-	locker sync.Mutex
-	router *Router
-	apps   map[string]App
-	conf   *conf.Config
-	store  Store
+	options *ServerOption
+	router  *Router
+	apps    map[string]App
+	conf    *conf.Config
+	store   Store
 }
 
 var (
@@ -166,21 +163,21 @@ func New(sopt *ServerOption) *HostServer {
 	cnf := sopt.AppConfigHandler(*sopt.bcs)
 	sopt.cnf = cnf
 	server = &HostServer{
-		Options: sopt,
+		options: sopt,
 		apps:    make(map[string]App),
 		conf:    cnf,
 		store:   sopt.BackendStoreHandler(*cnf),
 	}
 	// Must ensure store handler is not nil.
-	if server.Options.StoreDbSetupHandler == nil {
-		server.Options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
+	if server.options.StoreDbSetupHandler == nil {
+		server.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
 	}
-	if server.Options.StoreCacheSetupHandler == nil {
-		server.Options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
+	if server.options.StoreCacheSetupHandler == nil {
+		server.options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
 	}
 
 	// initial routes.
-	httpRouter.router = httpRouter.server.Group(server.Options.Prefix)
+	httpRouter.router = httpRouter.server.Group(server.options.Prefix)
 	server.router = httpRouter
 	servers[sopt.Name] = server
 	return server
@@ -188,14 +185,12 @@ func New(sopt *ServerOption) *HostServer {
 
 // Register register app instances into the server.
 func (server *HostServer) Register(apps ...App) {
-	server.locker.Lock()
-	defer server.locker.Unlock()
 	for _, app := range apps {
 		appName := app.Name()
 		if _, ok := server.apps[appName]; !ok {
 			server.apps[appName] = app
 			logger.Info("register app: %s", appName)
-			rg := server.router.Group(app.BaseRouter(), nil)
+			rg := server.router.Group(app.Router(), nil)
 			app.Register(rg)
 		}
 	}
@@ -214,8 +209,8 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 			if fi.IsDir() {
 				server.RegisterByPluginDir(pn)
 			} else {
-				if !strings.HasSuffix(fi.Name(), server.Options.PluginSymbolSuffix) {
-					logger.Info("suffix not is %s, skipping file: %s", server.Options.PluginSymbolSuffix, pn)
+				if !strings.HasSuffix(fi.Name(), server.options.PluginSymbolSuffix) {
+					logger.Info("suffix not is %s, skipping file: %s", server.options.PluginSymbolSuffix, pn)
 					continue
 				}
 				p, err := plugin.Open(pn)
@@ -223,7 +218,7 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 					logger.Error("load plugin file: %s, err: %v", pn, err)
 					continue
 				}
-				sym, err := p.Lookup(server.Options.PluginSymbolName)
+				sym, err := p.Lookup(server.options.PluginSymbolName)
 				if err != nil {
 					logger.Error("file %s, err: %v", pn, err)
 					continue
@@ -231,7 +226,7 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 				// TODO(Ocean): If symbol are pointer, how to conversions ?
 				app, ok := sym.(App)
 				if !ok {
-					logger.Error("symbol %s in file %s did not is app.App interface.", server.Options.PluginSymbolName, pn)
+					logger.Error("symbol %s in file %s did not is app.App interface.", server.options.PluginSymbolName, pn)
 					continue
 				}
 				server.Register(app)
@@ -251,18 +246,18 @@ func (server *HostServer) Serve() {
 
 	// signal watch.
 	sigs := make(chan os.Signal, 1)
-	handler := server.Options.StartBeforeHandler
+	handler := server.options.StartBeforeHandler
 	if handler != nil {
-		err := server.Options.StartBeforeHandler(server)
+		err := server.options.StartBeforeHandler(server)
 		if err != nil {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-	logger.Info("Listening and serving HTTP on: %s", server.Options.Addr)
+	logger.Info("Listening and serving HTTP on: %s", server.options.Addr)
 	logger.ResetLogFormatter()
 	var err error
 	go func() {
-		err = server.router.server.Run(server.Options.Addr)
+		err = server.router.server.Run(server.options.Addr)
 	}()
 	// TODO(Ocean): has no better solution that can be waiting for gin.Serve() completed with non-block state?
 	time.Sleep(time.Second * 1)
@@ -271,12 +266,12 @@ func (server *HostServer) Serve() {
 	}
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 	<-sigs
-	handler = server.Options.ShutDownBeforeHandler
+	handler = server.options.ShutDownBeforeHandler
 	if handler != nil {
-		err := server.Options.ShutDownBeforeHandler(server)
+		err := server.options.ShutDownBeforeHandler(server)
 		if err != nil {
 			fmt.Printf("call app.ShutDownBeforeHandler, %v", err)
 		}
 	}
-	logger.Info("Shutdown server: %s, Addr: %s", server.Options.Name, server.Options.Addr)
+	logger.Info("Shutdown server: %s, Addr: %s", server.options.Name, server.options.Addr)
 }
