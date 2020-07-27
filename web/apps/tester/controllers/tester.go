@@ -27,25 +27,9 @@ func (MyTesterController) Get(c *gw.Context) {
 	c.JSON(err, out)
 }
 
-func PostQuery(c *gw.Context) {
+func (MyTesterController) Query(c *gw.Context) {
 	expr := &gw.QueryExpr{}
 	if c.Bind(expr) != nil {
-		return
-	}
-	pager := expr.PagerExpr
-	db := c.Store.GetDbStore()
-	out := &[]dto.MyTester{}
-	var total int64
-	err := db.Model(&dto.MyTester{}).Count(&total).Limit(pager.PageSize).Offset(expr.PageOffset()).Scan(out).Error
-	if err != nil {
-		c.Fault(err)
-		return
-	}
-	c.PagerJSON(total, expr.PagerExpr, out)
-}
-func (MyTesterController) Query(c *gw.Context) {
-	expr := gw.PagerExpr{}
-	if c.Bind(&expr) != nil {
 		return
 	}
 	db := c.Store.GetDbStore()
@@ -56,7 +40,7 @@ func (MyTesterController) Query(c *gw.Context) {
 		c.Fault(err)
 		return
 	}
-	c.PagerJSON(total, expr, out)
+	c.PagerJSON(total, expr.PagerExpr, out)
 }
 
 func (MyTesterController) Post(c *gw.Context) {

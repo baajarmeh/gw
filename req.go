@@ -24,9 +24,25 @@ type PagerExpr struct {
 	PageNumber int `json:"pageNumber" binding:"required" xml:"pageNumber" query:"pageNumber" params:"pageNumber" form:"pageNumber"`
 }
 
+// SearcherExpr represents a general searcher query request model for gw framework.
+type SearcherExpr struct {
+	Search     string        `json:"search" query:"search" params:"search" form:"search"`
+	fields     []string      `json:"fields" query:"fields" params:"fields" form:"fields"`
+	values     []interface{} `json:"values" query:"values" params:"values" form:"values"`
+	searchMode string        `json:"mode" query:"mode" params:"mode" form:"mode"`
+}
+
+// RangeExpr represents a general range query request model for gw framework.
+type RangeExpr struct {
+	Range  string        `json:"range" query:"range" params:"range" form:"range"`
+	fields []string      `json:"fields" query:"fields" params:"fields" form:"fields"`
+	values []interface{} `json:"values" query:"values" params:"values" form:"values"`
+}
+
 // QueryExpr represents a general query request model for gw framework.
 type QueryExpr struct {
 	PagerExpr
+	SearcherExpr
 	Searcher struct {
 		Equal struct {
 			Field string `json:"field" query:"field" params:"field" form:"field"`
