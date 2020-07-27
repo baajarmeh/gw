@@ -4,11 +4,28 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/conf"
+	"github.com/oceanho/gw/logger"
+	"reflect"
+	"strings"
 	"time"
 )
 
 // Handler defines a http handler for gw framework.
 type Handler func(ctx *Context)
+
+// dynamicHandler
+type dynamicHandler func(relativePath string, r *RouterGroup, caller dynamicCaller)
+type dynamicCaller struct {
+	argsLength        int
+	ctrl              IController
+	handler           reflect.Value
+	methodName        string
+	argsOrderlyBinder []dynamicArgsBinder
+}
+type dynamicArgsBinder struct {
+	dataType reflect.Type
+	bindFunc func(p reflect.Type, c *Context) reflect.Value
+}
 
 // Context represents a gw Context object, it's extension from gin.Context.
 type Context struct {
@@ -20,6 +37,11 @@ type Context struct {
 	queries   map[string][]string
 	params    map[string]interface{}
 }
+
+// Context represents a REST full style API Controller, It's extensive from Context
+//type Controller struct {
+//	Context
+//}
 
 // Query returns a string from queries.
 func (c Context) Query(key string) string {
@@ -50,8 +72,8 @@ type Router struct {
 	currentRouter *gin.RouterGroup
 }
 
-// RouteGroup represents a gw's Group Router info.
-type RouteGroup struct {
+// RouterGroup represents a gw's Group Router info.
+type RouterGroup struct {
 	*Router
 }
 
@@ -122,8 +144,8 @@ func (router *Router) Handlers() gin.HandlersChain {
 }
 
 // Group returns a new route group.
-func (router *Router) Group(relativePath string, handler Handler) *RouteGroup {
-	rg := &RouteGroup{
+func (router *Router) Group(relativePath string, handler Handler) *RouterGroup {
+	rg := &RouterGroup{
 		router,
 	}
 	if handler != nil {
@@ -141,7 +163,7 @@ func (c *Context) Config() conf.Config {
 	return getConfig(c.Context)
 }
 
-// Bind represent a Api that can be bind data to out object by gin.Context's Bind(...) APIs.
+// Bind define a Api that can be bind data to out object by gin.Context's Bind(...) APIs.
 // It's auto response 400, invalid request parameter to client if bind fail.
 // returns a error message for c.Bind(...).
 func (c *Context) Bind(out interface{}) error {
@@ -150,6 +172,156 @@ func (c *Context) Bind(out interface{}) error {
 		return err
 	}
 	return nil
+}
+
+// BindQuery define a Api that can be bind data to out object by gin.Context's Bind(...) APIs.
+// It's auto response 400, invalid request parameter to client if bind fail.
+// returns a error message for c.BindQuery(...).
+func (c *Context) BindQuery(out interface{}) error {
+	if err := c.Context.BindQuery(out); err != nil {
+		c.Err400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))
+		return err
+	}
+	return nil
+}
+
+var methodParsers map[string]dynamicHandler
+
+func init() {
+	methodParsers = make(map[string]dynamicHandler)
+	methodParsers["get"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		r.GET(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["query"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		relativePath = strings.TrimRight(relativePath, "/")
+		relativePath = fmt.Sprintf("%s/query", relativePath)
+		r.GET(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["post"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		r.POST(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["put"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		r.PUT(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["delete"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		r.DELETE(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["options"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		r.OPTIONS(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["option"] = methodParsers["option"]
+	methodParsers["patch"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		r.PATCH(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["head"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		r.HEAD(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["any"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
+		r.Any(relativePath, func(ctx *Context) {
+			handleDynamic(ctx, caller)
+		})
+	}
+	methodParsers["all"] = methodParsers["any"]
+}
+
+func handleDynamic(ctx *Context, caller dynamicCaller) {
+	caller.handler.Call(caller.makeArgs(ctx))
+}
+
+func (d dynamicCaller) makeArgs(ctx *Context) []reflect.Value {
+	if d.argsLength > 0 {
+		var args = make([]reflect.Value, d.argsLength)
+		for i := 0; i < d.argsLength; i++ {
+			binder := d.argsOrderlyBinder[i]
+			args[i] = binder.bindFunc(binder.dataType, ctx)
+		}
+		return args
+	}
+	return nil
+}
+
+func ctxBinder(typ reflect.Type, ctx *Context) reflect.Value {
+	return reflect.ValueOf(ctx)
+}
+
+func RegisterControllers(router *RouterGroup, ctrls ...IController) {
+	logger.Info("register router by API RegisterControllers(...)")
+	for _, ctrl := range ctrls {
+		typ := reflect.TypeOf(ctrl)
+		val := reflect.ValueOf(ctrl)
+		var relativePath string
+		nameCaller, ok := typ.MethodByName("Name")
+		if ok {
+			relativePath = nameCaller.Func.Call([]reflect.Value{val})[0].String()
+		}
+		nm := typ.NumMethod()
+		for i := 0; i < nm; i++ {
+			m := typ.Method(i)
+			h, ok := methodParsers[strings.ToLower(m.Name)]
+			if ok {
+				//
+				//FIXME(Ocean): handler are current method, how to call AT here?
+				//
+				// f := val.Method(i)
+				// a := f.Interface()
+				// logger.Info("%v", a)
+				// refs:
+				// - https://github.com/golang/go/issues/39717
+				// var handler Handler
+				// caller := reflect.MakeFunc(nil, func(args []reflect.Value) (results []reflect.Value) {
+				// 	return nil
+				// })
+				// FIXME
+				n := 1
+				//n := reflect.TypeOf(m).NumIn()
+				prefix := fmt.Sprintf("invalid operation, method:%s.%s", val.Interface(), m.Name)
+				//if n != 1 {
+				//	panic(fmt.Sprintf("%s,args is len:%d, should be has 1 arguments of *gw.Context.", prefix, n))
+				//}
+				//i := m.Type.In(0)
+				//if i.Kind() != reflect.Ptr {
+				//	panic(fmt.Sprintf("%s,  the first arguments should be reciver gw.Context.", prefix))
+				//}
+
+				// FIXME(Ocean): how to check the arguments type is *gw.Context.
+				//if !ok {
+				//	panic(fmt.Sprintf("%s, the first arguments should be receiver of gw.Context.", prefix))
+				//}
+				if m.Type.NumOut() != 0 {
+					panic(fmt.Sprintf("%s, should be not return any values.", prefix))
+				}
+				dynBinders := make([]dynamicArgsBinder, n)
+				dynBinders[0] = dynamicArgsBinder{
+					dataType: reflect.TypeOf(&Context{}),
+					bindFunc: ctxBinder,
+				}
+				dynCaller := dynamicCaller{
+					argsLength:        n,
+					ctrl:              ctrl,
+					methodName:        m.Name,
+					handler:           val.MethodByName(m.Name),
+					argsOrderlyBinder: dynBinders,
+				}
+				h(relativePath, router, dynCaller)
+			}
+		}
+	}
 }
 
 func reflectRouter(relativePath string, handler Handler) {

@@ -28,10 +28,23 @@ type App interface {
 	Router() string
 
 	// Register define a API that for register your app router inside.
-	Register(router *RouteGroup)
+	Register(router *RouterGroup)
 
 	// Migrate define a API that for create your app database migrations inside.
 	Migrate(store Store)
+}
+
+// IController represents a Controller(the MVC of Controller).
+type IController interface {
+	// Name define a API that returns Your controller name(such as resource name)
+	// It's will be used as router prefix.
+	Name() string
+
+	// Create define a API
+	Create(ctx *Context) IController
+
+	// OnDestroy define a API
+	OnDestroy(ctx *Context) error
 }
 
 // ServerOption represents a Server Options.

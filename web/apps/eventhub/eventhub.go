@@ -23,7 +23,7 @@ func (u App) Router() string {
 	return "event-hub"
 }
 
-func (u App) Register(router *gw.RouteGroup) {
+func (u App) Register(router *gw.RouterGroup) {
 	router.GET("object/create", api.CreateObject)
 	router.POST("object/modify", api.ModifyObject)
 }

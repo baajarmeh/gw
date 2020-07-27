@@ -27,7 +27,7 @@ func (User) TableName() string {
 
 type Profile struct {
 	backend.Model
-	Gender   uint8  `gorm:"default:1"`  // 1.man, 2.woman, 3.custom, 4.unknown
+	Gender   uint8  `gorm:"default:1"` // 1.man, 2.woman, 3.custom, 4.unknown
 	UserID   uint64 `gorm:"index"`
 	Name     string `gorm:"type:varchar(64);index"`
 	Email    string `gorm:"type:varchar(128);index"`

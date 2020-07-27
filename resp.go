@@ -114,7 +114,7 @@ func (c *Context) Err500Payload(status int, payload interface{}) {
 	c.Err500PayloadMsg(status, errDefault500Msg, payload)
 }
 
-// Render response a response JSON by status.
+// JSON response a response JSON by status.
 // response 200,payload if status=0, other response 400, errMsg
 func (c *Context) JSON(errMsg interface{}, payload interface{}) {
 	if errMsg == nil {
@@ -122,6 +122,22 @@ func (c *Context) JSON(errMsg interface{}, payload interface{}) {
 	} else {
 		c.StatusJSON(http.StatusBadRequest, -1, errMsg, payload)
 	}
+}
+
+// Fault response a response fail json by status.
+func (c *Context) Fault(errMsg interface{}) {
+	c.JSON(errMsg, nil)
+}
+
+// PagerJSON response a response Pager's json by status.
+func (c *Context) PagerJSON(total int64, expr PagerExpr, data interface{}) {
+	pager := gin.H{
+		"Data":       data,
+		"Total":      total,
+		"PageSize":   expr.PageSize,
+		"PageNumber": expr.PageNumber,
+	}
+	c.OK(pager)
 }
 
 // Err500PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 500.

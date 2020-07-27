@@ -24,7 +24,7 @@ func (u App) Router() string {
 	return "uap"
 }
 
-func (u App) Register(router *gw.RouteGroup) {
+func (u App) Register(router *gw.RouterGroup) {
 	router.GET("tenant/get", api.GetTenant)
 	router.GET("tenant/query", api.QueryTenant)
 	router.POST("tenant/create", api.CreateTenant)

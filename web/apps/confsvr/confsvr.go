@@ -20,7 +20,7 @@ func (u App) Router() string {
 	return "confsvr"
 }
 
-func (u App) Register(router *gw.RouteGroup) {
+func (u App) Register(router *gw.RouterGroup) {
 	// Auth service routers.
 	router.GET("auth/auth", api.GetAuth)
 	router.GET("auth/create", api.CreateEnv)
