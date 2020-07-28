@@ -14,9 +14,9 @@ func (a App) Router() string {
 }
 
 func (a App) Register(router *gw.RouterGroup) {
-	panic("implement me")
+	//gw.RegisterControllers(router,)
 }
 
 func (a App) Migrate(store gw.Store) {
-	panic("implement me")
+	// Nothing to do.
 }

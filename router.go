@@ -158,6 +158,11 @@ func (router *Router) Group(relativePath string, handler Handler) *RouterGroup {
 	return rg
 }
 
+// RegisterControllers register a collection HTTP routes by gw.IController.
+func (router *RouterGroup) RegisterControllers(ctrls ...IController) {
+	RegisterControllers(router, ctrls...)
+}
+
 // Config returns a snapshot of the current Context's conf.Config object.
 func (c *Context) Config() conf.Config {
 	return getConfig(c.Context)
@@ -168,7 +173,7 @@ func (c *Context) Config() conf.Config {
 // returns a error message for c.Bind(...).
 func (c *Context) Bind(out interface{}) error {
 	if err := c.Context.Bind(out); err != nil {
-		c.Err400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))
+		c.JSON400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))
 		return err
 	}
 	return nil
@@ -179,7 +184,7 @@ func (c *Context) Bind(out interface{}) error {
 // returns a error message for c.BindQuery(...).
 func (c *Context) BindQuery(out interface{}) error {
 	if err := c.Context.BindQuery(out); err != nil {
-		c.Err400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))
+		c.JSON400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))
 		return err
 	}
 	return nil

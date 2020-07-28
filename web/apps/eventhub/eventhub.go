@@ -2,7 +2,6 @@ package stor
 
 import (
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/web/apps/stor/api"
 )
 
 func init() {
@@ -24,8 +23,7 @@ func (u App) Router() string {
 }
 
 func (u App) Register(router *gw.RouterGroup) {
-	router.GET("object/create", api.CreateObject)
-	router.POST("object/modify", api.ModifyObject)
+
 }
 
 func (u App) Migrate(store gw.Store) {

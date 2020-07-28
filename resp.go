@@ -10,7 +10,7 @@ var (
 	errDefault401Msg              = "Unauthorized"
 	errDefault403Msg              = "Access Denied"
 	errDefault404Msg              = "Not Found"
-	errDefault500Msg              = "Internal Server Error"
+	errDefault500Msg              = "Internal Server JSONor"
 	errDefaultPayload interface{} = nil
 )
 
@@ -19,99 +19,99 @@ func (c *Context) OK(payload interface{}) {
 	c.StatusJSON(http.StatusOK, 0, nil, payload)
 }
 
-// Err400 response a JSON formatter to client with http status = 400.
-func (c *Context) Err400(status int) {
-	c.Err400Msg(status, errDefault400Msg)
+// JSON400 response a JSON formatter to client with http status = 400.
+func (c *Context) JSON400(status int) {
+	c.JSON400Msg(status, errDefault400Msg)
 }
 
-// Err400Msg response a JSON formatter to client with http status = 401.
-func (c *Context) Err400Msg(status int, errMsg interface{}) {
-	c.Err400PayloadMsg(status, errMsg, errDefaultPayload)
+// JSON400Msg response a JSON formatter to client with http status = 401.
+func (c *Context) JSON400Msg(status int, errMsg interface{}) {
+	c.JSON400PayloadMsg(status, errMsg, errDefaultPayload)
 }
 
-// Err400Payload response a has payload properties JSON formatter to client with http status = 400.
-func (c *Context) Err400Payload(status int, payload interface{}) {
-	c.Err400PayloadMsg(status, errDefault400Msg, payload)
+// JSON400Payload response a has payload properties JSON formatter to client with http status = 400.
+func (c *Context) JSON400Payload(status int, payload interface{}) {
+	c.JSON400PayloadMsg(status, errDefault400Msg, payload)
 }
 
-// Err400PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 401.
-func (c *Context) Err400PayloadMsg(status int, errMsg interface{}, payload interface{}) {
+// JSON400PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 401.
+func (c *Context) JSON400PayloadMsg(status int, errMsg interface{}, payload interface{}) {
 	c.StatusJSON(http.StatusBadRequest, status, errMsg, payload)
 }
 
-// Err401 response a JSON formatter to client with http status = 401.
-func (c *Context) Err401(status int) {
-	c.Err401Msg(status, errDefault401Msg)
+// JSON401 response a JSON formatter to client with http status = 401.
+func (c *Context) JSON401(status int) {
+	c.JSON401Msg(status, errDefault401Msg)
 }
 
-// Err401Msg response a a has errMsg properties JSON formatter to client with http status = 401.
-func (c *Context) Err401Msg(status int, errMsg interface{}) {
-	c.Err401PayloadMsg(status, errMsg, errDefaultPayload)
+// JSON401Msg response a a has errMsg properties JSON formatter to client with http status = 401.
+func (c *Context) JSON401Msg(status int, errMsg interface{}) {
+	c.JSON401PayloadMsg(status, errMsg, errDefaultPayload)
 }
 
-// Err401Payload response a has payload properties JSON formatter to client with http status = 401.
-func (c *Context) Err401Payload(status int, payload interface{}) {
-	c.Err401PayloadMsg(status, errDefault401Msg, payload)
+// JSON401Payload response a has payload properties JSON formatter to client with http status = 401.
+func (c *Context) JSON401Payload(status int, payload interface{}) {
+	c.JSON401PayloadMsg(status, errDefault401Msg, payload)
 }
 
-// Err401PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 401.
-func (c *Context) Err401PayloadMsg(status int, errMsg interface{}, payload interface{}) {
+// JSON401PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 401.
+func (c *Context) JSON401PayloadMsg(status int, errMsg interface{}, payload interface{}) {
 	c.StatusJSON(http.StatusUnauthorized, status, errMsg, payload)
 }
 
-// Err403 response a JSON formatter to client with http status = 403.
-func (c *Context) Err403(status int) {
-	c.Err403Msg(status, errDefault403Msg)
+// JSON403 response a JSON formatter to client with http status = 403.
+func (c *Context) JSON403(status int) {
+	c.JSON403Msg(status, errDefault403Msg)
 }
 
-// Err403Msg response a has errMsg properties JSON formatter to client with http status = 403.
-func (c *Context) Err403Msg(status int, errMsg interface{}) {
-	c.Err403PayloadMsg(status, errMsg, errDefaultPayload)
+// JSON403Msg response a has errMsg properties JSON formatter to client with http status = 403.
+func (c *Context) JSON403Msg(status int, errMsg interface{}) {
+	c.JSON403PayloadMsg(status, errMsg, errDefaultPayload)
 }
 
-// Err403Payload response a has payload properties JSON formatter to client with http status = 403.
-func (c *Context) Err403Payload(status int, payload interface{}) {
-	c.Err403PayloadMsg(status, errDefault403Msg, payload)
+// JSON403Payload response a has payload properties JSON formatter to client with http status = 403.
+func (c *Context) JSON403Payload(status int, payload interface{}) {
+	c.JSON403PayloadMsg(status, errDefault403Msg, payload)
 }
 
-// Err403PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 403.
-func (c *Context) Err403PayloadMsg(status int, errMsg interface{}, payload interface{}) {
+// JSON403PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 403.
+func (c *Context) JSON403PayloadMsg(status int, errMsg interface{}, payload interface{}) {
 	c.StatusJSON(http.StatusForbidden, status, errMsg, payload)
 }
 
-// Err404 response a JSON formatter to client with http status = 404.
-func (c *Context) Err404(status int) {
-	c.Err404Msg(status, errDefault404Msg)
+// JSON404 response a JSON formatter to client with http status = 404.
+func (c *Context) JSON404(status int) {
+	c.JSON404Msg(status, errDefault404Msg)
 }
 
-// Err404Msg response a a has errMsg properties JSON formatter to client with http status = 404.
-func (c *Context) Err404Msg(status int, errMsg interface{}) {
-	c.Err404PayloadMsg(status, errMsg, errDefaultPayload)
+// JSON404Msg response a a has errMsg properties JSON formatter to client with http status = 404.
+func (c *Context) JSON404Msg(status int, errMsg interface{}) {
+	c.JSON404PayloadMsg(status, errMsg, errDefaultPayload)
 }
 
-// Err404Payload response a has payload properties JSON formatter to client with http status = 404.
-func (c *Context) Err404Payload(status int, payload interface{}) {
-	c.Err404PayloadMsg(status, payload, errDefault404Msg)
+// JSON404Payload response a has payload properties JSON formatter to client with http status = 404.
+func (c *Context) JSON404Payload(status int, payload interface{}) {
+	c.JSON404PayloadMsg(status, payload, errDefault404Msg)
 }
 
-// Err404PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 404.
-func (c *Context) Err404PayloadMsg(status int, errMsg interface{}, payload interface{}) {
+// JSON404PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 404.
+func (c *Context) JSON404PayloadMsg(status int, errMsg interface{}, payload interface{}) {
 	c.StatusJSON(http.StatusNotFound, status, errMsg, payload)
 }
 
-// Err500 response a JSON formatter to client with http status = 500.
-func (c *Context) Err500(status int) {
-	c.Err500Msg(status, nil)
+// JSON500 response a JSON formatter to client with http status = 500.
+func (c *Context) JSON500(status int) {
+	c.JSON500Msg(status, nil)
 }
 
-// Err500Msg response a has errMsg JSON formatter to client with http status = 500.
-func (c *Context) Err500Msg(status int, errMsg interface{}) {
-	c.Err500PayloadMsg(status, errMsg, errDefaultPayload)
+// JSON500Msg response a has errMsg JSON formatter to client with http status = 500.
+func (c *Context) JSON500Msg(status int, errMsg interface{}) {
+	c.JSON500PayloadMsg(status, errMsg, errDefaultPayload)
 }
 
-// Err500Payload response a has payload properties JSON formatter to client with http status = 500.
-func (c *Context) Err500Payload(status int, payload interface{}) {
-	c.Err500PayloadMsg(status, errDefault500Msg, payload)
+// JSON500Payload response a has payload properties JSON formatter to client with http status = 500.
+func (c *Context) JSON500Payload(status int, payload interface{}) {
+	c.JSON500PayloadMsg(status, errDefault500Msg, payload)
 }
 
 // JSON response a response JSON by status.
@@ -140,8 +140,8 @@ func (c *Context) PagerJSON(total int64, expr PagerExpr, data interface{}) {
 	c.OK(pager)
 }
 
-// Err500PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 500.
-func (c *Context) Err500PayloadMsg(status int, errMsg interface{}, payload interface{}) {
+// JSON500PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 500.
+func (c *Context) JSON500PayloadMsg(status int, errMsg interface{}, payload interface{}) {
 	c.StatusJSON(http.StatusInternalServerError, status, errMsg, payload)
 }
 
@@ -157,7 +157,7 @@ func (c *Context) StatusJSON(code int, status int, errMsg interface{}, payload i
 func resp(status int, requestID string, errMsg interface{}, payload interface{}) interface{} {
 	return gin.H{
 		"Status":    status,
-		"ErrMsg":    errMsg,
+		"JSONMsg":   errMsg,
 		"RequestID": requestID,
 		"Payload":   payload,
 	}

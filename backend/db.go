@@ -11,7 +11,7 @@ type HasTenantState struct {
 }
 
 type HasCreationState struct {
-	CreatedAt *time.Time
+	CreatedAt *time.Time `gorm:"not null"`
 }
 
 type HasModificationState struct {

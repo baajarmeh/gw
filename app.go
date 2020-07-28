@@ -39,12 +39,6 @@ type IController interface {
 	// Name define a API that returns Your controller name(such as resource name)
 	// It's will be used as router prefix.
 	Name() string
-
-	// Create define a API
-	Create(ctx *Context) IController
-
-	// OnDestroy define a API
-	OnDestroy(ctx *Context) error
 }
 
 // ServerOption represents a Server Options.
