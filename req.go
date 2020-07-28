@@ -6,71 +6,55 @@ import (
 	"time"
 )
 
+var requestIdStateKey = "gwState-X-Request-Id"
+
 func getRequestID(c *gin.Context) string {
 	requestID := c.GetHeader("X-Request-Id")
 	if requestID == "" {
-		requestID = internalGenRequestID()
+		requestID = c.GetString(requestIdStateKey)
+		if requestID == "" {
+			requestID = internalGenRequestID()
+		}
 	}
+	c.Set(requestIdStateKey, requestID)
 	return requestID
 }
 
 func internalGenRequestID() string {
-	return fmt.Sprintf("gw-%d", time.Now().UnixNano())
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
 
 // PagerExpr represents a general pager query request model for gw framework.
 type PagerExpr struct {
-	PageSize   int `json:"pageSize" binding:"required" xml:"pageSize" query:"pageSize" params:"pageSize" form:"pageSize"`
-	PageNumber int `json:"pageNumber" binding:"required" xml:"pageNumber" query:"pageNumber" params:"pageNumber" form:"pageNumber"`
+	PageSize   int `json:"pageSize" binding:"required" query:"pageSize" params:"pageSize" form:"pageSize"`
+	PageNumber int `json:"pageNumber" binding:"required" query:"pageNumber" params:"pageNumber" form:"pageNumber"`
 }
 
 // SearcherExpr represents a general searcher query request model for gw framework.
 type SearcherExpr struct {
-	Search     string        `json:"search" query:"search" params:"search" form:"search"`
-	fields     []string      `json:"fields" query:"fields" params:"fields" form:"fields"`
-	values     []interface{} `json:"values" query:"values" params:"values" form:"values"`
-	searchMode string        `json:"mode" query:"mode" params:"mode" form:"mode"`
+	Field      string `json:"field" query:"field" params:"field" form:"field"`
+	SearchMode string `json:"mode" query:"mode" params:"mode" form:"mode"`
 }
 
 // RangeExpr represents a general range query request model for gw framework.
 type RangeExpr struct {
-	Range  string        `json:"range" query:"range" params:"range" form:"range"`
-	fields []string      `json:"fields" query:"fields" params:"fields" form:"fields"`
-	values []interface{} `json:"values" query:"values" params:"values" form:"values"`
+	Field string      `json:"field" query:"field" params:"field" form:"field"`
+	Left  interface{} `json:"left" query:"left" params:"left" form:"left"`
+	Right interface{} `json:"right" query:"right" params:"right" form:"right"`
+}
+
+// OrderlyExpr represents a general sort request model for gw framework.
+type OrderlyExpr struct {
+	Field     string `json:"field" query:"field" params:"field" form:"field"`
+	Direction string `json:"direction" query:"direction" params:"direction" form:"direction"`
 }
 
 // QueryExpr represents a general query request model for gw framework.
 type QueryExpr struct {
 	PagerExpr
-	SearcherExpr
-	Searcher struct {
-		Equal struct {
-			Field string `json:"field" query:"field" params:"field" form:"field"`
-			Value string `json:"value" query:"value" params:"value" form:"value"`
-			// Multiple
-			Fields []string      `json:"fields" query:"fields" params:"fields" form:"fields"`
-			Values []interface{} `json:"values" query:"values" params:"values" form:"values"`
-		} `json:"equal" query:"equal" params:"equal" form:"equal"`
-		Range struct {
-			Field string `json:"field" query:"field" params:"field" form:"field"`
-			Value string `json:"value" query:"value" params:"value" form:"value"`
-			// Multiple
-			Fields []string      `json:"fields" query:"fields" params:"fields" form:"fields"`
-			Values []interface{} `json:"values" query:"values" params:"values" form:"values"`
-		} `json:"range" query:"range" params:"range" form:"range"`
-		Search struct {
-			Field string `json:"field" query:"field" params:"field" form:"field"`
-			Value string `json:"value" query:"value" params:"value" form:"value"`
-			// Multiple
-			Fields     []string      `json:"fields" query:"fields" params:"fields" form:"fields"`
-			Values     []interface{} `json:"values" query:"values" params:"values" form:"values"`
-			SearchMode string        `json:"mode" query:"mode" params:"mode" form:"mode"`
-		} `json:"search" query:"search" params:"search" form:"search"`
-	} `json:"expr" query:"expr" params:"expr" form:"expr"`
-	Order []struct {
-		Field     string `json:"field" query:"field" params:"field" form:"field"`
-		Direction string `json:"direction" query:"direction" params:"direction" form:"direction"`
-	} `json:"order" query:"order" params:"order" form:"order"`
+	Searcher []SearcherExpr `json:"s" query:"s" params:"s" form:"s"`
+	Ranger   []RangeExpr    `json:"r" query:"r" params:"r" form:"r"`
+	Orderly  []OrderlyExpr  `json:"o" query:"o" params:"o" form:"o"`
 }
 
 func (expr PagerExpr) PageOffset() int {
