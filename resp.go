@@ -146,10 +146,10 @@ func (c *Context) JSON500PayloadMsg(status int, errMsg interface{}, payload inte
 }
 
 // StatusJSON response a JSON formatter to client.
-// Auto call c.Abort() when code <= 200 || code >= 202.
+// Auto call c.Abort() when code < 200 || code > 202.
 func (c *Context) StatusJSON(code int, status int, errMsg interface{}, payload interface{}) {
 	c.Context.JSON(code, resp(status, c.RequestID, errMsg, payload))
-	if code <= 200 || code >= 202 {
+	if code < 200 || code > 202 {
 		c.Abort()
 	}
 }
