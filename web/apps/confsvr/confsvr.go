@@ -41,5 +41,7 @@ func (u App) Register(router *gw.RouterGroup) {
 }
 
 func (u App) Migrate(store gw.Store) {
-	// db := store.GetDbStore()
+	db := store.GetDbStore()
+	d, _ := db.DB()
+	d.Ping()
 }

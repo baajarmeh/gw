@@ -109,7 +109,7 @@ type Cache struct {
 	Port             int               `yaml:"port" toml:"port" json:"port"`
 	User             string            `yaml:"user" toml:"user" json:"user"`
 	Password         string            `yaml:"password" toml:"password" json:"password"`
-	Database         string            `yaml:"database" toml:"database" json:"database"`
+	DB               int               `yaml:"db" toml:"db" json:"db"`
 	SSLMode          string            `yaml:"ssl_mode" toml:"ssl_mode" json:"ssl_mode"`
 	SSLCert          string            `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
 	SSLCertFormatter string            `yaml:"ssl_cert_fmt" toml:"ssl_cert_fmt" json:"ssl_cert_fmt"`

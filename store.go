@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	dbMySQL "github.com/go-sql-driver/mysql"
+	mysqlDb "github.com/go-sql-driver/mysql"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
 	"gorm.io/driver/mysql"
@@ -27,7 +27,7 @@ type StoreDbSetupHandler func(ctx gin.Context, db *gorm.DB, user User) *gorm.DB
 // StoreCacheSetupHandler defines a redis Client object handler.
 type StoreCacheSetupHandler func(ctx gin.Context, client *redis.Client, user User) *redis.Client
 
-type internalBackendWrapper struct {
+type backendWrapper struct {
 	ctx                    gin.Context
 	user                   User
 	store                  Store
@@ -35,7 +35,7 @@ type internalBackendWrapper struct {
 	storeCacheSetupHandler StoreCacheSetupHandler
 }
 
-func (b internalBackendWrapper) GetDbStore() *gorm.DB {
+func (b backendWrapper) GetDbStore() *gorm.DB {
 	db := b.store.GetDbStore().WithContext(context.Background())
 	if db == nil {
 		panic("got db store fail, ret is nil.")
@@ -43,7 +43,7 @@ func (b internalBackendWrapper) GetDbStore() *gorm.DB {
 	return b.globalDbStep(db)
 }
 
-func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
+func (b backendWrapper) GetDbStoreByName(name string) *gorm.DB {
 	db := b.store.GetDbStoreByName(name).WithContext(context.Background())
 	if db == nil {
 		panic("got db store by name fail, ret is nil.")
@@ -51,15 +51,15 @@ func (b internalBackendWrapper) GetDbStoreByName(name string) *gorm.DB {
 	return b.globalDbStep(db)
 }
 
-func (b internalBackendWrapper) globalDbStep(db *gorm.DB) *gorm.DB {
+func (b backendWrapper) globalDbStep(db *gorm.DB) *gorm.DB {
 	return b.storeDbSetupHandler(b.ctx, db, b.user)
 }
 
-func (b internalBackendWrapper) globalCacheSetup(db *redis.Client) *redis.Client {
+func (b backendWrapper) globalCacheSetup(db *redis.Client) *redis.Client {
 	return b.storeCacheSetupHandler(b.ctx, db, b.user)
 }
 
-func (b internalBackendWrapper) GetCacheStore() *redis.Client {
+func (b backendWrapper) GetCacheStore() *redis.Client {
 	db := b.store.GetCacheStore()
 	if db == nil {
 		panic("got cache store fail, ret is nil.")
@@ -67,7 +67,7 @@ func (b internalBackendWrapper) GetCacheStore() *redis.Client {
 	return b.globalCacheSetup(db)
 }
 
-func (b internalBackendWrapper) GetCacheStoreByName(name string) *redis.Client {
+func (b backendWrapper) GetCacheStoreByName(name string) *redis.Client {
 	db := b.store.GetCacheStoreByName(name)
 	if db == nil {
 		panic("got cache store by name fail, ret is nil.")
@@ -126,7 +126,7 @@ func createDb(db conf.Db) *gorm.DB {
 		panic("not supports db.Driver: %s, only supports mysql.")
 	}
 
-	dbConf := dbMySQL.NewConfig()
+	dbConf := mysqlDb.NewConfig()
 	dbConf.Addr = fmt.Sprintf("%s:%d", db.Addr, db.Port)
 	dbConf.DBName = db.Database
 	dbConf.User = db.User
@@ -150,18 +150,23 @@ func createDb(db conf.Db) *gorm.DB {
 	return gDb
 }
 
-func createCache(db conf.Cache) *redis.Client {
-	return nil
+func createCache(cache conf.Cache) *redis.Client {
+	opts := &redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", cache.Addr, cache.Port),
+		Password: cache.Password,
+		DB:       cache.DB,
+	}
+	return redis.NewClient(opts)
 }
 
 func getStore(ctx *gin.Context, user User) Store {
 	server := hostServer(ctx)
-	bk := &internalBackendWrapper{
+	storeWrapper := &backendWrapper{
 		ctx:                    *ctx,
 		user:                   user,
 		store:                  server.store,
 		storeDbSetupHandler:    server.options.StoreDbSetupHandler,
 		storeCacheSetupHandler: server.options.StoreCacheSetupHandler,
 	}
-	return bk
+	return storeWrapper
 }

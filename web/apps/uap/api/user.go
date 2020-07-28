@@ -17,25 +17,25 @@ func GetUser(c *gw.Context) {
 	//biz.CreateUser(db)
 }
 func CreateUser(c *gw.Context) {
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
 func ModifyUser(c *gw.Context) {
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
 func DeleteUser(c *gw.Context) {
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }
 
 func QueryUser(c *gw.Context) {
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
 	})
 }

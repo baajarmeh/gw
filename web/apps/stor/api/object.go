@@ -6,13 +6,13 @@ import (
 )
 
 func CreateObject(c *gw.Context) {
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"payload": "CreateObject",
 	})
 }
 
 func ModifyObject(c *gw.Context) {
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"payload": "ModifyObject",
 	})
 }

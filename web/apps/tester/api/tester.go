@@ -27,7 +27,7 @@ func QueryMyTester(c *gw.Context) {
 }
 
 func GetTester(c *gw.Context) {
-	c.OK(struct {
+	c.JSON200(struct {
 		RequestID string
 	}{
 		RequestID: c.RequestID,

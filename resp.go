@@ -10,12 +10,12 @@ var (
 	errDefault401Msg              = "Unauthorized"
 	errDefault403Msg              = "Access Denied"
 	errDefault404Msg              = "Not Found"
-	errDefault500Msg              = "Internal Server JSONor"
+	errDefault500Msg              = "Internal Server Error"
 	errDefaultPayload interface{} = nil
 )
 
-// OK response a JSON formatter to client with http status = 200.
-func (c *Context) OK(payload interface{}) {
+// JSON200 response a JSON formatter to client with http status = 200.
+func (c *Context) JSON200(payload interface{}) {
 	c.StatusJSON(http.StatusOK, 0, nil, payload)
 }
 
@@ -118,7 +118,7 @@ func (c *Context) JSON500Payload(status int, payload interface{}) {
 // response 200,payload if status=0, other response 400, errMsg
 func (c *Context) JSON(errMsg interface{}, payload interface{}) {
 	if errMsg == nil {
-		c.OK(payload)
+		c.JSON200(payload)
 	} else {
 		c.StatusJSON(http.StatusBadRequest, -1, errMsg, payload)
 	}
@@ -137,7 +137,7 @@ func (c *Context) PagerJSON(total int64, expr PagerExpr, data interface{}) {
 		"PageSize":   expr.PageSize,
 		"PageNumber": expr.PageNumber,
 	}
-	c.OK(pager)
+	c.JSON200(pager)
 }
 
 // JSON500PayloadMsg response a has payload,errMsg properties JSON formatter to client with http status = 500.

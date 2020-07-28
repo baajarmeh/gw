@@ -7,7 +7,7 @@ import (
 
 func GetEnv(c *gw.Context) {
 	//user := c.User
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -17,7 +17,7 @@ func GetEnv(c *gw.Context) {
 
 func CreateEnv(c *gw.Context) {
 	//user := c.User
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -27,7 +27,7 @@ func CreateEnv(c *gw.Context) {
 
 func ModifyEnv(c *gw.Context) {
 	//user := c.User
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -37,7 +37,7 @@ func ModifyEnv(c *gw.Context) {
 
 func DestroyEnv(c *gw.Context) {
 	//user := c.User
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",

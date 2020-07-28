@@ -34,14 +34,10 @@ type Context struct {
 	User      User
 	Store     Store
 	startTime time.Time
+	logger    Logger
 	queries   map[string][]string
 	params    map[string]interface{}
 }
-
-// Context represents a REST full style API Controller, It's extensive from Context
-//type Controller struct {
-//	Context
-//}
 
 // Query returns a string from queries.
 func (c Context) Query(key string) string {
@@ -226,7 +222,7 @@ func init() {
 			handleDynamic(ctx, caller)
 		})
 	}
-	methodParsers["option"] = methodParsers["option"]
+	methodParsers["option"] = methodParsers["options"]
 	methodParsers["patch"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
 		r.PATCH(relativePath, func(ctx *Context) {
 			handleDynamic(ctx, caller)
@@ -280,34 +276,9 @@ func RegisterControllers(router *RouterGroup, ctrls ...IController) {
 			m := typ.Method(i)
 			h, ok := methodParsers[strings.ToLower(m.Name)]
 			if ok {
-				//
-				//FIXME(Ocean): handler are current method, how to call AT here?
-				//
-				// f := val.Method(i)
-				// a := f.Interface()
-				// logger.Info("%v", a)
-				// refs:
-				// - https://github.com/golang/go/issues/39717
-				// var handler Handler
-				// caller := reflect.MakeFunc(nil, func(args []reflect.Value) (results []reflect.Value) {
-				// 	return nil
-				// })
-				// FIXME
-				n := 1
-				//n := reflect.TypeOf(m).NumIn()
-				prefix := fmt.Sprintf("invalid operation, method:%s.%s", val.Interface(), m.Name)
-				//if n != 1 {
-				//	panic(fmt.Sprintf("%s,args is len:%d, should be has 1 arguments of *gw.Context.", prefix, n))
-				//}
-				//i := m.Type.In(0)
-				//if i.Kind() != reflect.Ptr {
-				//	panic(fmt.Sprintf("%s,  the first arguments should be reciver gw.Context.", prefix))
-				//}
-
 				// FIXME(Ocean): how to check the arguments type is *gw.Context.
-				//if !ok {
-				//	panic(fmt.Sprintf("%s, the first arguments should be receiver of gw.Context.", prefix))
-				//}
+				n := 1
+				prefix := fmt.Sprintf("invalid operation, method:%s.%s", val.Interface(), m.Name)
 				if m.Type.NumOut() != 0 {
 					panic(fmt.Sprintf("%s, should be not return any values.", prefix))
 				}
@@ -327,10 +298,6 @@ func RegisterControllers(router *RouterGroup, ctrls ...IController) {
 			}
 		}
 	}
-}
-
-func reflectRouter(relativePath string, handler Handler) {
-	// prefix  pattern   suffix.
 }
 
 func handle(c *gin.Context, handler Handler) {
@@ -368,6 +335,7 @@ func makeCtx(c *gin.Context) *Context {
 		Store:     backendStore,
 		Context:   c,
 		startTime: time.Now(),
+		logger: 	getLogger(c),
 		queries:   make(map[string][]string),
 		params:    make(map[string]interface{}),
 	}

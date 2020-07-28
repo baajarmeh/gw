@@ -7,7 +7,7 @@ import (
 
 func GetNS(c *gw.Context) {
 	//user := c.User
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -17,7 +17,7 @@ func GetNS(c *gw.Context) {
 
 func CreateNS(c *gw.Context) {
 	//user := c.User
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -27,7 +27,7 @@ func CreateNS(c *gw.Context) {
 
 func ModifyNS(c *gw.Context) {
 	//user := c.User
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
@@ -37,7 +37,7 @@ func ModifyNS(c *gw.Context) {
 
 func DestroyNS(c *gw.Context) {
 	//user := c.User
-	c.OK(gin.H{
+	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{
 			"token": "",
