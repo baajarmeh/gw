@@ -9,14 +9,19 @@ import (
 var requestIdStateKey = "gwState-X-Request-Id"
 
 func getRequestID(c *gin.Context) string {
+	shouldSave := true
 	requestID := c.GetHeader("X-Request-Id")
 	if requestID == "" {
 		requestID = c.GetString(requestIdStateKey)
 		if requestID == "" {
 			requestID = internalGenRequestID()
+		} else {
+			shouldSave = false
 		}
 	}
-	c.Set(requestIdStateKey, requestID)
+	if requestID != "" && shouldSave {
+		c.Set(requestIdStateKey, requestID)
+	}
 	return requestID
 }
 
