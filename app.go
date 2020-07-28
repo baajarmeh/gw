@@ -160,7 +160,7 @@ func New(sopt *ServerOption) *HostServer {
 	gin.SetMode(sopt.Mode)
 	engine := gin.New()
 	engine.Use(gin.Recovery())
-	engine.Use(state(sopt.Name))
+	engine.Use(state(sopt.Name), auth())
 	if sopt.Mode == "debug" {
 		engine.Use(gin.Logger())
 	}

@@ -13,10 +13,9 @@ type Logger interface {
 }
 
 type DefaultImplLogger struct {
-
 }
 
-func (d DefaultImplLogger) Write(bytes []byte) (int,error) {
+func (d DefaultImplLogger) Write(bytes []byte) (int, error) {
 	return os.Stdout.Write(bytes)
 }
 

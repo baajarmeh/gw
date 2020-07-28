@@ -1,5 +1,9 @@
 package gw
 
+import (
+	"github.com/gin-gonic/gin"
+)
+
 type IAuth interface {
 	Auth(passport, secret string, store Store) (User, error)
 }
@@ -11,21 +15,17 @@ type IPermission interface {
 
 const UserKey = "gw-user"
 
-// func Auth(a IAuth, realm string) gin.HandlerFunc {
-//
-// 	if realm == "" {
-// 		realm = "Authorization Required"
-// 	}
-// 	realm = "Basic realm=" + strconv.Quote(realm)
-// 	return func(c *gin.Context) {
-// 		basicAuth,ok := c.Get(gin.AuthUserKey)
-// 		if !ok {
-// 			return
-// 		}
-// 		c.Set(UserKey, User{})
-// 		c.Next()
-// 	}
-// }
+func auth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user := getUser(c)
+		if !user.Auth() {
+			// Check url are allow dict.
+			return
+		}
+		c.Set(UserKey, c)
+		c.Next()
+	}
+}
 
 type SessionAuth struct {
 }

@@ -335,7 +335,7 @@ func makeCtx(c *gin.Context) *Context {
 		Store:     backendStore,
 		Context:   c,
 		startTime: time.Now(),
-		logger: 	getLogger(c),
+		logger:    getLogger(c),
 		queries:   make(map[string][]string),
 		params:    make(map[string]interface{}),
 	}
