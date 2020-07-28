@@ -8,11 +8,9 @@ import (
 )
 
 func main() {
-	// server := app.Default()
 	bcs := conf.DefaultBootStrapConfig()
 	opts := gw.NewServerOption(bcs)
 	opts.Name = "my api"
-	//opts.Mode = "release"
 	server := gw.New(opts)
 	registerApps(server)
 	server.Serve()

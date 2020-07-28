@@ -21,10 +21,14 @@ func (usr User) IsTenantAdmin() bool {
 	return usr.Auth() && usr.RoleId == 2
 }
 
-func getUser(c *gin.Context) User {
+func getUser(c *gin.Context) *User {
 	obj, ok := c.Get(UserKey)
 	if !ok {
 		obj = User{}
 	}
-	return obj.(User)
+	usr, ok := obj.(*User)
+	if ok {
+		return usr
+	}
+	return nil
 }

@@ -8,9 +8,9 @@ service:
       disable: False
     allowUrls:
     - name: auth-apis
-      patterns:
-      - POST:RE:${_PREFIX}/ucp/account/login
-      - POST:RE:${_PREFIX}/ucp/account/login
+      urls:
+      - POST:${API_PREFIX}/ucp/account/login
+      - POST:${API_PREFIX}/ucp/account/login
       ips:
       - 127.0.0.1/32
       - 192.168.0.0/24

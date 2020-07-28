@@ -156,9 +156,9 @@ func (c *Context) StatusJSON(code int, status int, errMsg interface{}, payload i
 
 func resp(status int, requestID string, errMsg interface{}, payload interface{}) interface{} {
 	return gin.H{
-		"Status":    status,
-		"JSONMsg":   errMsg,
-		"RequestID": requestID,
-		"Payload":   payload,
+		"Status":  status,
+		"Error":   errMsg,
+		"ReqId":   requestID,
+		"Payload": payload,
 	}
 }

@@ -328,9 +328,9 @@ func handle(c *gin.Context, handler Handler) {
 func makeCtx(c *gin.Context) *Context {
 	user := getUser(c)
 	requestID := getRequestID(c)
-	backendStore := getStore(c, user)
+	backendStore := getStore(c, *user)
 	ctx := &Context{
-		User:      user,
+		User:      *user,
 		RequestID: requestID,
 		Store:     backendStore,
 		Context:   c,

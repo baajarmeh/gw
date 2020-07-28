@@ -157,16 +157,6 @@ func New(sopt *ServerOption) *HostServer {
 		logger.Warn("duplicated server, name: %s", sopt.Name)
 		return server
 	}
-	gin.SetMode(sopt.Mode)
-	engine := gin.New()
-	engine.Use(gin.Recovery())
-	engine.Use(state(sopt.Name), auth())
-	if sopt.Mode == "debug" {
-		engine.Use(gin.Logger())
-	}
-	httpRouter := &Router{
-		server: engine,
-	}
 	cnf := sopt.AppConfigHandler(*sopt.bcs)
 	sopt.cnf = cnf
 	server = &HostServer{
@@ -175,6 +165,20 @@ func New(sopt *ServerOption) *HostServer {
 		conf:    cnf,
 		store:   sopt.BackendStoreHandler(*cnf),
 	}
+	// Gin Engine configure.
+	gin.SetMode(sopt.Mode)
+	engine := gin.New()
+	engine.Use(gin.Recovery())
+	var vars = make(map[string]string)
+	vars["${API_PREFIX}"] = sopt.cnf.Service.Prefix
+	engine.Use(state(sopt.Name), auth(vars, sopt.cnf.Service.Security.Auth.AllowUrls))
+	if sopt.Mode == "debug" {
+		engine.Use(gin.Logger())
+	}
+	httpRouter := &Router{
+		server: engine,
+	}
+
 	// Must ensure store handler is not nil.
 	if server.options.StoreDbSetupHandler == nil {
 		server.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
