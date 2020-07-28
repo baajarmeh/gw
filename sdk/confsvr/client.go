@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/oceanho/gw/sdk/confsvr/req"
+	"github.com/oceanho/gw/sdk/confsvr/param"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -16,30 +16,30 @@ type Client struct {
 }
 
 type Option struct {
-	Addr         string
-	Service      string
-	Version      string
-	Proto        string
-	MaxRetries   int
-	PullInterval int
+	Addr               string
+	Service            string
+	Version            string
+	Proto              string
+	MaxRetries         int
+	QueryStateInterval int
 }
 
-func (c *Client) Do(reqobj req.IRequest, output interface{}) (int, error) {
+func (c *Client) Do(req param.IRequest, output interface{}) (int, error) {
 	var reader io.Reader
 	var buffer bufio.ReadWriter
-	body := reqobj.Body()
+	body := req.Body()
 	if len(body) > 0 {
 		reader = &buffer
-		buffer.Write(reqobj.Body())
+		buffer.Write(req.Body())
 	}
 
-	uri := reqobj.Url()
+	uri := req.Url()
 	uri = strings.TrimLeft(uri, "/")
 	uri = strings.TrimRight(uri, "/")
 
 	url := fmt.Sprintf("%s/%s/%s/%s", c.options.Addr, c.options.Version, c.options.Service, uri)
-	oriReq, _ := http.NewRequest(reqobj.Method(), url, reader)
-	for k, header := range reqobj.Headers() {
+	oriReq, _ := http.NewRequest(req.Method(), url, reader)
+	for k, header := range req.Headers() {
 		oriReq.Header.Set(k, header)
 	}
 
@@ -53,7 +53,7 @@ func (c *Client) Do(reqobj req.IRequest, output interface{}) (int, error) {
 	if err != nil {
 		return resp.StatusCode, fmt.Errorf("read resp body: %v", err)
 	}
-	if !req.IsHttpSucc(resp.StatusCode) {
+	if !param.IsHttpSucc(resp.StatusCode) {
 		return resp.StatusCode, fmt.Errorf("status code [%d] are not excepted, resp text: \"%s\"", resp.StatusCode, string(b))
 	}
 	err = json.Unmarshal(b, output)
@@ -74,12 +74,12 @@ var (
 
 func DefaultOptions() *Option {
 	return &Option{
-		Addr:         defaultAddr,
-		Proto:        defaultProto,
-		Service:      defaultService,
-		Version:      defaultVersion,
-		MaxRetries:   defaultMaxRetries,
-		PullInterval: defaultPullInterval,
+		Addr:               defaultAddr,
+		Proto:              defaultProto,
+		Service:            defaultService,
+		Version:            defaultVersion,
+		MaxRetries:         defaultMaxRetries,
+		QueryStateInterval: defaultPullInterval,
 	}
 }
 

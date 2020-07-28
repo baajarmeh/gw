@@ -1,4 +1,4 @@
-package req
+package param
 
 import (
 	"encoding/json"

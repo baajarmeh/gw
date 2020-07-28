@@ -1,40 +1,40 @@
-package req
+package param
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-type GetAuthRequest struct {
+type ReqGetAuth struct {
 	AccessKeyId     string
 	AccessKeySecret string
 }
 
-func (a GetAuthRequest) Method() string {
+func (a ReqGetAuth) Method() string {
 	return http.MethodGet
 }
 
-func (a GetAuthRequest) Url() string {
+func (a ReqGetAuth) Url() string {
 	return GetAuthRequestURL
 }
 
-func (a GetAuthRequest) Body() []byte {
+func (a ReqGetAuth) Body() []byte {
 	return nil
 }
 
-func (a GetAuthRequest) Headers() map[string]string {
+func (a ReqGetAuth) Headers() map[string]string {
 	headers := make(map[string]string)
 	headers["X-Access-KeyId"] = a.AccessKeyId
 	headers["X-Access-KeySecret"] = a.AccessKeySecret
 	return headers
 }
 
-type RespGetAuth struct {
+type RspGetAuth struct {
 	Resp
 	Payload PayloadGetAuth `json:"payload"`
 }
 
-func (resp RespGetAuth) String() string {
+func (resp RspGetAuth) String() string {
 	b, _ := json.Marshal(resp)
 	return string(b)
 }

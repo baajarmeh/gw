@@ -165,7 +165,7 @@ func (router *RouterGroup) RegisterControllers(ctrls ...IController) {
 
 // Config returns a snapshot of the current Context's conf.Config object.
 func (c *Context) Config() conf.Config {
-	return getConfig(c.Context)
+	return config(c.Context)
 }
 
 // Bind define a Api that can be bind data to out object by gin.Context's Bind(...) APIs.

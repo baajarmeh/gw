@@ -1,29 +1,29 @@
-package req
+package param
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-type GetConfRequest struct {
+type ReqGetConf struct {
 	Token       string `json:"token"`
 	Namespace   string `json:"ns"`
 	Environment string `json:"env"`
 }
 
-func (a GetConfRequest) Method() string {
+func (a ReqGetConf) Method() string {
 	return http.MethodGet
 }
 
-func (a GetConfRequest) Url() string {
+func (a ReqGetConf) Url() string {
 	return GetConfRequestURL
 }
 
-func (a GetConfRequest) Body() []byte {
+func (a ReqGetConf) Body() []byte {
 	return nil
 }
 
-func (a GetConfRequest) Headers() map[string]string {
+func (a ReqGetConf) Headers() map[string]string {
 	return nil
 }
 
@@ -44,27 +44,27 @@ type PayloadGetConf struct {
 
 // ====================================
 
-type CheckConfigVersionRequest struct {
+type ReqCheckConfigVersion struct {
 	Token string `json:"token"`
 }
 
-func (r CheckConfigVersionRequest) Method() string {
+func (r ReqCheckConfigVersion) Method() string {
 	panic("implement me")
 }
 
-func (r CheckConfigVersionRequest) Url() string {
+func (r ReqCheckConfigVersion) Url() string {
 	panic("implement me")
 }
 
-func (r CheckConfigVersionRequest) Body() []byte {
+func (r ReqCheckConfigVersion) Body() []byte {
 	panic("implement me")
 }
 
-func (r CheckConfigVersionRequest) Headers() map[string]string {
+func (r ReqCheckConfigVersion) Headers() map[string]string {
 	panic("implement me")
 }
 
-type RespCheckConfigVersion struct {
+type RspCheckConfigVersion struct {
 	Resp
 	Payload PayloadCheckConfigVersion `json:"payload"`
 }

@@ -1,4 +1,4 @@
-package req
+package param
 
 const (
 	GetAuthRequestURL = "auth/auth"
