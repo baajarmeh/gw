@@ -7,6 +7,7 @@ dependencies
 - mysql
 - golint
 - redis
+- certs
 
 Database(MySQL)
 
@@ -32,4 +33,13 @@ go get -u golang.org/x/lint/golint
 
 # references
 # https://github.com/golang/lint
+```
+
+
+certs
+
+``` shell
+mkdir -p config/etc
+openssl genrsa -out config/etc/gw.key 2048
+openssl rsa -in config/etc/gw.key -pubout -out config/etc/gw.pem
 ```

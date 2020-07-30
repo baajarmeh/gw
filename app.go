@@ -32,6 +32,9 @@ type App interface {
 
 	// Migrate define a API that for create your app database migrations inside.
 	Migrate(store Store)
+
+	// Use define a API that for Controller Server Options for your Application.
+	Use(option *ServerOption)
 }
 
 // IController represents a Controller(the MVC of Controller).
@@ -51,23 +54,33 @@ type ServerOption struct {
 	PluginDir              string
 	PluginSymbolName       string
 	PluginSymbolSuffix     string
-	StartBeforeHandler     func(server *HostServer) error
-	ShutDownBeforeHandler  func(server *HostServer) error
+	StartBeforeHandler     func(s *HostServer) error
+	ShutDownBeforeHandler  func(s *HostServer) error
 	BackendStoreHandler    func(cnf conf.Config) Store
 	AppConfigHandler       func(cnf conf.BootStrapConfig) *conf.Config
+	Crypto                 func(conf conf.Config) ICrypto
+	SessionStateStore      func(conf conf.Config) ISessionStateStore
+	AuthManager            IAuthManager
+	PermissionManager      IPermissionManager
 	StoreDbSetupHandler    StoreDbSetupHandler
 	StoreCacheSetupHandler StoreCacheSetupHandler
-	cnf                    *conf.Config
-	bcs                    *conf.BootStrapConfig
+	//ActionBeforeHandler    func(c *gin.Context)
+	//ActionResponseHandler  func(c *gin.Context)
+	cnf *conf.Config
+	bcs *conf.BootStrapConfig
 }
 
 // HostServer represents a  Host Server.
 type HostServer struct {
-	options *ServerOption
-	router  *Router
-	apps    map[string]App
-	conf    *conf.Config
-	store   Store
+	options           *ServerOption
+	router            *Router
+	apps              map[string]App
+	conf              *conf.Config
+	store             Store
+	crypto            ICrypto
+	authManager       IAuthManager
+	sessionStore      ISessionStateStore
+	permissionManager IPermissionManager
 }
 
 var (
@@ -125,7 +138,15 @@ func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 		BackendStoreHandler:    appDefaultBackendHandler,
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
-		bcs:                    bcs,
+		AuthManager:            defaultAm,
+		PermissionManager:      defaultPm,
+		SessionStateStore: func(conf conf.Config) ISessionStateStore {
+			return DefaultSessionStateStore(conf)
+		},
+		Crypto: func(conf conf.Config) ICrypto {
+			return DefaultCryptoAes(conf.Service.Security.Crypto.Salt)
+		},
+		bcs: bcs,
 	}
 	return conf
 }
@@ -157,52 +178,22 @@ func New(sopt *ServerOption) *HostServer {
 		logger.Warn("duplicated server, name: %s", sopt.Name)
 		return server
 	}
-	cnf := sopt.AppConfigHandler(*sopt.bcs)
-	sopt.cnf = cnf
 	server = &HostServer{
 		options: sopt,
 		apps:    make(map[string]App),
-		conf:    cnf,
-		store:   sopt.BackendStoreHandler(*cnf),
 	}
-	// Gin Engine configure.
-	gin.SetMode(sopt.Mode)
-	engine := gin.New()
-	engine.Use(gin.Recovery())
-	var vars = make(map[string]string)
-	vars["${API_PREFIX}"] = sopt.cnf.Service.Prefix
-	engine.Use(state(sopt.Name), auth(vars, sopt.cnf.Service.Security.Auth.AllowUrls))
-	if sopt.Mode == "debug" {
-		engine.Use(gin.Logger())
-	}
-	httpRouter := &Router{
-		server: engine,
-	}
-
-	// Must ensure store handler is not nil.
-	if server.options.StoreDbSetupHandler == nil {
-		server.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
-	}
-	if server.options.StoreCacheSetupHandler == nil {
-		server.options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
-	}
-
-	// initial routes.
-	httpRouter.router = httpRouter.server.Group(server.options.Prefix)
-	server.router = httpRouter
 	servers[sopt.Name] = server
 	return server
 }
 
-// Register register app instances into the server.
+// Register register a app instances into the server.
 func (server *HostServer) Register(apps ...App) {
 	for _, app := range apps {
 		appName := app.Name()
 		if _, ok := server.apps[appName]; !ok {
 			server.apps[appName] = app
-			logger.Info("register app: %s", appName)
-			rg := server.router.Group(app.Router(), nil)
-			app.Register(rg)
+			// ServerOptions used AT first.
+			app.Use(server.options)
 		}
 	}
 }
@@ -246,13 +237,80 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 	}
 }
 
+func initial(server *HostServer) {
+	//
+	// Before Server start, Must initial all of Server Options
+	// There are options may be changed by Custom app instance's .Use(...) APIs.
+	cnf := server.options.AppConfigHandler(*server.options.bcs)
+
+	server.options.cnf = cnf
+	server.conf = cnf
+	server.crypto = server.options.Crypto(*cnf)
+	server.store = server.options.BackendStoreHandler(*cnf)
+	server.sessionStore = server.options.SessionStateStore(*cnf)
+
+	server.authManager = server.options.AuthManager
+	server.permissionManager = server.options.PermissionManager
+
+	// Gin Engine configure.
+	gin.SetMode(server.options.Mode)
+	engine := gin.New()
+	engine.Use(gin.Recovery())
+	engine.Use(hostState(server.options.Name))
+
+	// Auth(login/logout) API routers.
+	registerAuthRouter(cnf, server, engine)
+
+	var vars = make(map[string]string)
+	vars["${PREFIX}"] = server.options.cnf.Service.Prefix
+	engine.Use(gwAuthChecker(vars, server.options.cnf.Service.Security.Auth.AllowUrls))
+
+	if server.options.Mode == "debug" {
+		engine.Use(gin.Logger())
+	}
+	httpRouter := &Router{
+		server: engine,
+	}
+
+	// Must ensure store handler is not nil.
+	if server.options.StoreDbSetupHandler == nil {
+		server.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
+	}
+	if server.options.StoreCacheSetupHandler == nil {
+		server.options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
+	}
+
+	// initial routes.
+	httpRouter.router = httpRouter.server.Group(server.options.Prefix)
+	server.router = httpRouter
+}
+
+func registerAuthRouter(cnf *conf.Config, server *HostServer, router *gin.Engine) {
+	var s = cnf.Service.Security.Auth.LoginUrl
+	router.POST(strings.Replace(s, "${PREFIX}", server.options.cnf.Service.Prefix, 1), gwLogin)
+	s = cnf.Service.Security.Auth.LogoutUrl
+	router.POST(strings.Replace(s, "${PREFIX}", server.options.cnf.Service.Prefix, 1), gwLogout)
+}
+
+func registerApps(server *HostServer) {
+	for _, app := range server.apps {
+		// app routers.
+		logger.Info("register app: %s", app.Name())
+		rg := server.router.Group(app.Router(), nil)
+		app.Register(rg)
+
+		// migrate
+		logger.Info("migrate app: %s", app.Name())
+		app.Migrate(server.store)
+	}
+}
+
 // Serve represents start the Server.
 func (server *HostServer) Serve() {
-	// before server starting. Try migrates for all registered Apps.
-	for _, p := range server.apps {
-		logger.Info("Migrate app: %s", p.Name())
-		p.Migrate(server.store)
-	}
+	//
+	// All of app server initial AT here.
+	initial(server)
+	registerApps(server)
 
 	// signal watch.
 	sigs := make(chan os.Signal, 1)

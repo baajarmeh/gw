@@ -4,16 +4,41 @@ service:
   version: "Version 1.0"
   remarks: "User Account Platform  Services."
   security:
+    crypto:
+      salt: "sPJF7yVnCvgctCJJ9scdTjwqzeenKnHH"
+      privateKey: "config/etc/gw.key"
+      publicKey: "config/etc/gw.pem"
+      isFile: True # true/false. The key,cert can be base64 string or A file path.
+    timeout:  # Timeout control, units is millisecond
+      redis: 1000
+      database: 2000
+      mongo: 2000
     auth:
+      paramKey:
+        passport: "email"
+        secret: "password"
+      session:
+        defaultStore:
+          name: primary
+          prefix: gw-sid.
+      cookie:
+        key: "_gid"
+        domain: ":host"  # :host or xxx.com / xxx.net
+        path: "/"
+        maxAge: 7200
+        httpOnly: False
+        secure: False
       disable: False
-    allowUrls:
-    - name: auth-apis
-      urls:
-      - POST:${API_PREFIX}/ucp/account/login
-      - POST:${API_PREFIX}/ucp/account/login
-      ips:
-      - 127.0.0.1/32
-      - 192.168.0.0/24
+      loginUrl: ${PREFIX}/gw/auth/login
+      logoutUrl: ${PREFIX}/gw/auth/logout
+      allowUrls:
+      - name: auth
+        urls:
+        - POST:${PREFIX}/ucp/account/login
+        - POST:${PREFIX}/ucp/account/login
+        ips:
+        - 127.0.0.1/32
+        - 192.168.0.0/24
     queryLimit:
       minPageSize: 20
       maxPageSize: 2000

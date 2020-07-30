@@ -13,8 +13,8 @@ func GetAK(c *gw.Context) {
 	err := row.Scan(&result)
 
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s, db result: %d, db err: %v",
-			c.RequestID, c.Query("uid"), result, err),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %d, db result: %d, db err: %v",
+			c.RequestID, c.User.Id, result, err),
 	})
 }
 

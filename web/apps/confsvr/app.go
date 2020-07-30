@@ -12,15 +12,15 @@ func New() App {
 	return App{}
 }
 
-func (u App) Name() string {
+func (a App) Name() string {
 	return "gw.confsvr"
 }
 
-func (u App) Router() string {
+func (a App) Router() string {
 	return "confsvr"
 }
 
-func (u App) Register(router *gw.RouterGroup) {
+func (a App) Register(router *gw.RouterGroup) {
 	// Auth service routers.
 	router.GET("auth/auth", api.GetAuth)
 	router.GET("auth/create", api.CreateEnv)
@@ -40,8 +40,11 @@ func (u App) Register(router *gw.RouterGroup) {
 	router.GET("ns/destroy", api.DestroyNS)
 }
 
-func (u App) Migrate(store gw.Store) {
+func (a App) Migrate(store gw.Store) {
 	db := store.GetDbStore()
 	d, _ := db.DB()
 	d.Ping()
+}
+
+func (a App) Use(opt *gw.ServerOption) {
 }

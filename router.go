@@ -74,58 +74,58 @@ type RouterGroup struct {
 }
 
 // GET register a http Get router of handler.
-func (router *Router) GET(relativePath string, handler Handler) {
+func (router *Router) GET(relativePath string, handler Handler, perms ...Permission) {
 	router.currentRouter.GET(relativePath, func(c *gin.Context) {
-		handle(c, handler)
+		handle(c, handler, perms...)
 	})
 }
 
 // POST register a http POST router of handler.
-func (router *Router) POST(relativePath string, handler Handler) {
+func (router *Router) POST(relativePath string, handler Handler, perms ...Permission) {
 	router.currentRouter.POST(relativePath, func(c *gin.Context) {
-		handle(c, handler)
+		handle(c, handler, perms...)
 	})
 }
 
 // PUT register a http PUT router of handler.
-func (router *Router) PUT(relativePath string, handler Handler) {
+func (router *Router) PUT(relativePath string, handler Handler, perms ...Permission) {
 	router.currentRouter.PUT(relativePath, func(c *gin.Context) {
-		handle(c, handler)
+		handle(c, handler, perms...)
 	})
 }
 
 // HEAD register a http HEAD router of handler.
-func (router *Router) HEAD(relativePath string, handler Handler) {
+func (router *Router) HEAD(relativePath string, handler Handler, perms ...Permission) {
 	router.currentRouter.HEAD(relativePath, func(c *gin.Context) {
-		handle(c, handler)
+		handle(c, handler, perms...)
 	})
 }
 
 // DELETE register a http DELETE router of handler.
-func (router *Router) DELETE(relativePath string, handler Handler) {
+func (router *Router) DELETE(relativePath string, handler Handler, perms ...Permission) {
 	router.currentRouter.DELETE(relativePath, func(c *gin.Context) {
-		handle(c, handler)
+		handle(c, handler, perms...)
 	})
 }
 
 // OPTIONS register a http OPTIONS router of handler.
-func (router *Router) OPTIONS(relativePath string, handler Handler) {
+func (router *Router) OPTIONS(relativePath string, handler Handler, perms ...Permission) {
 	router.currentRouter.OPTIONS(relativePath, func(c *gin.Context) {
-		handle(c, handler)
+		handle(c, handler, perms...)
 	})
 }
 
 // PATCH register a http PATCH router of handler.
-func (router *Router) PATCH(relativePath string, handler Handler) {
+func (router *Router) PATCH(relativePath string, handler Handler, perms ...Permission) {
 	router.currentRouter.PATCH(relativePath, func(c *gin.Context) {
-		handle(c, handler)
+		handle(c, handler, perms...)
 	})
 }
 
 // Any register a any HTTP method router of handler.
-func (router *Router) Any(relativePath string, handler Handler) {
+func (router *Router) Any(relativePath string, handler Handler, perms ...Permission) {
 	router.currentRouter.Any(relativePath, func(c *gin.Context) {
-		handle(c, handler)
+		handle(c, handler, perms...)
 	})
 }
 
@@ -140,13 +140,13 @@ func (router *Router) Handlers() gin.HandlersChain {
 }
 
 // Group returns a new route group.
-func (router *Router) Group(relativePath string, handler Handler) *RouterGroup {
+func (router *Router) Group(relativePath string, handler Handler, perms ...Permission) *RouterGroup {
 	rg := &RouterGroup{
 		router,
 	}
 	if handler != nil {
 		rg.currentRouter = rg.router.Group(relativePath, func(c *gin.Context) {
-			handle(c, handler)
+			handle(c, handler, perms...)
 		})
 	} else {
 		rg.currentRouter = rg.router.Group(relativePath)
@@ -300,8 +300,9 @@ func RegisterControllers(router *RouterGroup, ctrls ...IController) {
 	}
 }
 
-func handle(c *gin.Context, handler Handler) {
-	handler(makeCtx(c))
+func handle(ctx *gin.Context, handler Handler, perms ...Permission) {
+	c := makeCtx(ctx)
+	handler(c)
 }
 
 //

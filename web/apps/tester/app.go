@@ -17,15 +17,15 @@ func New() App {
 	return App{}
 }
 
-func (u App) Name() string {
+func (a App) Name() string {
 	return "gw.tester"
 }
 
-func (u App) Router() string {
+func (a App) Router() string {
 	return "tester"
 }
 
-func (u App) Register(router *gw.RouterGroup) {
+func (a App) Register(router *gw.RouterGroup) {
 
 	router.GET("test/create", api.CreateMyTester)
 	router.GET("test/query", api.QueryMyTester)
@@ -60,7 +60,10 @@ func (u App) Register(router *gw.RouterGroup) {
 	gw.RegisterControllers(router, &controllers.MyTesterController{})
 }
 
-func (u App) Migrate(store gw.Store) {
+func (a App) Migrate(store gw.Store) {
 	db := store.GetDbStore()
 	db.AutoMigrate(&dto.MyTester{})
+}
+
+func (a App) Use(opt *gw.ServerOption) {
 }

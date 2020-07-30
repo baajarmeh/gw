@@ -14,18 +14,20 @@ func New() App {
 	return App{}
 }
 
-func (u App) Name() string {
+func (a App) Name() string {
 	return "gw.event-hub"
 }
 
-func (u App) Router() string {
+func (a App) Router() string {
 	return "event-hub"
 }
 
-func (u App) Register(router *gw.RouterGroup) {
-
+func (a App) Register(router *gw.RouterGroup) {
 }
 
-func (u App) Migrate(store gw.Store) {
+func (a App) Migrate(store gw.Store) {
 	// db := store.GetDbStore()
+}
+
+func (a App) Use(opt *gw.ServerOption) {
 }

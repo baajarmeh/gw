@@ -7,7 +7,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	mysqlDb "github.com/go-sql-driver/mysql"
 	"github.com/oceanho/gw/conf"
-	"github.com/oceanho/gw/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strconv"
@@ -87,7 +86,8 @@ func (d DefaultBackendImpl) GetDbStore() *gorm.DB {
 func (d DefaultBackendImpl) GetDbStoreByName(name string) *gorm.DB {
 	db, ok := d.dbs[name]
 	if !ok {
-		logger.Warn("got db: %s fail. not found.", name)
+		//logger.Warn("got db: %s fail. not found.", name)
+		panic(fmt.Sprintf("got cache: %s fail. not found.", name))
 	}
 	return db
 }
@@ -99,7 +99,8 @@ func (d DefaultBackendImpl) GetCacheStore() *redis.Client {
 func (d DefaultBackendImpl) GetCacheStoreByName(name string) *redis.Client {
 	db, ok := d.caches[name]
 	if !ok {
-		logger.Warn("got cache: %s fail. not found.", name)
+		//logger.Warn("got cache: %s fail. not found.", name)
+		panic(fmt.Sprintf("got cache: %s fail. not found.", name))
 	}
 	return db
 }
@@ -156,7 +157,11 @@ func createCache(cache conf.Cache) *redis.Client {
 		Password: cache.Password,
 		DB:       cache.DB,
 	}
-	return redis.NewClient(opts)
+	client := redis.NewClient(opts)
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		panic(fmt.Sprintf("redis not pong, name:%s. addr: %s, port: %d", cache.Name, cache.Addr, cache.Port))
+	}
+	return client
 }
 
 func getStore(ctx *gin.Context, user User) Store {

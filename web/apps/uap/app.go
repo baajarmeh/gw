@@ -16,15 +16,15 @@ func New() App {
 	return App{}
 }
 
-func (u App) Name() string {
+func (a App) Name() string {
 	return "gw.uap"
 }
 
-func (u App) Router() string {
+func (a App) Router() string {
 	return "uap"
 }
 
-func (u App) Register(router *gw.RouterGroup) {
+func (a App) Register(router *gw.RouterGroup) {
 	router.GET("tenant/get", api.GetTenant)
 	router.GET("tenant/query", api.QueryTenant)
 	router.POST("tenant/create", api.CreateTenant)
@@ -74,7 +74,11 @@ func (u App) Register(router *gw.RouterGroup) {
 	router.POST("perms/user/destroy", api.DeleteUserPerms)
 }
 
-func (u App) Migrate(store gw.Store) {
+func (a App) Migrate(store gw.Store) {
 	db := store.GetDbStore()
 	db.AutoMigrate(&entities.User{}, &entities.Profile{})
+}
+
+func (a App) Use(opt *gw.ServerOption) {
+	//opt.AuthManager = &gwext.AuthManager{}
 }

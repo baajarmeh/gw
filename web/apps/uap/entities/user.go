@@ -11,8 +11,9 @@ var tablePrefix = "uap"
 type User struct {
 	backend.Model
 	Passport  string `gorm:"type:varchar(32);unique_index;not null"`
-	Secret    string `gorm:"type:varchar(128)"`
+	Secret    string `gorm:"type:varchar(128);not null"`
 	IsTenancy bool   `gorm:"default:0;not null"`
+	IsAdmin   bool   `gorm:"default:0;not null"`
 	backend.HasTenantState
 	backend.HasLockState
 	backend.HasCreationState

@@ -61,7 +61,39 @@ type Config struct {
 		Version  string `yaml:"version" toml:"version" json:"version"`
 		Remarks  string `yaml:"remarks" toml:"remarks" json:"remarks"`
 		Security struct {
+			Crypto struct {
+				Salt       string `yaml:"salt" toml:"salt" json:"salt"`
+				PrivateKey string `yaml:"privateKey" toml:"privateKey" json:"privateKey"`
+				PublicKey  string `yaml:"publicKey" toml:"publicKey" json:"publicKey"`
+				IsFile     bool   `yaml:"isFile" toml:"isFile" json:"isFile"`
+			} `yaml:"crypto" toml:"crypto" json:"crypto"`
+			Timeout struct {
+				HTTP     int `yaml:"http" toml:"http" json:"http"`
+				Redis    int `yaml:"redis" toml:"redis" json:"redis"`
+				MongoDB  int `yaml:"mongo" toml:"mongo" json:"mongo"`
+				Database int `yaml:"database" toml:"database" json:"database"`
+			} `yaml:"timeout" toml:"timeout" json:"timeout"`
 			Auth struct {
+				ParamKey struct {
+					Passport string `yaml:"passport" toml:"passport" json:"passport"`
+					Secret   string `yaml:"secret" toml:"secret" json:"secret"`
+				} `yaml:"paramKey" toml:"paramKey" json:"paramKey"`
+				Session struct {
+					DefaultStore struct {
+						Name   string `yaml:"name" toml:"name" json:"name"`
+						Prefix string `yaml:"prefix" toml:"prefix" json:"prefix"`
+					} `yaml:"defaultStore" toml:"defaultStore" json:"defaultStore"`
+				} `yaml:"session" toml:"session" json:"session"`
+				Cookie struct {
+					Key      string `yaml:"key" toml:"key" json:"key"`
+					Path     string `yaml:"path" toml:"path" json:"path"`
+					HttpOnly bool   `yaml:"httpOnly" toml:"httpOnly" json:"httpOnly"`
+					MaxAge   int    `yaml:"maxAge" toml:"maxAge" json:"maxAge"`
+					Secure   bool   `yaml:"secure" toml:"secure" json:"secure"`
+					Domain   string `yaml:"domain" toml:"domain" json:"domain"`
+				} `yaml:"cookie" toml:"cookie" json:"cookie"`
+				LoginUrl  string     `yaml:"loginUrl" toml:"loginUrl" json:"loginUrl"`
+				LogoutUrl string     `yaml:"logoutUrl" toml:"logoutUrl" json:"logoutUrl"`
 				Disable   bool       `yaml:"disable" toml:"disable" json:"disable"`
 				AllowUrls []AllowUrl `yaml:"allowUrls" toml:"allowUrls" json:"allowUrls"`
 			} `yaml:"auth" toml:"auth" json:"auth"`
@@ -129,20 +161,6 @@ type AllowUrlPattern struct {
 	IsRegex         bool
 	IPLimit         string
 	regMatchPattern *regexp.Regexp
-}
-
-func ParseAllowUrlToPatterns(urls []AllowUrl) []AllowUrlPattern {
-	panic("impl me please.")
-	patterns := make([]AllowUrlPattern, len(urls))
-	// TODO(Ocean): implementation.
-	// for _, url := range urls {
-	// 	p := AllowUrlPattern{}
-	// 	s := strings.Split(url.Urls, ":")
-	// 	p.Method = strings.ToUpper(s[0])
-	// 	p.IPLimit = ""
-	// 	patterns = append(patterns, p)
-	// }
-	return patterns
 }
 
 var defaultBSCLocalFileData = `

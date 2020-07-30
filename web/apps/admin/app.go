@@ -20,3 +20,6 @@ func (a App) Register(router *gw.RouterGroup) {
 func (a App) Migrate(store gw.Store) {
 	// Nothing to do.
 }
+
+func (a App) Use(opt *gw.ServerOption) {
+}
