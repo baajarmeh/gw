@@ -1,5 +1,18 @@
 # gw
 
+gw (golang web), gin + gorm + go-redis + mysql
+
+out-of-the-box, Fully features:
+
+- Auth
+- Permission manager
+- Multi-tenancy
+- ORM (gorm + mysql)
+- Cache (redis)
+- Modular module application.
+- REST style Api support.
+- Out-of-the-box Web Api framework.
+
 ## Step by step.
 
 dependencies
@@ -7,11 +20,14 @@ dependencies
 - mysql
 - golint
 - redis
-- certs
+- openssl certificates
 
 Database(MySQL)
 
 ``` shell
+brew install mysql
+brew services start mysql
+
 mysql> create database gwdb;
 Query OK, 1 row affected (0.02 sec)
 
@@ -35,6 +51,12 @@ go get -u golang.org/x/lint/golint
 # https://github.com/golang/lint
 ```
 
+redis
+
+``` shell
+brew install redis
+brew services start redis
+```
 
 certs
 

@@ -62,10 +62,19 @@ type Config struct {
 		Remarks  string `yaml:"remarks" toml:"remarks" json:"remarks"`
 		Security struct {
 			Crypto struct {
-				Salt       string `yaml:"salt" toml:"salt" json:"salt"`
-				PrivateKey string `yaml:"privateKey" toml:"privateKey" json:"privateKey"`
-				PublicKey  string `yaml:"publicKey" toml:"publicKey" json:"publicKey"`
-				IsFile     bool   `yaml:"isFile" toml:"isFile" json:"isFile"`
+				Hash struct {
+					Salt      string `yaml:"salt" toml:"salt" json:"salt"`
+					Algorithm string `yaml:"alg" toml:"alg" json:"alg"`
+				} `yaml:"hash" toml:"hash" json:"hash"`
+				Protect struct {
+					Secret    string `yaml:"secret" toml:"secret" json:"secret"`
+					Algorithm string `yaml:"alg" toml:"alg" json:"alg"`
+				} `yaml:"protect" toml:"protect" json:"protect"`
+				Certificate struct {
+					PrivateKey string `yaml:"privateKey" toml:"privateKey" json:"privateKey"`
+					PublicKey  string `yaml:"publicKey" toml:"publicKey" json:"publicKey"`
+					IsFile     bool   `yaml:"isFile" toml:"isFile" json:"isFile"`
+				} `yaml:"cert" toml:"cert" json:"cert"`
 			} `yaml:"crypto" toml:"crypto" json:"crypto"`
 			Timeout struct {
 				HTTP     int `yaml:"http" toml:"http" json:"http"`
@@ -75,9 +84,16 @@ type Config struct {
 			} `yaml:"timeout" toml:"timeout" json:"timeout"`
 			Auth struct {
 				ParamKey struct {
-					Passport string `yaml:"passport" toml:"passport" json:"passport"`
-					Secret   string `yaml:"secret" toml:"secret" json:"secret"`
+					Passport   string                 `yaml:"passport" toml:"passport" json:"passport"`
+					Secret     string                 `yaml:"secret" toml:"secret" json:"secret"`
+					VerifyCode string                 `yaml:"verifyCode" toml:"verifyCode" json:"verifyCode"`
+					Custom     map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
 				} `yaml:"paramKey" toml:"paramKey" json:"paramKey"`
+				ParamPattern struct {
+					Passport   string `yaml:"passport" toml:"passport" json:"passport"`
+					Secret     string `yaml:"secret" toml:"secret" json:"secret"`
+					VerifyCode string `yaml:"verifyCode" toml:"verifyCode" json:"verifyCode"`
+				} `yaml:"paramPattern" toml:"paramPattern" json:"paramPattern"`
 				Session struct {
 					DefaultStore struct {
 						Name   string `yaml:"name" toml:"name" json:"name"`
@@ -226,7 +242,7 @@ func NewConfigByBootStrapConfig(bcs *BootStrapConfig) *Config {
 	cnf := &Config{}
 	err := cp.Provide(*bcs, cnf)
 	if err != nil {
-		panic(fmt.Sprintf("config provider: %s call Provide(...) fail.", bcs.AppCnf.Provider))
+		panic(fmt.Sprintf("config provider: %s call Provide(...) fail. err: %v", bcs.AppCnf.Provider, err))
 	}
 	return cnf
 }

@@ -5,25 +5,37 @@ service:
   remarks: "User Account Platform  Services."
   security:
     crypto:
-      salt: "sPJF7yVnCvgctCJJ9scdTjwqzeenKnHH"
-      privateKey: "config/etc/gw.key"
-      publicKey: "config/etc/gw.pem"
-      isFile: True # true/false. The key,cert can be base64 string or A file path.
+      hash:
+        alg: "sha256" # md5 / sha1 / sha256
+        salt: "cvMC33eY7o9YKarcUr7VCf9XLFmHXKWJ"
+      protect:
+        alg: "aes"  # aes / 3des / rsa
+        secret: "sPJF7yVnCvgctCJJ9scdTjwqzeenKnHH"
+      cert:
+        privateKey: "config/etc/gw.key"
+        publicKey: "config/etc/gw.pem"
+        isFile: True # true/false. The key,cert can be base64 string or A file path.
     timeout:  # Timeout control, units is millisecond
       redis: 1000
       database: 2000
       mongo: 2000
+      http: 2000
     auth:
       paramKey:
         passport: "email"
         secret: "password"
+        verifyCode: "verifyCode"
+      paramPattern:
+        passport: '^\S{5,64}$'
+        secret: '^\S{5,64}$'
+        verifyCode: '^[0-9]{0,8}$'
       session:
         defaultStore:
           name: primary
-          prefix: gw-sid.
+          prefix: gw-sid
       cookie:
         key: "_gid"
-        domain: ":host"  # :host or xxx.com / xxx.net
+        domain: ""  # xxx.com / xxx.net
         path: "/"
         maxAge: 7200
         httpOnly: False

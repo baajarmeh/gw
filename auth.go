@@ -13,12 +13,18 @@ import (
 )
 
 type Permission struct {
-	Name       string
-	Descriptor string
+	Key        string `json:"key"`
+	Name       string `json:"name"`
+	Descriptor string `json:"descriptor"`
+}
+
+func (perms Permission) String() string {
+	b, _ := json.Marshal(perms)
+	return string(b)
 }
 
 type IAuthManager interface {
-	Login(store Store, passport, secret string) (*User, error)
+	Login(store Store, passport, secret, verifyCode string) (*User, error)
 	Logout(store Store, user *User) bool
 }
 
@@ -91,14 +97,14 @@ func (d *DefaultSessionStateStoreImpl) Query(store Store, sid string) (*User, er
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(bytes,user)
+	err = json.Unmarshal(bytes, user)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret string) (*User, error) {
+func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, verifyCode string) (*User, error) {
 	user, ok := d.users[passport]
 	if ok && user.secret == secret {
 		return user, nil
@@ -179,64 +185,99 @@ func (p *DefaultPermissionManagerImpl) HasPermission(user User, perms ...Permiss
 	return false
 }
 
-const gwUserKey = "gw-user"
+const (
+	gwUserKey = "gw-user"
+)
 
 func gwLogin(c *gin.Context) {
 	s := hostServer(c)
-	store := s.store
 	reqId := getRequestID(c)
+	pKey := s.conf.Service.Security.Auth.ParamKey
 	// supports
 	// 1. User/Password
 	// 2. X-Access-Key/X-Access-Secret
-	// 3. Realm auth
-	passport, secret, ok := parseCredentials(s, c)
+	// 3. Realm auth (Basic auth)
+	passport, secret, verifyCode, ok := parseCredentials(s, c)
 	if !ok {
-		c.JSON(http.StatusBadRequest, resp(-1, reqId, "No Credentials.", nil))
+		c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials.", nil))
 		c.Abort()
 		return
 	}
-	sid, secureSid, ok := newSid(s)
+
+	// check params
+	if p, ok := s.validators[pKey.Passport]; ok {
+		if !p.MatchString(passport) {
+			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.Abort()
+			return
+		}
+	}
+	if p, ok := s.validators[pKey.Secret]; ok {
+		if !p.MatchString(secret) {
+			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.Abort()
+			return
+		}
+	}
+	if p, ok := s.validators[pKey.VerifyCode]; ok {
+		if !p.MatchString(verifyCode) {
+			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.Abort()
+			return
+		}
+	}
+
+	// Login
+	user, err := s.authManager.Login(s.store, passport, secret, verifyCode)
+	if err != nil || user == nil {
+		c.JSON(http.StatusOK, respBody(400, reqId, err.Error(), nil))
+		c.Abort()
+		return
+	}
+	sid, ok := encryptSid(s, passport)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, resp(-1, reqId, "Create session ID fail.", nil))
+		c.JSON(http.StatusInternalServerError, respBody(-1, reqId, "Create session ID fail.", nil))
 		c.Abort()
 		return
 	}
-	user, err := s.authManager.Login(store, passport, secret)
-	if err != nil {
-		c.JSON(http.StatusOK, resp(-1, reqId, err.Error(), nil))
-		c.Abort()
-		return
-	}
-	if err := s.sessionStore.Save(store, sid, user); err != nil {
-		c.JSON(http.StatusInternalServerError, resp(-1, reqId, "Save session fail.", nil))
+	if err := s.sessionStore.Save(s.store, user.Passport, user); err != nil {
+		c.JSON(http.StatusInternalServerError, respBody(-1, reqId, "Save session fail.", err.Error()))
 		c.Abort()
 		return
 	}
 	cks := s.conf.Service.Security.Auth.Cookie
 	domain := cks.Domain
-	if domain == ":host" || domain == "" {
-		domain = c.Request.Host
+	// if domain == ":host" || domain == "" {
+	// 	domain = ""
+	// }
+	expiredAt := time.Duration(cks.MaxAge) * time.Second
+	token := gin.H{
+		"Token":     sid,
+		"ExpiredAt": time.Now().Add(expiredAt).Unix(),
 	}
-	c.SetCookie(cks.Key, secureSid, cks.MaxAge, cks.Path, domain, cks.Secure, cks.HttpOnly)
+	payload := respBody(0, reqId, nil, token)
+	// token, header, X-Auth-Token
+	c.Header("X-Auth-Token", sid)
+	c.SetCookie(cks.Key, sid, cks.MaxAge, cks.Path, domain, cks.Secure, cks.HttpOnly)
+	c.JSON(http.StatusOK, payload)
 }
 
 func gwLogout(c *gin.Context) {
 	s := hostServer(c)
 	reqId := getRequestID(c)
 	user := getUser(c)
-	store := s.store
 	cks := s.conf.Service.Security.Auth.Cookie
-	ok := s.authManager.Logout(store, user)
+	ok := s.authManager.Logout(s.store, user)
 	if !ok {
-		resp(-1, reqId, "auth logout fail", nil)
+		respBody(500, reqId, "auth logout fail", nil)
 		return
 	}
 	sid, ok := getSid(s, c)
 	if !ok {
-		resp(-1, reqId, "session store logout fail", nil)
+		respBody(500, reqId, "session store logout fail", nil)
 		return
 	}
-	_ = s.sessionStore.Remove(store, sid)
+	_ = s.sessionStore.Remove(s.store, sid)
 	domain := cks.Domain
 	if domain == ":host" || domain == "" {
 		domain = c.Request.Host
@@ -244,7 +285,7 @@ func gwLogout(c *gin.Context) {
 	c.SetCookie(cks.Key, "", -1, cks.Path, domain, cks.Secure, cks.HttpOnly)
 }
 
-func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, result bool) {
+func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, verifyCode string, result bool) {
 	//
 	// Auth Param configuration.
 	param := s.conf.Service.Security.Auth.ParamKey
@@ -259,6 +300,7 @@ func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, r
 	// 1. User/Password
 	passport, _ = c.GetPostForm(param.Passport)
 	secret, _ = c.GetPostForm(param.Secret)
+	verifyCode, _ = c.GetPostForm(param.VerifyCode)
 	result = passport != "" && secret != ""
 	if result {
 		return
@@ -268,8 +310,9 @@ func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, r
 	if c.ContentType() == "application/json" {
 		// json decode
 		cred := gin.H{
-			param.Passport: "",
-			param.Secret:   "",
+			param.Passport:   "",
+			param.Secret:     "",
+			param.VerifyCode: "",
 		}
 		err := c.Bind(&cred)
 		if err != nil {
@@ -277,6 +320,7 @@ func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, r
 		}
 		passport = cred[param.Passport].(string)
 		secret = cred[param.Secret].(string)
+		verifyCode = cred[param.VerifyCode].(string)
 		result = passport != "" && secret != ""
 		if result {
 			return
@@ -286,6 +330,7 @@ func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, r
 	// 2. X-Access-Key/X-Access-Secret
 	passport = c.GetHeader("X-Access-Key")
 	secret = c.GetHeader("X-Access-Secret")
+	verifyCode = c.GetHeader("X-Access-VerifyCode")
 	result = passport != "" && secret != ""
 	if result {
 		return
@@ -293,6 +338,9 @@ func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, r
 
 	// 3. Basic auth
 	passport, secret, result = c.Request.BasicAuth()
+	if verifyCode == "" {
+		verifyCode = c.Query(param.VerifyCode)
+	}
 	return
 }
 
@@ -316,7 +364,7 @@ func gwAuthChecker(vars map[string]string, urls []conf.AllowUrl) gin.HandlerFunc
 		//
 		if (user == nil || !user.IsAuth()) && !allowUrls[path] {
 			// Check url are allow dict.
-			payload := resp(http.StatusUnauthorized, getRequestID(c), errDefault401Msg, errDefaultPayload)
+			payload := respBody(http.StatusUnauthorized, getRequestID(c), errDefault401Msg, errDefaultPayload)
 			c.JSON(http.StatusUnauthorized, payload)
 			c.Abort()
 			return

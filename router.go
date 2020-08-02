@@ -5,9 +5,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
+	"net/http"
 	"reflect"
 	"strings"
 	"time"
+)
+
+const (
+	apiNameKey = "gw-api-name"
 )
 
 // Handler defines a http handler for gw framework.
@@ -30,13 +35,14 @@ type dynamicArgsBinder struct {
 // Context represents a gw Context object, it's extension from gin.Context.
 type Context struct {
 	*gin.Context
-	RequestID string
-	User      User
-	Store     Store
-	startTime time.Time
-	logger    Logger
-	queries   map[string][]string
-	params    map[string]interface{}
+	RequestID   string
+	User        User
+	Store       Store
+	Permissions []Permission
+	startTime   time.Time
+	logger      Logger
+	queries     map[string][]string
+	params      map[string]interface{}
 }
 
 // Query returns a string from queries.
@@ -73,59 +79,90 @@ type RouterGroup struct {
 	*Router
 }
 
+func calcPermName(perms ...Permission) string {
+	names := make([]string, len(perms))
+	for i := 0; i < len(perms); i++ {
+		names[i] = perms[i].Key
+	}
+	return strings.Join(names, ", ")
+}
+
 // GET register a http Get router of handler.
 func (router *Router) GET(relativePath string, handler Handler, perms ...Permission) {
+	permName := calcPermName(perms...)
+	api := fmt.Sprintf("%s -> %s", "GET", relativePath)
 	router.currentRouter.GET(relativePath, func(c *gin.Context) {
-		handle(c, handler, perms...)
+		c.Set(apiNameKey, relativePath)
+		handle(c, handler, api, permName, perms...)
 	})
 }
 
 // POST register a http POST router of handler.
 func (router *Router) POST(relativePath string, handler Handler, perms ...Permission) {
+	permName := calcPermName(perms...)
+	api := fmt.Sprintf("%s -> %s", "POST", relativePath)
 	router.currentRouter.POST(relativePath, func(c *gin.Context) {
-		handle(c, handler, perms...)
+		c.Set(apiNameKey, relativePath)
+		handle(c, handler, api, permName, perms...)
 	})
 }
 
 // PUT register a http PUT router of handler.
 func (router *Router) PUT(relativePath string, handler Handler, perms ...Permission) {
+	permName := calcPermName(perms...)
+	api := fmt.Sprintf("%s -> %s", "PUT", relativePath)
 	router.currentRouter.PUT(relativePath, func(c *gin.Context) {
-		handle(c, handler, perms...)
+		c.Set(apiNameKey, relativePath)
+		handle(c, handler, api, permName, perms...)
 	})
 }
 
 // HEAD register a http HEAD router of handler.
 func (router *Router) HEAD(relativePath string, handler Handler, perms ...Permission) {
+	permName := calcPermName(perms...)
+	api := fmt.Sprintf("%s -> %s", "HEAD", relativePath)
 	router.currentRouter.HEAD(relativePath, func(c *gin.Context) {
-		handle(c, handler, perms...)
+		c.Set(apiNameKey, relativePath)
+		handle(c, handler, api, permName, perms...)
 	})
 }
 
 // DELETE register a http DELETE router of handler.
 func (router *Router) DELETE(relativePath string, handler Handler, perms ...Permission) {
+	permName := calcPermName(perms...)
+	api := fmt.Sprintf("%s -> %s", "DELETE", relativePath)
 	router.currentRouter.DELETE(relativePath, func(c *gin.Context) {
-		handle(c, handler, perms...)
+		c.Set(apiNameKey, relativePath)
+		handle(c, handler, api, permName, perms...)
 	})
 }
 
 // OPTIONS register a http OPTIONS router of handler.
 func (router *Router) OPTIONS(relativePath string, handler Handler, perms ...Permission) {
+	permName := calcPermName(perms...)
+	api := fmt.Sprintf("%s -> %s", "OPTIONS", relativePath)
 	router.currentRouter.OPTIONS(relativePath, func(c *gin.Context) {
-		handle(c, handler, perms...)
+		c.Set(apiNameKey, relativePath)
+		handle(c, handler, api, permName, perms...)
 	})
 }
 
 // PATCH register a http PATCH router of handler.
 func (router *Router) PATCH(relativePath string, handler Handler, perms ...Permission) {
+	permName := calcPermName(perms...)
+	api := fmt.Sprintf("%s -> %s", "PATCH", relativePath)
 	router.currentRouter.PATCH(relativePath, func(c *gin.Context) {
-		handle(c, handler, perms...)
+		handle(c, handler, api, permName, perms...)
 	})
 }
 
 // Any register a any HTTP method router of handler.
 func (router *Router) Any(relativePath string, handler Handler, perms ...Permission) {
+	permName := calcPermName(perms...)
+	api := fmt.Sprintf("%s -> %s", "Any", relativePath)
 	router.currentRouter.Any(relativePath, func(c *gin.Context) {
-		handle(c, handler, perms...)
+		c.Set(apiNameKey, relativePath)
+		handle(c, handler, api, permName, perms...)
 	})
 }
 
@@ -145,8 +182,10 @@ func (router *Router) Group(relativePath string, handler Handler, perms ...Permi
 		router,
 	}
 	if handler != nil {
+		permName := calcPermName(perms...)
+		api := fmt.Sprintf("%s -> %s", "Any-Group", relativePath)
 		rg.currentRouter = rg.router.Group(relativePath, func(c *gin.Context) {
-			handle(c, handler, perms...)
+			handle(c, handler, api, permName, perms...)
 		})
 	} else {
 		rg.currentRouter = rg.router.Group(relativePath)
@@ -169,7 +208,7 @@ func (c *Context) Config() conf.Config {
 // returns a error message for c.Bind(...).
 func (c *Context) Bind(out interface{}) error {
 	if err := c.Context.Bind(out); err != nil {
-		c.JSON400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))
+		c.JSON400Msg(400, fmt.Sprintf("invalid request parameters, details: \n%v", err))
 		return err
 	}
 	return nil
@@ -180,7 +219,7 @@ func (c *Context) Bind(out interface{}) error {
 // returns a error message for c.BindQuery(...).
 func (c *Context) BindQuery(out interface{}) error {
 	if err := c.Context.BindQuery(out); err != nil {
-		c.JSON400Msg(4000, fmt.Sprintf("invalid request parameters, details: \n%v", err))
+		c.JSON400Msg(400, fmt.Sprintf("invalid request parameters, details: \n%v", err))
 		return err
 	}
 	return nil
@@ -300,9 +339,19 @@ func RegisterControllers(router *RouterGroup, ctrls ...IController) {
 	}
 }
 
-func handle(ctx *gin.Context, handler Handler, perms ...Permission) {
-	c := makeCtx(ctx)
-	handler(c)
+func handle(c *gin.Context, handler Handler, api string, permsName string, perms ...Permission) {
+	s := hostServer(c)
+	user := getUser(c)
+	requestID := getRequestID(c)
+	store := getStore(c, s, *user)
+	permissionManager := s.permissionManager
+	if len(perms) > 0 && !permissionManager.HasPermission(*user, perms...) {
+		body := fmt.Sprintf("Your have no permission[%s], to access API, %s", permsName, api)
+		payload := respBody(403, requestID, errDefault403Msg, body)
+		c.JSON(http.StatusForbidden, payload)
+	}
+	ctx := makeCtx(c, *user, *s, store, requestID, perms...)
+	handler(ctx)
 }
 
 //
@@ -326,19 +375,17 @@ func handle(ctx *gin.Context, handler Handler, perms ...Permission) {
 // 	handler(makeCtx(c))
 // }
 
-func makeCtx(c *gin.Context) *Context {
-	user := getUser(c)
-	requestID := getRequestID(c)
-	backendStore := getStore(c, *user)
+func makeCtx(c *gin.Context, user User, s HostServer, store Store, requestID string, perms ...Permission) *Context {
 	ctx := &Context{
-		User:      *user,
-		RequestID: requestID,
-		Store:     backendStore,
-		Context:   c,
-		startTime: time.Now(),
-		logger:    getLogger(c),
-		queries:   make(map[string][]string),
-		params:    make(map[string]interface{}),
+		User:        user,
+		RequestID:   requestID,
+		Store:       store,
+		Context:     c,
+		Permissions: perms,
+		startTime:   time.Now(),
+		logger:      getLogger(c),
+		queries:     make(map[string][]string),
+		params:      make(map[string]interface{}),
 	}
 	return ctx
 }

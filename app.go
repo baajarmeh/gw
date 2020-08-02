@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path"
 	"plugin"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -77,10 +78,12 @@ type HostServer struct {
 	apps              map[string]App
 	conf              *conf.Config
 	store             Store
-	crypto            ICrypto
+	hash              ICryptoHash
+	protect           ICryptoProtect
 	authManager       IAuthManager
 	sessionStore      ISessionStateStore
 	permissionManager IPermissionManager
+	validators        map[string]*regexp.Regexp
 }
 
 var (
@@ -144,7 +147,8 @@ func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 			return DefaultSessionStateStore(conf)
 		},
 		Crypto: func(conf conf.Config) ICrypto {
-			return DefaultCryptoAes(conf.Service.Security.Crypto.Salt)
+			c := conf.Service.Security.Crypto
+			return DefaultCrypto(c.Protect.Secret, c.Hash.Salt)
 		},
 		bcs: bcs,
 	}
@@ -242,15 +246,20 @@ func initial(server *HostServer) {
 	// Before Server start, Must initial all of Server Options
 	// There are options may be changed by Custom app instance's .Use(...) APIs.
 	cnf := server.options.AppConfigHandler(*server.options.bcs)
+	crypto := server.options.Crypto(*cnf)
 
 	server.options.cnf = cnf
 	server.conf = cnf
-	server.crypto = server.options.Crypto(*cnf)
+	server.hash = crypto.Hash()
+	server.protect = crypto.Protect()
+
 	server.store = server.options.BackendStoreHandler(*cnf)
 	server.sessionStore = server.options.SessionStateStore(*cnf)
 
 	server.authManager = server.options.AuthManager
 	server.permissionManager = server.options.PermissionManager
+
+	registerValidators(server)
 
 	// Gin Engine configure.
 	gin.SetMode(server.options.Mode)
@@ -283,6 +292,29 @@ func initial(server *HostServer) {
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(server.options.Prefix)
 	server.router = httpRouter
+}
+
+func registerValidators(s *HostServer) {
+
+	p := s.conf.Service.Security.Auth
+	s.validators = make(map[string]*regexp.Regexp)
+
+	passportRegex, err := regexp.Compile(p.ParamPattern.Passport)
+	if err != nil {
+		panic(fmt.Sprintf("invalid regex pattern: %s for passport", p.ParamPattern.Passport))
+	}
+	secretRegex, err := regexp.Compile(p.ParamPattern.Secret)
+	if err != nil {
+		panic(fmt.Sprintf("invalid regex pattern: %s for secret", p.ParamPattern.Secret))
+	}
+
+	verifyCodeRegex, err := regexp.Compile(p.ParamPattern.VerifyCode)
+	if err != nil {
+		panic(fmt.Sprintf("invalid regex pattern: %s for verifyCode", p.ParamPattern.VerifyCode))
+	}
+	s.validators[p.ParamKey.Passport] = passportRegex
+	s.validators[p.ParamKey.Secret] = secretRegex
+	s.validators[p.ParamKey.VerifyCode] = verifyCodeRegex
 }
 
 func registerAuthRouter(cnf *conf.Config, server *HostServer, router *gin.Engine) {

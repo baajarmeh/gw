@@ -164,8 +164,7 @@ func createCache(cache conf.Cache) *redis.Client {
 	return client
 }
 
-func getStore(ctx *gin.Context, user User) Store {
-	server := hostServer(ctx)
+func getStore(ctx *gin.Context, server *HostServer, user User) Store {
 	storeWrapper := &backendWrapper{
 		ctx:                    *ctx,
 		user:                   user,
