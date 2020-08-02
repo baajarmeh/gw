@@ -83,7 +83,8 @@ type Config struct {
 				Database int `yaml:"database" toml:"database" json:"database"`
 			} `yaml:"timeout" toml:"timeout" json:"timeout"`
 			Auth struct {
-				ParamKey struct {
+				TrustSidKey string `yaml:"trustSidKey" toml:"trustSidKey" json:"trustSidKey"`
+				ParamKey    struct {
 					Passport   string                 `yaml:"passport" toml:"passport" json:"passport"`
 					Secret     string                 `yaml:"secret" toml:"secret" json:"secret"`
 					VerifyCode string                 `yaml:"verifyCode" toml:"verifyCode" json:"verifyCode"`

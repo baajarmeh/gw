@@ -21,6 +21,7 @@ service:
       mongo: 2000
       http: 2000
     auth:
+      trustSidKey: "x-gw-trust-sid" # 如果配置这项，请务必确保您发送到后端节点的 http header -> <trustSidKey> 是可信的.
       paramKey:
         passport: "email"
         secret: "password"

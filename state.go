@@ -124,6 +124,15 @@ func getSid(s *HostServer, c *gin.Context) (string, bool) {
 	if ok {
 		return sid.(string), true
 	}
+	// Trust Sid header.
+	// sid can be decrypt AT gateway (OpenResty, Nginx etc.) layout.
+	sidKey := s.conf.Service.Security.Auth.TrustSidKey
+	if sidKey != "" {
+		sid := c.GetHeader(sidKey)
+		if sid != "" {
+			return sid, ok
+		}
+	}
 	client := getClient(c)
 	cks := s.conf.Service.Security.Auth.Cookie
 	// 1. Query cookie get Sid.
