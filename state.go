@@ -25,7 +25,6 @@ const (
 )
 
 func globalState(serverName string) gin.HandlerFunc {
-
 	// code copies from gin framework.
 	var out io.Writer = os.Stderr
 	var ginLogger *log.Logger
