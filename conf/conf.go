@@ -193,6 +193,7 @@ var (
 	defaultBootStrapConfigFileName = "config/boot.yaml"
 	formatterDecoders              map[string]func(b []byte, out interface{}) error
 	configProviders                map[string]ConfigProvider
+	configVarModifier              func(cnf *Config) *Config
 )
 
 func init() {
@@ -203,6 +204,22 @@ func init() {
 	// config provider initialization
 	RegisterProvider(newLocalFileConfigProvider())
 	RegisterProvider(newGWHttpConfSvrConfigProvider())
+
+	configVarModifier = func(cnf *Config) *Config {
+		b, e := json.Marshal(cnf)
+		if e != nil {
+			panic(fmt.Errorf("configVarModifier fail on json.Marshal(). err: %v", e))
+		}
+		s := string(b)
+		prefix := cnf.Service.Prefix
+		s = strings.Replace(s, "$PREFIX", prefix, -1)
+		s = strings.Replace(s, "${PREFIX}", prefix, -1)
+		cnfNew := &Config{}
+		if json.Unmarshal([]byte(s), cnfNew) != nil {
+			panic(fmt.Errorf("configVarModifier fail on json.Unmarshal(). err: %v", e))
+		}
+		return cnfNew
+	}
 }
 
 func initialFormatterDecoders() {
@@ -249,13 +266,7 @@ func NewConfigByBootStrapConfig(bcs *BootStrapConfig) *Config {
 	if err != nil {
 		panic(fmt.Sprintf("json.Marshal(cnf) fail. err: %v", err))
 	}
-	str := string(t)
-	str = strings.Replace(str, "${PREFIX}", cnf.Service.Prefix, -1)
-	err = json.Unmarshal([]byte(str), cnf)
-	if err != nil {
-		panic(fmt.Sprintf("json.Marshal(cnf) fail. err: %v", err))
-	}
-	return cnf
+	return configVarModifier(cnf)
 }
 
 func LoadBootStrapConfigFromBytes(formatter string, bytes []byte) *BootStrapConfig {
