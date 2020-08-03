@@ -368,10 +368,10 @@ func registerValidators(s *HostServer) {
 }
 
 func registerAuthRouter(cnf *conf.Config, server *HostServer, router *gin.Engine) {
-	var s = cnf.Service.Security.Auth.LoginUrl
-	router.POST(strings.Replace(s, "${PREFIX}", server.options.cnf.Service.Prefix, 1), gwLogin)
-	s = cnf.Service.Security.Auth.LogoutUrl
-	router.POST(strings.Replace(s, "${PREFIX}", server.options.cnf.Service.Prefix, 1), gwLogout)
+	router.GET(cnf.Service.Security.Auth.LoginUrl, gwLogin)
+	router.POST(cnf.Service.Security.Auth.LoginUrl, gwLogin)
+	router.GET(cnf.Service.Security.Auth.LogoutUrl, gwLogout)
+	router.POST(cnf.Service.Security.Auth.LogoutUrl, gwLogout)
 }
 
 func registerApps(server *HostServer) {

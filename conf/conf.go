@@ -109,10 +109,11 @@ type Config struct {
 					Secure   bool   `yaml:"secure" toml:"secure" json:"secure"`
 					Domain   string `yaml:"domain" toml:"domain" json:"domain"`
 				} `yaml:"cookie" toml:"cookie" json:"cookie"`
-				LoginUrl  string     `yaml:"loginUrl" toml:"loginUrl" json:"loginUrl"`
-				LogoutUrl string     `yaml:"logoutUrl" toml:"logoutUrl" json:"logoutUrl"`
-				Disable   bool       `yaml:"disable" toml:"disable" json:"disable"`
-				AllowUrls []AllowUrl `yaml:"allowUrls" toml:"allowUrls" json:"allowUrls"`
+				AuthServer string     `yaml:"authServer" toml:"authServer" json:"authServer"`
+				LoginUrl   string     `yaml:"loginUrl" toml:"loginUrl" json:"loginUrl"`
+				LogoutUrl  string     `yaml:"logoutUrl" toml:"logoutUrl" json:"logoutUrl"`
+				Disable    bool       `yaml:"disable" toml:"disable" json:"disable"`
+				AllowUrls  []AllowUrl `yaml:"allowUrls" toml:"allowUrls" json:"allowUrls"`
 			} `yaml:"auth" toml:"auth" json:"auth"`
 			QueryLimit struct {
 				MinPageSize int `yaml:"minPageSize" toml:"minPageSize" json:"minPageSize"`
