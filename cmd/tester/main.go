@@ -24,7 +24,7 @@ func main() {
 
 	server.AfterHooks(func(c *gin.Context) {
 		mytestid := c.MustGet("my-tester-id").(int)
-		startAt,_ := c.MustGet("my-tester-start-at").(int64)
+		startAt, _ := c.MustGet("my-tester-start-at").(int64)
 		nanoSeconds := time.Now().UnixNano() - startAt
 		logger.Info("mytestid: %s, cost Nano Second: %d", mytestid, nanoSeconds)
 	})

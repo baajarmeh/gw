@@ -1,13 +1,15 @@
 package dto
 
-import "github.com/oceanho/gw/backend"
+import (
+	"github.com/oceanho/gw/backend/gwDb"
+)
 
 type MyTester struct {
-	backend.Model
-	backend.HasCreationState
-	backend.HasActivationState
-	backend.HasModificationState
-	backend.HasSoftDeletionState
-	backend.HasEffectivePeriodState
-	backend.HasTenantState
+	gwDb.Model
+	gwDb.HasCreationState
+	gwDb.HasActivationState
+	gwDb.HasModificationState
+	gwDb.HasSoftDeletionState
+	gwDb.HasEffectivePeriodState
+	gwDb.HasTenantState
 }
