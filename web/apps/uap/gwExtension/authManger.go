@@ -1,4 +1,4 @@
-package gwext
+package gwExtension
 
 import (
 	"github.com/oceanho/gw"

@@ -1,7 +1,11 @@
 package main
 
-import "flag"
+import (
+	"github.com/oceanho/gw/contrib/gwcli"
+	"os"
+)
 
-func main()  {
-	flag.Parse()
+func main() {
+	app := gwcli.App()
+	app.Run(os.Args)
 }

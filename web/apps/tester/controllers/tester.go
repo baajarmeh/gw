@@ -8,18 +8,13 @@ import (
 type MyTesterController struct {
 }
 
+// gw.IController
+// Name returns the Resource name.
 func (MyTesterController) Name() string {
 	return "my-tester-default-controller"
 }
 
-func (c *MyTesterController) Create(ctx *gw.Context) gw.IController {
-	return c
-}
-
-func (c MyTesterController) OnDestroy(ctx *gw.Context) error {
-	return nil
-}
-
+// http Get
 func (MyTesterController) Get(c *gw.Context) {
 	db := c.Store.GetDbStore()
 	out := &[]dto.MyTester{}
@@ -27,6 +22,7 @@ func (MyTesterController) Get(c *gw.Context) {
 	c.JSON(err, out)
 }
 
+// http Get pager Query.
 func (MyTesterController) Query(c *gw.Context) {
 	expr := &gw.QueryExpr{}
 	if c.Bind(expr) != nil {
@@ -43,8 +39,13 @@ func (MyTesterController) Query(c *gw.Context) {
 	c.PagerJSON(total, expr.PagerExpr, out)
 }
 
+// http Post
 func (MyTesterController) Post(c *gw.Context) {
 	obj := &dto.MyTester{}
 	err := c.Store.GetDbStore().Create(obj)
 	c.JSON(err, obj)
 }
+
+//
+// More http Methods(Put,Delete and so so.)
+//

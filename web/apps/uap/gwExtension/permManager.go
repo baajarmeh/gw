@@ -1,1 +1,1 @@
-package gwext
+package gwExtension
