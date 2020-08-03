@@ -5,11 +5,11 @@ import (
 )
 
 type MyTester struct {
-	gwDb.Model
-	gwDb.HasCreationState
-	gwDb.HasActivationState
-	gwDb.HasModificationState
-	gwDb.HasSoftDeletionState
-	gwDb.HasEffectivePeriodState
-	gwDb.HasTenantState
+	gwdb.Model
+	gwdb.HasCreationState
+	gwdb.HasActivationState
+	gwdb.HasModificationState
+	gwdb.HasSoftDeletionState
+	gwdb.HasEffectivePeriodState
+	gwdb.HasTenantState
 }

@@ -1,4 +1,4 @@
-package gwDb
+package gwdb
 
 import "fmt"
 
