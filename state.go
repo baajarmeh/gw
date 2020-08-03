@@ -24,7 +24,7 @@ func hostState(serverName string) gin.HandlerFunc {
 		sid, ok := getSid(s, c)
 		if ok {
 			c.Set(sidStateKey, sid)
-			user, err := s.sessionStore.Query(s.store, sid)
+			user, err := s.sessionStateManager.Query(s.store, sid)
 			if err == nil && user != nil {
 				// Set User State.
 				c.Set(gwUserKey, user)

@@ -60,7 +60,7 @@ type ServerOption struct {
 	BackendStoreHandler    func(cnf conf.Config) Store
 	AppConfigHandler       func(cnf conf.BootStrapConfig) *conf.Config
 	Crypto                 func(conf conf.Config) ICrypto
-	SessionStateStore      func(conf conf.Config) ISessionStateStore
+	SessionStateStore      func(conf conf.Config) ISessionStateManager
 	AuthManager            IAuthManager
 	PermissionManager      IPermissionManager
 	StoreDbSetupHandler    StoreDbSetupHandler
@@ -73,17 +73,17 @@ type ServerOption struct {
 
 // HostServer represents a  Host Server.
 type HostServer struct {
-	options           *ServerOption
-	router            *Router
-	apps              map[string]App
-	conf              *conf.Config
-	store             Store
-	hash              ICryptoHash
-	protect           ICryptoProtect
-	authManager       IAuthManager
-	sessionStore      ISessionStateStore
-	permissionManager IPermissionManager
-	validators        map[string]*regexp.Regexp
+	options             *ServerOption
+	router              *Router
+	apps                map[string]App
+	conf                *conf.Config
+	store               Store
+	hash                ICryptoHash
+	protect             ICryptoProtect
+	authManager         IAuthManager
+	sessionStateManager ISessionStateManager
+	permissionManager   IPermissionManager
+	validators          map[string]*regexp.Regexp
 }
 
 var (
@@ -143,8 +143,8 @@ func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
 		AuthManager:            defaultAm,
 		PermissionManager:      defaultPm,
-		SessionStateStore: func(conf conf.Config) ISessionStateStore {
-			return DefaultSessionStateStore(conf)
+		SessionStateStore: func(conf conf.Config) ISessionStateManager {
+			return DefaultSessionStateManager(conf)
 		},
 		Crypto: func(conf conf.Config) ICrypto {
 			c := conf.Service.Security.Crypto
@@ -254,7 +254,7 @@ func initial(server *HostServer) {
 	server.protect = crypto.Protect()
 
 	server.store = server.options.BackendStoreHandler(*cnf)
-	server.sessionStore = server.options.SessionStateStore(*cnf)
+	server.sessionStateManager = server.options.SessionStateStore(*cnf)
 
 	server.authManager = server.options.AuthManager
 	server.permissionManager = server.options.PermissionManager

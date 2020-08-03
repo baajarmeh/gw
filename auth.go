@@ -28,7 +28,7 @@ type IAuthManager interface {
 	Logout(store Store, user *User) bool
 }
 
-type ISessionStateStore interface {
+type ISessionStateManager interface {
 	Save(store Store, sid string, user *User) error
 	Query(store Store, sid string) (*User, error)
 	Remove(store Store, sid string) error
@@ -43,7 +43,7 @@ type DefaultAuthManagerImpl struct {
 	users map[string]*User
 }
 
-type DefaultSessionStateStoreImpl struct {
+type DefaultSessionStateManagerImpl struct {
 	storeName          string
 	storePrefix        string
 	expirationDuration time.Duration
@@ -51,7 +51,7 @@ type DefaultSessionStateStoreImpl struct {
 	redisTimeout       time.Duration
 }
 
-func DefaultSessionStateStore(cnf conf.Config) *DefaultSessionStateStoreImpl {
+func DefaultSessionStateManager(cnf conf.Config) *DefaultSessionStateManagerImpl {
 	defaultSs.cnf = cnf
 	timeout := cnf.Service.Security.Timeout.Redis
 	defaultSs.storeName = cnf.Service.Security.Auth.Session.DefaultStore.Name
@@ -61,16 +61,16 @@ func DefaultSessionStateStore(cnf conf.Config) *DefaultSessionStateStoreImpl {
 	return defaultSs
 }
 
-func (d *DefaultSessionStateStoreImpl) context() (context.Context, context.CancelFunc) {
+func (d *DefaultSessionStateManagerImpl) context() (context.Context, context.CancelFunc) {
 	ctx := context.Background()
 	return context.WithTimeout(ctx, d.redisTimeout)
 }
 
-func (d *DefaultSessionStateStoreImpl) storeKey(sid string) string {
+func (d *DefaultSessionStateManagerImpl) storeKey(sid string) string {
 	return fmt.Sprintf("%s.%s", d.storePrefix, sid)
 }
 
-func (d *DefaultSessionStateStoreImpl) Remove(store Store, sid string) error {
+func (d *DefaultSessionStateManagerImpl) Remove(store Store, sid string) error {
 	//FIXME(ocean): deadline executed error ?
 	//ctx, cancel := d.context()
 	//defer cancel()
@@ -79,7 +79,7 @@ func (d *DefaultSessionStateStoreImpl) Remove(store Store, sid string) error {
 	return redis.Del(ctx, d.storeKey(sid)).Err()
 }
 
-func (d *DefaultSessionStateStoreImpl) Save(store Store, sid string, user *User) error {
+func (d *DefaultSessionStateManagerImpl) Save(store Store, sid string, user *User) error {
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
@@ -87,7 +87,7 @@ func (d *DefaultSessionStateStoreImpl) Save(store Store, sid string, user *User)
 	return redis.Set(ctx, d.storeKey(sid), user, d.expirationDuration).Err()
 }
 
-func (d *DefaultSessionStateStoreImpl) Query(store Store, sid string) (*User, error) {
+func (d *DefaultSessionStateManagerImpl) Query(store Store, sid string) (*User, error) {
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
@@ -119,7 +119,7 @@ func (d *DefaultAuthManagerImpl) Logout(store Store, user *User) bool {
 
 var (
 	defaultAm *DefaultAuthManagerImpl
-	defaultSs *DefaultSessionStateStoreImpl
+	defaultSs *DefaultSessionStateManagerImpl
 	defaultPm *DefaultPermissionManagerImpl
 )
 
@@ -149,7 +149,7 @@ func init() {
 			},
 		},
 	}
-	defaultSs = &DefaultSessionStateStoreImpl{}
+	defaultSs = &DefaultSessionStateManagerImpl{}
 	defaultPm = &DefaultPermissionManagerImpl{
 		perms: make(map[string]map[string]Permission),
 	}
@@ -240,7 +240,7 @@ func gwLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	if err := s.sessionStore.Save(s.store, user.Passport, user); err != nil {
+	if err := s.sessionStateManager.Save(s.store, user.Passport, user); err != nil {
 		c.JSON(http.StatusInternalServerError, respBody(-1, reqId, "Save session fail.", err.Error()))
 		c.Abort()
 		return
@@ -277,7 +277,7 @@ func gwLogout(c *gin.Context) {
 		respBody(500, reqId, "session store logout fail", nil)
 		return
 	}
-	_ = s.sessionStore.Remove(s.store, sid)
+	_ = s.sessionStateManager.Remove(s.store, sid)
 	domain := cks.Domain
 	if domain == ":host" || domain == "" {
 		domain = c.Request.Host
