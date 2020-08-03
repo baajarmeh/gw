@@ -245,6 +245,16 @@ func NewConfigByBootStrapConfig(bcs *BootStrapConfig) *Config {
 	if err != nil {
 		panic(fmt.Sprintf("config provider: %s call Provide(...) fail. err: %v", bcs.AppCnf.Provider, err))
 	}
+	t, err := json.Marshal(cnf)
+	if err != nil {
+		panic(fmt.Sprintf("json.Marshal(cnf) fail. err: %v", err))
+	}
+	str := string(t)
+	str = strings.Replace(str, "${PREFIX}", cnf.Service.Prefix, -1)
+	err = json.Unmarshal([]byte(str), cnf)
+	if err != nil {
+		panic(fmt.Sprintf("json.Marshal(cnf) fail. err: %v", err))
+	}
 	return cnf
 }
 
