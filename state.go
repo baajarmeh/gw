@@ -1,35 +1,133 @@
 package gw
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
 	"github.com/oceanho/gw/utils/secure"
+	"io"
+	"io/ioutil"
+	"log"
+	"net"
+	"net/http"
+	"net/http/httputil"
+	"os"
+	"runtime"
 	"strings"
+	"time"
 )
 
-const stateKey = "gw-app-state"
-const sidStateKey = "gw-sid-state"
+const (
+	gwAppNameKey  = "gw-app"
+	gwSidStateKey = "gw-sid-state"
+)
 
-func hostState(serverName string) gin.HandlerFunc {
-	//
-	// host server state.
-	// 1. register the HostServer state into gin.Context
-	// 2. process request, try got User from the http requests.
-	//
+func globalState(serverName string) gin.HandlerFunc {
+
+	// code copies from gin framework.
+	var out io.Writer = os.Stderr
+	var ginLogger *log.Logger
+	if out != nil {
+		ginLogger = log.New(out, "\n\n\x1b[31m", log.LstdFlags)
+	}
 	return func(c *gin.Context) {
-		c.Set(stateKey, serverName)
+		//
+		// host server state.
+		// 1. register the HostServer state into gin.Context
+		// 2. process request, try got User from the http requests.
+		//
+		c.Set(gwAppNameKey, serverName)
 		s := hostServer(c)
+		requestId := getRequestID(c)
+
+		defer func() {
+			var stacks []byte
+			var httpRequest []byte
+			var headers []string
+			if err := recover(); err != nil {
+				// Check for a broken connection, as it is not really a
+				// condition that warrants a panic stack trace.
+				var brokenPipe bool
+				if ne, ok := err.(*net.OpError); ok {
+					if se, ok := ne.Err.(*os.SyscallError); ok {
+						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
+							brokenPipe = true
+						}
+					}
+				}
+				if ginLogger != nil {
+					stacks = stack(3)
+					httpRequest, _ = httputil.DumpRequest(c.Request, false)
+					headers = strings.Split(string(httpRequest), "\r\n")
+					for idx, header := range headers {
+						current := strings.Split(header, ":")
+						if current[0] == "Authorization" {
+							headers[idx] = current[0] + ": *"
+						}
+					}
+					if brokenPipe {
+						ginLogger.Printf("requestId: %s, %s\n%s%s", requestId, err, string(httpRequest), reset)
+					} else if gin.IsDebugging() {
+						ginLogger.Printf("[Recovery] requestId: %s, %s panic recovered:\n%s\n%s\n %s %s", requestId,
+							timeFormat(time.Now()), strings.Join(headers, "\r\n"), err, stacks, reset)
+					} else {
+						ginLogger.Printf("[Recovery] requestId: %s, %s panic recovered:\n%s\n%s%s", requestId,
+							timeFormat(time.Now()), err, stacks, reset)
+					}
+				}
+
+				// If the connection is dead, we can't write a status to it.
+				if brokenPipe {
+					c.Error(err.(error)) // nolint: errcheck
+					c.Abort()
+				} else {
+					body := respBody(500, requestId, errDefault500Msg, nil)
+					c.JSON(http.StatusInternalServerError, body)
+				}
+			}
+			// handle panic Errors
+			status := c.Writer.Status()
+			handlers, ok := s.httpErrHandlers[status]
+			defer func() {
+				if err := recover(); err != nil {
+					stacks = stack(3)
+					logger.Error("handler or hooks errors fail, err: %s", string(stacks))
+				}
+			}()
+			if ok {
+				for _, handler := range handlers {
+					handler(requestId, string(httpRequest), headers, string(stacks), c.Errors)
+				}
+			}
+			// After handlers.
+			for _, handler := range s.afterHandler {
+				handler(c)
+			}
+		}()
+
+		// before handlers
+		for _, handler := range s.beforeHandler {
+			handler(c)
+		}
+
+		//// has processed, return.
+		//if c.Writer.Status() != 0 {
+		//	return
+		//}
+
+		// gw framework handler.
 		sid, ok := getSid(s, c)
 		if ok {
-			c.Set(sidStateKey, sid)
+			c.Set(gwSidStateKey, sid)
 			user, err := s.sessionStateManager.Query(s.store, sid)
 			if err == nil && user != nil {
-				// Set User State.
+				// set User State.
 				c.Set(gwUserKey, user)
 			}
 		}
+
 		c.Next()
 	}
 }
@@ -120,7 +218,7 @@ func getClient(c *gin.Context) string {
 }
 
 func getSid(s *HostServer, c *gin.Context) (string, bool) {
-	sid, ok := c.Get(sidStateKey)
+	sid, ok := c.Get(gwSidStateKey)
 	if ok {
 		return sid.(string), true
 	}
@@ -148,10 +246,90 @@ func getSid(s *HostServer, c *gin.Context) (string, bool) {
 }
 
 func hostServer(c *gin.Context) *HostServer {
-	serverName := c.MustGet(stateKey).(string)
+	serverName := c.MustGet(gwAppNameKey).(string)
 	return servers[serverName]
 }
 
 func config(c *gin.Context) conf.Config {
 	return *hostServer(c).conf
+}
+
+//
+// code copies from gin framework.
+
+var (
+	dunno     = []byte("???")
+	centerDot = []byte("·")
+	dot       = []byte(".")
+	slash     = []byte("/")
+)
+
+const (
+	reset = "\033[0m"
+)
+
+// stack returns a nicely formatted stack frame, skipping skip frames.
+func stack(skip int) []byte {
+	buf := new(bytes.Buffer) // the returned data
+	// As we loop, we open files and read them. These variables record the currently
+	// loaded file.
+	var lines [][]byte
+	var lastFile string
+	for i := skip; ; i++ { // Skip the expected number of frames
+		pc, file, line, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+		// Print this much at least.  If we can't find the source, it won't show.
+		fmt.Fprintf(buf, "%s:%d (0x%x)\n", file, line, pc)
+		if file != lastFile {
+			data, err := ioutil.ReadFile(file)
+			if err != nil {
+				continue
+			}
+			lines = bytes.Split(data, []byte{'\n'})
+			lastFile = file
+		}
+		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), source(lines, line))
+	}
+	return buf.Bytes()
+}
+
+// source returns a space-trimmed slice of the n'th line.
+func source(lines [][]byte, n int) []byte {
+	n-- // in stack trace, lines are 1-indexed but our array is 0-indexed
+	if n < 0 || n >= len(lines) {
+		return dunno
+	}
+	return bytes.TrimSpace(lines[n])
+}
+
+// function returns, if possible, the name of the function containing the PC.
+func function(pc uintptr) []byte {
+	fn := runtime.FuncForPC(pc)
+	if fn == nil {
+		return dunno
+	}
+	name := []byte(fn.Name())
+	// The name includes the path name to the package, which is unnecessary
+	// since the file name is already included.  Plus, it has center dots.
+	// That is, we see
+	//	runtime/debug.*T·ptrmethod
+	// and want
+	//	*T.ptrmethod
+	// Also the package path might contains dot (e.g. code.google.com/...),
+	// so first eliminate the path prefix
+	if lastSlash := bytes.LastIndex(name, slash); lastSlash >= 0 {
+		name = name[lastSlash+1:]
+	}
+	if period := bytes.Index(name, dot); period >= 0 {
+		name = name[period+1:]
+	}
+	name = bytes.Replace(name, centerDot, dot, -1)
+	return name
+}
+
+func timeFormat(t time.Time) string {
+	var timeString = t.Format("2006/01/02 - 15:04:05")
+	return timeString
 }

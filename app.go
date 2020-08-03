@@ -14,6 +14,7 @@ import (
 	"plugin"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -45,6 +46,9 @@ type IController interface {
 	Name() string
 }
 
+// ErrorHandler represents a http Error handler.
+type ErrorHandler func(requestId string, httpRequest string, headers []string, stack string, err []*gin.Error)
+
 // ServerOption represents a Server Options.
 type ServerOption struct {
 	Addr                   string
@@ -73,6 +77,8 @@ type ServerOption struct {
 
 // HostServer represents a  Host Server.
 type HostServer struct {
+	name                string
+	locker              sync.Mutex
 	options             *ServerOption
 	router              *Router
 	apps                map[string]App
@@ -84,6 +90,9 @@ type HostServer struct {
 	sessionStateManager ISessionStateManager
 	permissionManager   IPermissionManager
 	validators          map[string]*regexp.Regexp
+	httpErrHandlers     map[int][]ErrorHandler
+	beforeHandler       []gin.HandlerFunc
+	afterHandler        []gin.HandlerFunc
 }
 
 var (
@@ -183,27 +192,68 @@ func New(sopt *ServerOption) *HostServer {
 		return server
 	}
 	server = &HostServer{
-		options: sopt,
-		apps:    make(map[string]App),
+		options:         sopt,
+		name:            sopt.Name,
+		apps:            make(map[string]App),
+		httpErrHandlers: make(map[int][]ErrorHandler),
+		beforeHandler:   make([]gin.HandlerFunc, 0),
+		afterHandler:    make([]gin.HandlerFunc, 0),
 	}
 	servers[sopt.Name] = server
 	return server
 }
 
+// BeforeHooks register a global http handler API into the server, it's called AT handling http request before.
+func (s *HostServer) BeforeHooks(handlers ...gin.HandlerFunc) {
+	if len(handlers) == 0 {
+		return
+	}
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	s.beforeHandler = append(s.beforeHandler, handlers...)
+}
+
+// BeforeHooks register a global http handler API into the server, it's called AT handled http request After.
+func (s *HostServer) AfterHooks(handlers ...gin.HandlerFunc) {
+	if len(handlers) == 0 {
+		return
+	}
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	s.afterHandler = append(s.afterHandler, handlers...)
+}
+
+// HandleError register a global http error handler API into the server.
+func (s *HostServer) HandleError(httpStatus int, handlers ...ErrorHandler) {
+	if len(handlers) == 0 {
+		return
+	}
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	h := s.httpErrHandlers[httpStatus]
+	if len(h) == 0 {
+		h = make([]ErrorHandler, len(handlers))
+		copy(h, handlers)
+	} else {
+		h = append(h, handlers...)
+	}
+	s.httpErrHandlers[httpStatus] = h
+}
+
 // Register register a app instances into the server.
-func (server *HostServer) Register(apps ...App) {
+func (s *HostServer) Register(apps ...App) {
 	for _, app := range apps {
 		appName := app.Name()
-		if _, ok := server.apps[appName]; !ok {
-			server.apps[appName] = app
+		if _, ok := s.apps[appName]; !ok {
+			s.apps[appName] = app
 			// ServerOptions used AT first.
-			app.Use(server.options)
+			app.Use(s.options)
 		}
 	}
 }
 
 // RegisterByPluginDir register app instances into the server with gw plugin mode.
-func (server *HostServer) RegisterByPluginDir(dirs ...string) {
+func (s *HostServer) RegisterByPluginDir(dirs ...string) {
 	for _, d := range dirs {
 		rd, err := ioutil.ReadDir(d)
 		if err != nil {
@@ -213,10 +263,10 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 		for _, fi := range rd {
 			pn := path.Join(d, fi.Name())
 			if fi.IsDir() {
-				server.RegisterByPluginDir(pn)
+				s.RegisterByPluginDir(pn)
 			} else {
-				if !strings.HasSuffix(fi.Name(), server.options.PluginSymbolSuffix) {
-					logger.Info("suffix not is %s, skipping file: %s", server.options.PluginSymbolSuffix, pn)
+				if !strings.HasSuffix(fi.Name(), s.options.PluginSymbolSuffix) {
+					logger.Info("suffix not is %s, skipping file: %s", s.options.PluginSymbolSuffix, pn)
 					continue
 				}
 				p, err := plugin.Open(pn)
@@ -224,7 +274,7 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 					logger.Error("load plugin file: %s, err: %v", pn, err)
 					continue
 				}
-				sym, err := p.Lookup(server.options.PluginSymbolName)
+				sym, err := p.Lookup(s.options.PluginSymbolName)
 				if err != nil {
 					logger.Error("file %s, err: %v", pn, err)
 					continue
@@ -232,66 +282,66 @@ func (server *HostServer) RegisterByPluginDir(dirs ...string) {
 				// TODO(Ocean): If symbol are pointer, how to conversions ?
 				app, ok := sym.(App)
 				if !ok {
-					logger.Error("symbol %s in file %s did not is app.App interface.", server.options.PluginSymbolName, pn)
+					logger.Error("symbol %s in file %s did not is app.App interface.", s.options.PluginSymbolName, pn)
 					continue
 				}
-				server.Register(app)
+				s.Register(app)
 			}
 		}
 	}
 }
 
-func initial(server *HostServer) {
+func initial(s *HostServer) {
 	//
 	// Before Server start, Must initial all of Server Options
 	// There are options may be changed by Custom app instance's .Use(...) APIs.
-	cnf := server.options.AppConfigHandler(*server.options.bcs)
-	crypto := server.options.Crypto(*cnf)
+	cnf := s.options.AppConfigHandler(*s.options.bcs)
+	crypto := s.options.Crypto(*cnf)
 
-	server.options.cnf = cnf
-	server.conf = cnf
-	server.hash = crypto.Hash()
-	server.protect = crypto.Protect()
+	s.options.cnf = cnf
+	s.conf = cnf
+	s.hash = crypto.Hash()
+	s.protect = crypto.Protect()
 
-	server.store = server.options.BackendStoreHandler(*cnf)
-	server.sessionStateManager = server.options.SessionStateStore(*cnf)
+	s.store = s.options.BackendStoreHandler(*cnf)
+	s.sessionStateManager = s.options.SessionStateStore(*cnf)
 
-	server.authManager = server.options.AuthManager
-	server.permissionManager = server.options.PermissionManager
+	s.authManager = s.options.AuthManager
+	s.permissionManager = s.options.PermissionManager
 
-	registerValidators(server)
+	registerValidators(s)
 
 	// Gin Engine configure.
-	gin.SetMode(server.options.Mode)
-	engine := gin.New()
-	engine.Use(gin.Recovery())
-	engine.Use(hostState(server.options.Name))
+	gin.SetMode(s.options.Mode)
+	g := gin.New()
+	// g.Use(gin.Recovery())
+	g.Use(globalState(s.options.Name))
 
 	// Auth(login/logout) API routers.
-	registerAuthRouter(cnf, server, engine)
+	registerAuthRouter(cnf, s, g)
 
 	var vars = make(map[string]string)
-	vars["${PREFIX}"] = server.options.cnf.Service.Prefix
-	engine.Use(gwAuthChecker(vars, server.options.cnf.Service.Security.Auth.AllowUrls))
+	vars["${PREFIX}"] = s.options.cnf.Service.Prefix
+	g.Use(gwAuthChecker(vars, s.options.cnf.Service.Security.Auth.AllowUrls))
 
-	if server.options.Mode == "debug" {
-		engine.Use(gin.Logger())
+	if s.options.Mode == "debug" {
+		g.Use(gin.Logger())
 	}
 	httpRouter := &Router{
-		server: engine,
+		server: g,
 	}
 
 	// Must ensure store handler is not nil.
-	if server.options.StoreDbSetupHandler == nil {
-		server.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
+	if s.options.StoreDbSetupHandler == nil {
+		s.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
 	}
-	if server.options.StoreCacheSetupHandler == nil {
-		server.options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
+	if s.options.StoreCacheSetupHandler == nil {
+		s.options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
 	}
 
 	// initial routes.
-	httpRouter.router = httpRouter.server.Group(server.options.Prefix)
-	server.router = httpRouter
+	httpRouter.router = httpRouter.server.Group(s.options.Prefix)
+	s.router = httpRouter
 }
 
 func registerValidators(s *HostServer) {
@@ -338,26 +388,26 @@ func registerApps(server *HostServer) {
 }
 
 // Serve represents start the Server.
-func (server *HostServer) Serve() {
+func (s *HostServer) Serve() {
 	//
 	// All of app server initial AT here.
-	initial(server)
-	registerApps(server)
+	initial(s)
+	registerApps(s)
 
 	// signal watch.
 	sigs := make(chan os.Signal, 1)
-	handler := server.options.StartBeforeHandler
+	handler := s.options.StartBeforeHandler
 	if handler != nil {
-		err := server.options.StartBeforeHandler(server)
+		err := s.options.StartBeforeHandler(s)
 		if err != nil {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-	logger.Info("Listening and serving HTTP on: %s", server.options.Addr)
+	logger.Info("Listening and serving HTTP on: %s", s.options.Addr)
 	logger.ResetLogFormatter()
 	var err error
 	go func() {
-		err = server.router.server.Run(server.options.Addr)
+		err = s.router.server.Run(s.options.Addr)
 	}()
 	// TODO(Ocean): has no better solution that can be waiting for gin.Serve() completed with non-block state?
 	time.Sleep(time.Second * 1)
@@ -366,12 +416,12 @@ func (server *HostServer) Serve() {
 	}
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 	<-sigs
-	handler = server.options.ShutDownBeforeHandler
+	handler = s.options.ShutDownBeforeHandler
 	if handler != nil {
-		err := server.options.ShutDownBeforeHandler(server)
+		err := s.options.ShutDownBeforeHandler(s)
 		if err != nil {
 			fmt.Printf("call app.ShutDownBeforeHandler, %v", err)
 		}
 	}
-	logger.Info("Shutdown server: %s, Addr: %s", server.options.Name, server.options.Addr)
+	logger.Info("Shutdown server: %s, Addr: %s", s.options.Name, s.options.Addr)
 }

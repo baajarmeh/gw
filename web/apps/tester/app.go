@@ -58,6 +58,9 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("test/500-err-payload", api.GetTester500WithCustomPayloadErr)
 
 	gw.RegisterControllers(router, &controllers.MyTesterController{})
+
+	router.GET("err/401", api.Err401)
+	router.GET("err/500", api.Err500)
 }
 
 func (a App) Migrate(store gw.Store) {
