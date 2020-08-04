@@ -421,24 +421,24 @@ type User struct {
 	secret   string
 }
 
-func (usr *User) UnmarshalBinary(data []byte) error {
-	return json.Unmarshal(data, usr)
+func (user *User) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, user)
 }
 
-func (usr *User) MarshalBinary() (data []byte, err error) {
-	return json.Marshal(usr)
+func (user *User) MarshalBinary() (data []byte, err error) {
+	return json.Marshal(user)
 }
 
-func (usr User) IsAuth() bool {
-	return &usr != nil && usr.Id > 0
+func (user User) IsAuth() bool {
+	return &user != nil && user.Id > 0
 }
 
-func (usr User) IsAdmin() bool {
-	return usr.IsAuth() && usr.RoleId == 1
+func (user User) IsAdmin() bool {
+	return user.IsAuth() && user.RoleId == 1
 }
 
-func (usr User) IsTenantAdmin() bool {
-	return usr.IsAuth() && usr.RoleId == 2
+func (user User) IsTenantAdmin() bool {
+	return user.IsAuth() && user.RoleId == 2
 }
 
 func getUser(c *gin.Context) *User {
