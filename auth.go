@@ -205,21 +205,21 @@ func gwLogin(c *gin.Context) {
 	}
 
 	// check params
-	if p, ok := s.validators[pKey.Passport]; ok {
+	if p, ok := s.authParamValidators[pKey.Passport]; ok {
 		if !p.MatchString(passport) {
 			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
 			c.Abort()
 			return
 		}
 	}
-	if p, ok := s.validators[pKey.Secret]; ok {
+	if p, ok := s.authParamValidators[pKey.Secret]; ok {
 		if !p.MatchString(secret) {
 			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
 			c.Abort()
 			return
 		}
 	}
-	if p, ok := s.validators[pKey.VerifyCode]; ok {
+	if p, ok := s.authParamValidators[pKey.VerifyCode]; ok {
 		if !p.MatchString(verifyCode) {
 			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
 			c.Abort()

@@ -17,17 +17,17 @@ func main() {
 	opts.Name = "my-tester-api"
 	server := gw.New(opts)
 
-	server.BeforeHooks(func(c *gin.Context) {
+	server.AddBeforeHooks(gw.NewHook("my-tester-before", func(c *gin.Context) {
 		c.Set("my-tester-id", 1000)
 		c.Set("my-tester-start-at", time.Now().UnixNano())
-	})
+	}))
 
-	server.AfterHooks(func(c *gin.Context) {
+	server.AddAfterHooks(gw.NewHook("my-tester-after", func(c *gin.Context) {
 		mytestid := c.MustGet("my-tester-id").(int)
 		startAt, _ := c.MustGet("my-tester-start-at").(int64)
 		nanoSeconds := time.Now().UnixNano() - startAt
-		logger.Info("mytestid: %s, cost Nano Second: %d", mytestid, nanoSeconds)
-	})
+		logger.Info("mytestid: %d, cost Nano Second: %d", mytestid, nanoSeconds)
+	}))
 
 	//server.AfterHooks(func(c *gin.Context) {
 	//	panic("server.AfterHooks panic.")

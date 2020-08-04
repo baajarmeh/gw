@@ -101,14 +101,14 @@ func globalState(serverName string) gin.HandlerFunc {
 				}
 			}
 			// After handlers.
-			for _, handler := range s.afterHandler {
-				handler(c)
+			for _, hook := range s.afterHooks {
+				hook.Handler(c)
 			}
 		}()
 
 		// before handlers
-		for _, handler := range s.beforeHandler {
-			handler(c)
+		for _, hook := range s.beforeHooks {
+			hook.Handler(c)
 		}
 
 		//// has processed, return.

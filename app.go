@@ -3,6 +3,8 @@ package gw
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
@@ -89,10 +91,11 @@ type HostServer struct {
 	authManager         IAuthManager
 	sessionStateManager ISessionStateManager
 	permissionManager   IPermissionManager
-	validators          map[string]*regexp.Regexp
 	httpErrHandlers     map[int][]ErrorHandler
-	beforeHandler       []gin.HandlerFunc
-	afterHandler        []gin.HandlerFunc
+	beforeHooks         map[string]*Hook
+	afterHooks          map[string]*Hook
+	modelValidators     map[string]*Validator
+	authParamValidators map[string]*regexp.Regexp
 }
 
 var (
@@ -192,35 +195,95 @@ func New(sopt *ServerOption) *HostServer {
 		return server
 	}
 	server = &HostServer{
-		options:         sopt,
-		name:            sopt.Name,
-		apps:            make(map[string]App),
-		httpErrHandlers: make(map[int][]ErrorHandler),
-		beforeHandler:   make([]gin.HandlerFunc, 0),
-		afterHandler:    make([]gin.HandlerFunc, 0),
+		options:             sopt,
+		name:                sopt.Name,
+		apps:                make(map[string]App),
+		httpErrHandlers:     make(map[int][]ErrorHandler),
+		beforeHooks:         make(map[string]*Hook),
+		afterHooks:          make(map[string]*Hook),
+		authParamValidators: make(map[string]*regexp.Regexp),
+		modelValidators:     make(map[string]*Validator),
 	}
 	servers[sopt.Name] = server
 	return server
 }
 
-// BeforeHooks register a global http handler API into the server, it's called AT handling http request before.
-func (s *HostServer) BeforeHooks(handlers ...gin.HandlerFunc) {
+// AddBeforeHooks register a global http handler API into the server, it's called AT handling http request before.
+func (s *HostServer) AddBeforeHooks(handlers ...*Hook) {
 	if len(handlers) == 0 {
 		return
 	}
 	s.locker.Lock()
 	defer s.locker.Unlock()
-	s.beforeHandler = append(s.beforeHandler, handlers...)
+	for _, val := range handlers {
+		s.beforeHooks[val.Name] = val
+	}
 }
 
-// BeforeHooks register a global http handler API into the server, it's called AT handled http request After.
-func (s *HostServer) AfterHooks(handlers ...gin.HandlerFunc) {
+// DeleteBeforeHooks delete a global hook from has registered before hooks.
+func (s *HostServer) DeleteBeforeHook(hookName string) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	delete(s.beforeHooks, hookName)
+}
+
+// ReplaceBeforeHook replace a global hook from has registered before hooks.
+func (s *HostServer) ReplaceBeforeHook(hookName string, hookHandler *Hook) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	s.beforeHooks[hookName] = hookHandler
+}
+
+// AddAfterHooks register a global http handler API into the server, it's called AT handled http request After.
+func (s *HostServer) AddAfterHooks(handlers ...*Hook) {
 	if len(handlers) == 0 {
 		return
 	}
 	s.locker.Lock()
 	defer s.locker.Unlock()
-	s.afterHandler = append(s.afterHandler, handlers...)
+	for _, val := range handlers {
+		s.afterHooks[val.Name] = val
+	}
+}
+
+// DeleteAfterHooks delete a global hook from has registered after hooks.
+func (s *HostServer) DeleteAfterHook(hookName string) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	delete(s.afterHooks, hookName)
+}
+
+// ReplaceAfterHook replace a global hook from has registered after hooks.
+func (s *HostServer) ReplaceAfterHook(hookName string, hookHandler *Hook) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	s.afterHooks[hookName] = hookHandler
+}
+
+// AddValidators register a global model binding validator into server object.
+func (s *HostServer) AddValidators(validators ...*Validator) {
+	if len(validators) == 0 {
+		return
+	}
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	for _, val := range validators {
+		s.modelValidators[val.Name] = val
+	}
+}
+
+// DeleteValidators delete a global model binding validator from has registered validators.
+func (s *HostServer) DeleteValidators(validatorName string) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	delete(s.modelValidators, validatorName)
+}
+
+// ReplaceValidators replace a global model binding validator from has registered validators.
+func (s *HostServer) ReplaceValidators(validatorName string, validator *Validator) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	s.modelValidators[validatorName] = validator
 }
 
 // HandleError register a global http error handler API into the server.
@@ -309,7 +372,8 @@ func initial(s *HostServer) {
 	s.authManager = s.options.AuthManager
 	s.permissionManager = s.options.PermissionManager
 
-	registerValidators(s)
+	registerAuthParamValidators(s)
+	registerModelBindValidators(s)
 
 	// Gin Engine configure.
 	gin.SetMode(s.options.Mode)
@@ -344,11 +408,8 @@ func initial(s *HostServer) {
 	s.router = httpRouter
 }
 
-func registerValidators(s *HostServer) {
-
+func registerAuthParamValidators(s *HostServer) {
 	p := s.conf.Service.Security.Auth
-	s.validators = make(map[string]*regexp.Regexp)
-
 	passportRegex, err := regexp.Compile(p.ParamPattern.Passport)
 	if err != nil {
 		panic(fmt.Sprintf("invalid regex pattern: %s for passport", p.ParamPattern.Passport))
@@ -362,9 +423,23 @@ func registerValidators(s *HostServer) {
 	if err != nil {
 		panic(fmt.Sprintf("invalid regex pattern: %s for verifyCode", p.ParamPattern.VerifyCode))
 	}
-	s.validators[p.ParamKey.Passport] = passportRegex
-	s.validators[p.ParamKey.Secret] = secretRegex
-	s.validators[p.ParamKey.VerifyCode] = verifyCodeRegex
+	s.authParamValidators[p.ParamKey.Passport] = passportRegex
+	s.authParamValidators[p.ParamKey.Secret] = secretRegex
+	s.authParamValidators[p.ParamKey.VerifyCode] = verifyCodeRegex
+}
+
+func registerModelBindValidators(s *HostServer) {
+	//
+	// ref
+	// https://github.com/gin-gonic/gin#model-binding-and-validation
+	//
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		for _, val := range s.modelValidators {
+			v.RegisterValidation(val.Name, val.Handler)
+		}
+	} else {
+		panic("validator version did not match.")
+	}
 }
 
 func registerAuthRouter(cnf *conf.Config, server *HostServer, router *gin.Engine) {
