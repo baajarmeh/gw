@@ -18,7 +18,15 @@ func NewHook(name string, handler gin.HandlerFunc) *Hook {
 	}
 }
 
+type DecoratorExecPosition int8
+
+const (
+	ExecPointActionBefore DecoratorExecPosition = 0
+	ExecPointActionAfter
+)
+
 type IDecorator interface {
+	Point() DecoratorExecPosition
 	Call(ctx *Context) (friendlyMsg string, err error)
 }
 
@@ -28,6 +36,10 @@ type PermissionDecoratorImpl struct {
 }
 
 var ErrPermissionDenied = fmt.Errorf("permission denied")
+
+func (p PermissionDecoratorImpl) Point() DecoratorExecPosition {
+	return ExecPointActionBefore
+}
 
 func (p PermissionDecoratorImpl) Call(ctx *Context) (friendlyMsg string, err error) {
 	s := hostServer(ctx.Context)

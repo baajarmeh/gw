@@ -1,4 +1,4 @@
-package controllers
+package RestAPIs
 
 type Tenant struct {
 }

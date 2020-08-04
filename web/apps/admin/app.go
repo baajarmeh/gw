@@ -14,7 +14,7 @@ func (a App) Router() string {
 }
 
 func (a App) Register(router *gw.RouterGroup) {
-	//gw.RegisterControllers(router,)
+	//gw.RegisterRestAPIs(router,)
 }
 
 func (a App) Migrate(store gw.Store) {

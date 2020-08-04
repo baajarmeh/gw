@@ -5,17 +5,17 @@ import (
 	"github.com/oceanho/gw/web/apps/tester/dto"
 )
 
-type MyTesterController struct {
+type MyTesterRestAPI struct {
 }
 
-// gw.IController
+// gw.IRestAPI
 // Name returns the Resource name.
-func (MyTesterController) Name() string {
-	return "my-tester-default-controller"
+func (MyTesterRestAPI) Name() string {
+	return "my-tester-default-RestAPI"
 }
 
 // http Get
-func (MyTesterController) Get(c *gw.Context) {
+func (MyTesterRestAPI) Get(c *gw.Context) {
 	db := c.Store.GetDbStore()
 	out := &[]dto.MyTester{}
 	err := db.Model(&dto.MyTester{}).Limit(200).Offset(0).Scan(out).Error
@@ -23,7 +23,7 @@ func (MyTesterController) Get(c *gw.Context) {
 }
 
 // http Get pager Query.
-func (MyTesterController) Query(c *gw.Context) {
+func (MyTesterRestAPI) Query(c *gw.Context) {
 	expr := &gw.QueryExpr{}
 	if c.Bind(expr) != nil {
 		return
@@ -40,7 +40,7 @@ func (MyTesterController) Query(c *gw.Context) {
 }
 
 // http Post
-func (MyTesterController) Post(c *gw.Context) {
+func (MyTesterRestAPI) Post(c *gw.Context) {
 	obj := &dto.MyTester{}
 	err := c.Store.GetDbStore().Create(obj)
 	c.JSON(err, obj)

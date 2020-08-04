@@ -22,7 +22,7 @@ type Handler func(ctx *Context)
 type dynamicHandler func(relativePath string, r *RouterGroup, caller dynamicCaller)
 type dynamicCaller struct {
 	argsLength        int
-	ctrl              IController
+	ctrl              IRestAPI
 	handler           reflect.Value
 	methodName        string
 	argsOrderlyBinder []dynamicArgsBinder
@@ -35,13 +35,14 @@ type dynamicArgsBinder struct {
 // Context represents a gw Context object, it's extension from gin.Context.
 type Context struct {
 	*gin.Context
-	RequestID string
-	User      User
-	Store     Store
-	startTime time.Time
-	logger    Logger
-	queries   map[string][]string
-	params    map[string]interface{}
+	RequestID      string
+	User           User
+	Store          Store
+	startTime      time.Time
+	logger         Logger
+	queries        map[string][]string
+	params         map[string]interface{}
+	globalDbFilter []interface{}
 }
 
 // Query returns a string from queries.
@@ -80,73 +81,73 @@ type RouterGroup struct {
 
 // GET register a http Get router of handler.
 func (router *Router) GET(relativePath string, handler Handler, decorators ...IDecorator) {
-	api := fmt.Sprintf("%s -> %s", "GET", relativePath)
+	a, b := groupDecorators(decorators...)
 	router.currentRouter.GET(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, decorators...)
+		handle(c, handler, a, b)
 	})
 }
 
 // POST register a http POST router of handler.
 func (router *Router) POST(relativePath string, handler Handler, decorators ...IDecorator) {
-	api := fmt.Sprintf("%s -> %s", "POST", relativePath)
+	a, b := groupDecorators(decorators...)
 	router.currentRouter.POST(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, decorators...)
+		handle(c, handler, a, b)
 	})
 }
 
 // PUT register a http PUT router of handler.
 func (router *Router) PUT(relativePath string, handler Handler, decorators ...IDecorator) {
-	api := fmt.Sprintf("%s -> %s", "PUT", relativePath)
+	a, b := groupDecorators(decorators...)
 	router.currentRouter.PUT(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, decorators...)
+		handle(c, handler, a, b)
 	})
 }
 
 // HEAD register a http HEAD router of handler.
 func (router *Router) HEAD(relativePath string, handler Handler, decorators ...IDecorator) {
-	api := fmt.Sprintf("%s -> %s", "HEAD", relativePath)
+	a, b := groupDecorators(decorators...)
 	router.currentRouter.HEAD(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, decorators...)
+		handle(c, handler, a, b)
 	})
 }
 
 // DELETE register a http DELETE router of handler.
 func (router *Router) DELETE(relativePath string, handler Handler, decorators ...IDecorator) {
-	api := fmt.Sprintf("%s -> %s", "DELETE", relativePath)
+	a, b := groupDecorators(decorators...)
 	router.currentRouter.DELETE(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, decorators...)
+		handle(c, handler, a, b)
 	})
 }
 
 // OPTIONS register a http OPTIONS router of handler.
 func (router *Router) OPTIONS(relativePath string, handler Handler, decorators ...IDecorator) {
-	api := fmt.Sprintf("%s -> %s", "OPTIONS", relativePath)
+	a, b := groupDecorators(decorators...)
 	router.currentRouter.OPTIONS(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, decorators...)
+		handle(c, handler, a, b)
 	})
 }
 
 // PATCH register a http PATCH router of handler.
 func (router *Router) PATCH(relativePath string, handler Handler, decorators ...IDecorator) {
-	api := fmt.Sprintf("%s -> %s", "PATCH", relativePath)
+	a, b := groupDecorators(decorators...)
 	router.currentRouter.PATCH(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, decorators...)
+		handle(c, handler, a, b)
 	})
 }
 
 // Any register a any HTTP method router of handler.
 func (router *Router) Any(relativePath string, handler Handler, decorators ...IDecorator) {
-	api := fmt.Sprintf("%s -> %s", "ANY", relativePath)
+	a, b := groupDecorators(decorators...)
 	router.currentRouter.Any(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, decorators...)
+		handle(c, handler, a, b)
 	})
 }
 
@@ -166,9 +167,9 @@ func (router *Router) Group(relativePath string, handler Handler, decorators ...
 		router,
 	}
 	if handler != nil {
-		api := fmt.Sprintf("%s -> %s", "Any-Group", relativePath)
+		a, b := groupDecorators(decorators...)
 		rg.currentRouter = rg.router.Group(relativePath, func(c *gin.Context) {
-			handle(c, handler, api, decorators...)
+			handle(c, handler, a, b)
 		})
 	} else {
 		rg.currentRouter = rg.router.Group(relativePath)
@@ -176,9 +177,9 @@ func (router *Router) Group(relativePath string, handler Handler, decorators ...
 	return rg
 }
 
-// RegisterControllers register a collection HTTP routes by gw.IController.
-func (router *RouterGroup) RegisterControllers(ctrls ...IController) {
-	RegisterControllers(router, ctrls...)
+// RegisterRestAPIs register a collection HTTP routes by gw.IRestAPI.
+func (router *RouterGroup) RegisterRestAPIs(ctrls ...IRestAPI) {
+	RegisterRestAPI(router, ctrls...)
 }
 
 // Config returns a snapshot of the current Context's conf.Config object.
@@ -283,8 +284,8 @@ func ctxBinder(typ reflect.Type, ctx *Context) reflect.Value {
 	return reflect.ValueOf(ctx)
 }
 
-func RegisterControllers(router *RouterGroup, ctrls ...IController) {
-	logger.Info("register router by API RegisterControllers(...)")
+func RegisterRestAPI(router *RouterGroup, ctrls ...IRestAPI) {
+	logger.Info("register router by API RegisterRestAPI(...)")
 	for _, ctrl := range ctrls {
 		typ := reflect.TypeOf(ctrl)
 		val := reflect.ValueOf(ctrl)
@@ -322,53 +323,49 @@ func RegisterControllers(router *RouterGroup, ctrls ...IController) {
 	}
 }
 
-func handle(c *gin.Context, handler Handler, api string, decorators ...IDecorator) {
+func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators []IDecorator) {
 	s := hostServer(c)
 	user := getUser(c)
 	requestID := getRequestID(s, c)
 	store := getStore(c, s, *user)
 	ctx := makeCtx(c, *user, *s, store, requestID)
-	if len(decorators) > 0 {
-		var msg string
-		var err error
-		for _, d := range decorators {
-			msg, err = d.Call(ctx)
-			if err != nil {
-				break
-			}
-		}
+	// action before Decorators
+	var msg string
+	var err error
+	for _, d := range beforeDecorators {
+		msg, err = d.Call(ctx)
 		if err != nil {
-			if msg == "" {
-				msg = "caller decorator fail."
-			}
-			body := respBody(http.StatusForbidden, requestID, errDefault403Msg, msg)
-			c.JSON(http.StatusForbidden, body)
-			return
+			break
 		}
 	}
-	handler(ctx)
-}
+	if err != nil {
+		if msg == "" {
+			msg = "caller decorator fail."
+		}
+		body := respBody(http.StatusForbidden, requestID, errDefault403Msg, msg)
+		c.JSON(http.StatusForbidden, body)
+		return
+	}
 
-//
-// TODO(Ocean): impl it.
-//  sp, reg, str, uint64
-// ===========================
-//
-// func handleBySubPath(c *gin.Context, handler Handler) {
-// 	handler(makeCtx(c))
-// }
-//
-// func handleByUint64(c *gin.Context, handler Handler) {
-// 	handler(makeCtx(c))
-// }
-//
-// func handleByStr(c *gin.Context, handler Handler) {
-// 	handler(makeCtx(c))
-// }
-//
-// func handleByRegex(c *gin.Context, handler Handler) {
-// 	handler(makeCtx(c))
-// }
+	// process Action handler.
+	handler(ctx)
+
+	// action after Decorators
+	for _, d := range afterDecorators {
+		msg, err = d.Call(ctx)
+		if err != nil {
+			break
+		}
+	}
+	if err != nil {
+		if msg == "" {
+			msg = "caller decorator fail."
+		}
+		body := respBody(http.StatusForbidden, requestID, errDefault403Msg, msg)
+		c.JSON(http.StatusForbidden, body)
+		return
+	}
+}
 
 func makeCtx(c *gin.Context, user User, s HostServer, store Store, requestID string) *Context {
 	ctx := &Context{
@@ -384,6 +381,16 @@ func makeCtx(c *gin.Context, user User, s HostServer, store Store, requestID str
 	return ctx
 }
 
-func parseParams() map[string]interface{} {
-	panic("impl please.")
+func groupDecorators(decorators ...IDecorator) (a, b []IDecorator) {
+	var before, after []IDecorator
+	for _, d := range decorators {
+		if d.Point() == ExecPointActionBefore {
+			before = append(before, d)
+		} else if d.Point() == ExecPointActionAfter {
+			after = append(after, d)
+		} else {
+			panic(fmt.Sprintf("invalid pointer(%d). decorator: %v", d.Point(), d))
+		}
+	}
+	return before, after
 }

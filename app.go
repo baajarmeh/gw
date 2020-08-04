@@ -35,13 +35,13 @@ type App interface {
 	// Migrate define a API that for create your app database migrations inside.
 	Migrate(store Store)
 
-	// Use define a API that for Controller Server Options for your Application.
+	// Use define a API that for RestAPI Server Options for your Application.
 	Use(option *ServerOption)
 }
 
-// IController represents a Controller(the MVC of Controller).
-type IController interface {
-	// Name define a API that returns Your controller name(such as resource name)
+// IRestAPI represents a Rest Style API instance.
+type IRestAPI interface {
+	// Name define a API that returns Your RestAPI name(such as resource name)
 	// It's will be used as router prefix.
 	Name() string
 }
@@ -366,18 +366,18 @@ func initial(s *HostServer) {
 	}
 
 	// Must ensure store handler is not nil.
-	IfNullThen(s.options.StoreDbSetupHandler, func() {
+	if s.options.StoreDbSetupHandler == nil {
 		s.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
-	})
-	IfNullThen(s.options.StoreCacheSetupHandler, func() {
+	}
+	if s.options.StoreCacheSetupHandler == nil {
 		s.options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
-	})
-	IfNullThen(s.storeDbSetupHandler, func() {
+	}
+	if s.storeDbSetupHandler == nil {
 		s.storeDbSetupHandler = s.options.StoreDbSetupHandler
-	})
-	IfNullThen(s.storeCacheSetupHandler, func() {
+	}
+	if s.storeCacheSetupHandler == nil {
 		s.storeCacheSetupHandler = s.options.StoreCacheSetupHandler
-	})
+	}
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(s.options.Prefix)
 	s.router = httpRouter

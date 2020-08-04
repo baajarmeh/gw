@@ -58,7 +58,7 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("test/500-payload", api.GetTester500WithCustomPayload)
 	router.GET("test/500-err-payload", api.GetTester500WithCustomPayloadErr)
 
-	gw.RegisterControllers(router, &rest.MyTesterController{})
+	gw.RegisterRestAPI(router, &rest.MyTesterRestAPI{})
 
 	router.GET("err/401", api.Err401)
 	router.GET("err/500", api.Err500)

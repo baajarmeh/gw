@@ -8,8 +8,8 @@ import (
 func App() *cli.App {
 	appName := "gw-cli"
 	app := &cli.App{
-		Name:  appName,
-		Usage: "The gw framework command tools.",
+		Name:    appName,
+		Usage:   "The gw framework command tools.",
 		Version: gw.Version,
 		Commands: []*cli.Command{
 			{

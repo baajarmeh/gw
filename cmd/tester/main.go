@@ -29,13 +29,6 @@ func main() {
 		logger.Info("mytestid: %d, cost Nano Second: %d", mytestid, nanoSeconds)
 	}))
 
-	//
-	// This code should be not cash server.
-	//
-	//server.AddAfterHooks(gw.NewHook("tester-panic", func(c *gin.Context) {
-	//	panic("server.AfterHooks panic.")
-	//}))
-
 	server.HandleError(500, func(requestId, httpRequest string, headers []string, stack string, err []*gin.Error) {
 		msgs := make([]string, 0)
 		msgs = append(msgs, fmt.Sprintf("GW-500-Custom Handler"))
@@ -46,6 +39,7 @@ func main() {
 		msgs = append(msgs, fmt.Sprintf("errors: %v", err))
 		logger.Error("got a 500 error. \r\n%s", strings.Join(msgs, "\r\n=====================\r\n"))
 	})
+
 	registerApps(server)
 	server.Serve()
 }
