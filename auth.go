@@ -207,7 +207,7 @@ func (p *DefaultPermissionManagerImpl) HasPermission(user User, perms ...Permiss
 // GW framework login API.
 func gwLogin(c *gin.Context) {
 	s := hostServer(c)
-	reqId := getRequestID(c)
+	reqId := getRequestID(s, c)
 	pKey := s.conf.Service.Security.Auth.ParamKey
 	// supports
 	// 1. User/Password
@@ -281,7 +281,7 @@ func gwLogin(c *gin.Context) {
 // GW framework logout API.
 func gwLogout(c *gin.Context) {
 	s := hostServer(c)
-	reqId := getRequestID(c)
+	reqId := getRequestID(s, c)
 	user := getUser(c)
 	cks := s.conf.Service.Security.Auth.Cookie
 	ok := s.authManager.Logout(s.store, user)
@@ -312,8 +312,10 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 		}
 	}
 	return func(c *gin.Context) {
+		s := hostServer(c)
 		user := getUser(c)
 		path := fmt.Sprintf("%s:%s", c.Request.Method, c.Request.URL.Path)
+		requestId := getRequestID(s, c)
 		//
 		// No auth and request URI not in allowed urls.
 		// UnAuthorized
@@ -341,7 +343,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 					},
 				},
 			}
-			body := respBody(http.StatusUnauthorized, getRequestID(c), errDefault401Msg, payload)
+			body := respBody(http.StatusUnauthorized, requestId, errDefault401Msg, payload)
 			c.JSON(http.StatusUnauthorized, body)
 			c.Abort()
 			return

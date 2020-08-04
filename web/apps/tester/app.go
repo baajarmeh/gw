@@ -62,9 +62,6 @@ func (a App) Register(router *gw.RouterGroup) {
 
 	router.GET("err/401", api.Err401)
 	router.GET("err/500", api.Err500)
-
-	router.GET("binding/regex", api.ValidatorRegexTest)
-	router.POST("binding/regex", api.ValidatorRegexTest)
 }
 
 func (a App) Migrate(store gw.Store) {

@@ -325,7 +325,7 @@ func RegisterControllers(router *RouterGroup, ctrls ...IController) {
 func handle(c *gin.Context, handler Handler, api string, decorators ...IDecorator) {
 	s := hostServer(c)
 	user := getUser(c)
-	requestID := getRequestID(c)
+	requestID := getRequestID(s, c)
 	store := getStore(c, s, *user)
 	ctx := makeCtx(c, *user, *s, store, requestID)
 	if len(decorators) > 0 {

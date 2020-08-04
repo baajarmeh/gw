@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	gwAppKey = "gw-app"
-	gwSidKey = "gw-sid"
+	gwAppKey  = "gw-app"
+	gwSidKey  = "gw-sid"
 	gwUserKey = "gw-user"
 )
 
@@ -41,8 +41,7 @@ func gwState(serverName string) gin.HandlerFunc {
 		//
 		c.Set(gwAppKey, serverName)
 		s := hostServer(c)
-		requestId := getRequestID(c)
-
+		requestId := getRequestID(s, c)
 		defer func() {
 			var stacks []byte
 			var httpRequest []byte

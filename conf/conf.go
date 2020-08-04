@@ -120,6 +120,9 @@ type Config struct {
 				MaxPageSize int `yaml:"maxPageSize" toml:"maxPageSize" json:"maxPageSize"`
 			} `yaml:"queryLimit" toml:"queryLimit" json:"queryLimit"`
 		} `yaml:"security" toml:"security" json:"security"`
+		Settings struct {
+			RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
+		} `yaml:"settings" toml:"settings" json:"settings"`
 	} `yaml:"service" toml:"service" json:"service"`
 	Common struct {
 		Backend *Backend `yaml:"backend" toml:"backend" json:"backend"`
