@@ -18,15 +18,16 @@ func NewHook(name string, handler gin.HandlerFunc) *Hook {
 	}
 }
 
-type DecoratorExecPosition int8
+type DecoratorPoint int8
 
 const (
-	ExecPointActionBefore DecoratorExecPosition = 0
-	ExecPointActionAfter
+	DecoratorPointActionBefore DecoratorPoint = 0
+	DecoratorPointActionAfter
 )
 
 type IDecorator interface {
-	Point() DecoratorExecPosition
+	Catalog() string
+	Point() DecoratorPoint
 	Call(ctx *Context) (friendlyMsg string, err error)
 }
 
@@ -35,10 +36,16 @@ type PermissionDecoratorImpl struct {
 	friendlyMsg string
 }
 
+const permissionDecoratorCatalog = "permission"
+
 var ErrPermissionDenied = fmt.Errorf("permission denied")
 
-func (p PermissionDecoratorImpl) Point() DecoratorExecPosition {
-	return ExecPointActionBefore
+func (p PermissionDecoratorImpl) Catalog() string {
+	return permissionDecoratorCatalog
+}
+
+func (p PermissionDecoratorImpl) Point() DecoratorPoint {
+	return DecoratorPointActionBefore
 }
 
 func (p PermissionDecoratorImpl) Call(ctx *Context) (friendlyMsg string, err error) {
@@ -59,4 +66,15 @@ func PermissionDecorator(perms ...Permission) IDecorator {
 		perms:       perms,
 		friendlyMsg: friendlyMsg,
 	}
+}
+
+// helpers
+func filterDecorator(filter func(d IDecorator) bool, decorators ...IDecorator) []IDecorator {
+	var result []IDecorator
+	for _, dc := range decorators {
+		if filter(dc) {
+			result = append(result, dc)
+		}
+	}
+	return result
 }

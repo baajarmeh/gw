@@ -352,7 +352,7 @@ func initial(s *HostServer) {
 	g.Use(gwState(s.options.Name))
 
 	// Auth(login/logout) API routers.
-	registerAuthRouter(cnf, s, g)
+	registerAuthRouter(cnf, g)
 
 	// global Auth middleware.
 	g.Use(gwAuthChecker(s.options.cnf.Service.Security.Auth.AllowUrls))
@@ -362,7 +362,8 @@ func initial(s *HostServer) {
 	}
 
 	httpRouter := &Router{
-		server: g,
+		server:      g,
+		routerInfos: make([]RouterInfo, 0),
 	}
 
 	// Must ensure store handler is not nil.
@@ -403,11 +404,16 @@ func registerAuthParamValidators(s *HostServer) {
 	s.authParamValidators[p.ParamKey.VerifyCode] = verifyCodeRegex
 }
 
-func registerAuthRouter(cnf *conf.Config, server *HostServer, router *gin.Engine) {
-	router.GET(cnf.Service.Security.Auth.LoginUrl, gwLogin)
-	router.POST(cnf.Service.Security.Auth.LoginUrl, gwLogin)
-	router.GET(cnf.Service.Security.Auth.LogoutUrl, gwLogout)
-	router.POST(cnf.Service.Security.Auth.LogoutUrl, gwLogout)
+func registerAuthRouter(cnf *conf.Config, router *gin.Engine) {
+	authServer := cnf.Service.AuthServer
+	if !authServer.Disabled {
+		for _, m := range authServer.LogIn.Methods {
+			router.Handle(strings.ToUpper(m), authServer.LogIn.Url, gwLogin)
+		}
+		for _, m := range authServer.LogOut.Methods {
+			router.Handle(strings.ToUpper(m), authServer.LogOut.Url, gwLogout)
+		}
+	}
 }
 
 func registerApps(server *HostServer) {

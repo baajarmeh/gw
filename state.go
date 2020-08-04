@@ -112,11 +112,6 @@ func gwState(serverName string) gin.HandlerFunc {
 			hook.Handler(c)
 		}
 
-		//// has processed, return.
-		//if c.Writer.Status() != 0 {
-		//	return
-		//}
-
 		// gw framework handler.
 		sid, ok := getSid(s, c)
 		if ok {

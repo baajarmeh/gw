@@ -321,25 +321,20 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 		// UnAuthorized
 		//
 		if (user == nil || !user.IsAuth()) && !allowUrls[path] {
-			auth := hostServer(c).conf.Service.Security.Auth
-			authServer := strings.TrimRight(auth.AuthServer, "/")
-			loginUrl := fmt.Sprintf("%s/%s", authServer, strings.TrimLeft(auth.LoginUrl, "/"))
-			logoutUrl := fmt.Sprintf("%s/%s", authServer, strings.TrimLeft(auth.LogoutUrl, "/"))
+			auth := hostServer(c).conf.Service.Security.Auth.Server
 			// Check url are allow dict.
 			payload := gin.H{
 				"Auth": gin.H{
 					"LogIn": gin.H{
-						"Url":    loginUrl,
-						"Method": "GET/POST",
-						"Types": []string{
-							"User/Password",
-							"X-Access-Key/Secret",
-							"Basic Auth",
-						},
+						"Url":       fmt.Sprintf("%s/%s",
+							strings.TrimRight(auth.Addr,"/"), strings.TrimLeft(auth.LogIn.Url,"/")),
+						"Methods":   auth.LogIn.Methods,
+						"AuthTypes": auth.LogIn.AuthTypes,
 					},
 					"LogOut": gin.H{
-						"Url":    logoutUrl,
-						"Method": "GET/POST",
+						"Url":       fmt.Sprintf("%s/%s",
+							strings.TrimRight(auth.Addr,"/"), strings.TrimLeft(auth.LogOut.Url,"/")),
+						"Methods": auth.LogOut.Methods,
 					},
 				},
 			}
