@@ -3,7 +3,7 @@ package uap
 import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/web/apps/uap/api"
-	"github.com/oceanho/gw/web/apps/uap/entities"
+	"github.com/oceanho/gw/web/apps/uap/dbModel"
 )
 
 func init() {
@@ -76,7 +76,7 @@ func (a App) Register(router *gw.RouterGroup) {
 
 func (a App) Migrate(store gw.Store) {
 	db := store.GetDbStore()
-	db.AutoMigrate(&entities.User{}, &entities.Profile{})
+	db.AutoMigrate(&dbModel.User{}, &dbModel.Profile{})
 }
 
 func (a App) Use(opt *gw.ServerOption) {

@@ -42,6 +42,7 @@ service:
         httpOnly: False
         secure: False
       disable: False
+      authServer: https://auth.gw-framework.com
       loginUrl: ${PREFIX}/gw/auth/login
       logoutUrl: ${PREFIX}/gw/auth/logout
       allowUrls:
