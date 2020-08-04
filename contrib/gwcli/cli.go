@@ -1,6 +1,7 @@
 package gwcli
 
 import (
+	"github.com/oceanho/gw"
 	"github.com/urfave/cli/v2"
 )
 
@@ -9,6 +10,7 @@ func App() *cli.App {
 	app := &cli.App{
 		Name:  appName,
 		Usage: "The gw framework command tools.",
+		Version: gw.Version,
 		Commands: []*cli.Command{
 			{
 				Name:      "createapp",
