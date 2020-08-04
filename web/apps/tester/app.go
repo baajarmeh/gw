@@ -3,8 +3,9 @@ package tester
 import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/web/apps/tester/api"
-	"github.com/oceanho/gw/web/apps/tester/controllers"
+	"github.com/oceanho/gw/web/apps/tester/definations"
 	"github.com/oceanho/gw/web/apps/tester/dto"
+	"github.com/oceanho/gw/web/apps/tester/rest"
 )
 
 func init() {
@@ -27,7 +28,7 @@ func (a App) Router() string {
 
 func (a App) Register(router *gw.RouterGroup) {
 
-	router.GET("test/create", api.CreateMyTester)
+	router.POST("test/create", api.CreateMyTester, definations.PermissionCreateTestDataDecorator)
 	router.GET("test/query", api.QueryMyTester)
 
 	router.GET("test/200", api.GetTester)
@@ -57,10 +58,13 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("test/500-payload", api.GetTester500WithCustomPayload)
 	router.GET("test/500-err-payload", api.GetTester500WithCustomPayloadErr)
 
-	gw.RegisterControllers(router, &controllers.MyTesterController{})
+	gw.RegisterControllers(router, &rest.MyTesterController{})
 
 	router.GET("err/401", api.Err401)
 	router.GET("err/500", api.Err500)
+
+	router.GET("binding/regex", api.ValidatorRegexTest)
+	router.POST("binding/regex", api.ValidatorRegexTest)
 }
 
 func (a App) Migrate(store gw.Store) {

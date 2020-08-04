@@ -29,9 +29,12 @@ func main() {
 		logger.Info("mytestid: %d, cost Nano Second: %d", mytestid, nanoSeconds)
 	}))
 
-	//server.AfterHooks(func(c *gin.Context) {
+	//
+	// This code should be not cash server.
+	//
+	//server.AddAfterHooks(gw.NewHook("tester-panic", func(c *gin.Context) {
 	//	panic("server.AfterHooks panic.")
-	//})
+	//}))
 
 	server.HandleError(500, func(requestId, httpRequest string, headers []string, stack string, err []*gin.Error) {
 		msgs := make([]string, 0)

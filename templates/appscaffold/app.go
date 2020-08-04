@@ -4,7 +4,6 @@ import (
 	"github.com/oceanho/gw"
 )
 
-
 //
 // Impl gw.App interface at here.
 // reference: https://github.com/oceanho/gw/wiki/Scaffold-Guides#6-appgo
@@ -16,7 +15,6 @@ type App struct {
 func New() App {
 	return App{}
 }
-
 
 func (a App) Name() string {
 	// return your app name

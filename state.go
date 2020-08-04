@@ -20,11 +20,13 @@ import (
 )
 
 const (
-	gwAppNameKey  = "gw-app"
-	gwSidStateKey = "gw-sid-state"
+	gwAppKey = "gw-app"
+	gwSidKey = "gw-sid"
+	gwUserKey = "gw-user"
 )
 
-func globalState(serverName string) gin.HandlerFunc {
+// GW framework state Middleware.
+func gwState(serverName string) gin.HandlerFunc {
 	// code copies from gin framework.
 	var out io.Writer = os.Stderr
 	var ginLogger *log.Logger
@@ -37,7 +39,7 @@ func globalState(serverName string) gin.HandlerFunc {
 		// 1. register the HostServer state into gin.Context
 		// 2. process request, try got User from the http requests.
 		//
-		c.Set(gwAppNameKey, serverName)
+		c.Set(gwAppKey, serverName)
 		s := hostServer(c)
 		requestId := getRequestID(c)
 
@@ -82,7 +84,7 @@ func globalState(serverName string) gin.HandlerFunc {
 					c.Error(err.(error)) // nolint: errcheck
 					c.Abort()
 				} else {
-					body := respBody(500, requestId, errDefault500Msg, nil)
+					body := respBody(http.StatusInternalServerError, requestId, errDefault500Msg, nil)
 					c.JSON(http.StatusInternalServerError, body)
 				}
 			}
@@ -119,7 +121,7 @@ func globalState(serverName string) gin.HandlerFunc {
 		// gw framework handler.
 		sid, ok := getSid(s, c)
 		if ok {
-			c.Set(gwSidStateKey, sid)
+			c.Set(gwSidKey, sid)
 			user, err := s.sessionStateManager.Query(s.store, sid)
 			if err == nil && user != nil {
 				// set User State.
@@ -217,7 +219,7 @@ func getClient(c *gin.Context) string {
 }
 
 func getSid(s *HostServer, c *gin.Context) (string, bool) {
-	sid, ok := c.Get(gwSidStateKey)
+	sid, ok := c.Get(gwSidKey)
 	if ok {
 		return sid.(string), true
 	}
@@ -245,7 +247,7 @@ func getSid(s *HostServer, c *gin.Context) (string, bool) {
 }
 
 func hostServer(c *gin.Context) *HostServer {
-	serverName := c.MustGet(gwAppNameKey).(string)
+	serverName := c.MustGet(gwAppKey).(string)
 	return servers[serverName]
 }
 

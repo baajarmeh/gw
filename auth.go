@@ -23,8 +23,24 @@ func (perms Permission) String() string {
 	return string(b)
 }
 
+func NewPerm(key, name, descriptor string) Permission {
+	return Permission{
+		Key:        key,
+		Name:       name,
+		Descriptor: descriptor,
+	}
+}
+
+func NewPermSameKeyName(kn, descriptor string) Permission {
+	return NewPerm(kn, kn, descriptor)
+}
+
+func NewPermSameKeyNameDesc(knd string) Permission {
+	return NewPermSameKeyName(knd, knd)
+}
+
 type IAuthManager interface {
-	Login(store Store, passport, secret, verifyCode string) (*User, error)
+	Login(store Store, passport, secret, credType, verifyCode string) (*User, error)
 	Logout(store Store, user *User) bool
 }
 
@@ -104,7 +120,7 @@ func (d *DefaultSessionStateManagerImpl) Query(store Store, sid string) (*User, 
 	return user, nil
 }
 
-func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, verifyCode string) (*User, error) {
+func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, credType, verifyCode string) (*User, error) {
 	user, ok := d.users[passport]
 	if ok && user.secret == secret {
 		return user, nil
@@ -174,6 +190,9 @@ func (p *DefaultPermissionManagerImpl) CreatePermissions(group string, perms ...
 
 func (p *DefaultPermissionManagerImpl) HasPermission(user User, perms ...Permission) bool {
 	if user.IsAuth() {
+		if user.IsAdmin() {
+			return true
+		}
 		for _, g := range p.perms {
 			for _, pm := range perms {
 				if _, ok := g[pm.Name]; ok {
@@ -185,10 +204,7 @@ func (p *DefaultPermissionManagerImpl) HasPermission(user User, perms ...Permiss
 	return false
 }
 
-const (
-	gwUserKey = "gw-user"
-)
-
+// GW framework login API.
 func gwLogin(c *gin.Context) {
 	s := hostServer(c)
 	reqId := getRequestID(c)
@@ -197,7 +213,7 @@ func gwLogin(c *gin.Context) {
 	// 1. User/Password
 	// 2. X-Access-Key/X-Access-Secret
 	// 3. Realm auth (Basic auth)
-	passport, secret, verifyCode, ok := parseCredentials(s, c)
+	passport, secret, verifyCode, credType, ok := parseCredentials(s, c)
 	if !ok {
 		c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials.", nil))
 		c.Abort()
@@ -228,7 +244,7 @@ func gwLogin(c *gin.Context) {
 	}
 
 	// Login
-	user, err := s.authManager.Login(s.store, passport, secret, verifyCode)
+	user, err := s.authManager.Login(s.store, passport, secret, credType, verifyCode)
 	if err != nil || user == nil {
 		c.JSON(http.StatusOK, respBody(400, reqId, err.Error(), nil))
 		c.Abort()
@@ -262,6 +278,7 @@ func gwLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, payload)
 }
 
+// GW framework logout API.
 func gwLogout(c *gin.Context) {
 	s := hostServer(c)
 	reqId := getRequestID(c)
@@ -285,73 +302,12 @@ func gwLogout(c *gin.Context) {
 	c.SetCookie(cks.Key, "", -1, cks.Path, domain, cks.Secure, cks.HttpOnly)
 }
 
-func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, verifyCode string, result bool) {
-	//
-	// Auth Param configuration.
-	param := s.conf.Service.Security.Auth.ParamKey
-	//
-	// supports
-	// 1. User/Password
-	// 2. X-Access-Key/X-Access-Secret
-	// 3. Realm auth
-	// ===============================
-	//
-
-	// 1. User/Password
-	passport, _ = c.GetPostForm(param.Passport)
-	secret, _ = c.GetPostForm(param.Secret)
-	verifyCode, _ = c.GetPostForm(param.VerifyCode)
-	result = passport != "" && secret != ""
-	if result {
-		return
-	}
-
-	// JSON
-	if c.ContentType() == "application/json" {
-		// json decode
-		cred := gin.H{
-			param.Passport:   "",
-			param.Secret:     "",
-			param.VerifyCode: "",
-		}
-		err := c.Bind(&cred)
-		if err != nil {
-			return
-		}
-		passport = cred[param.Passport].(string)
-		secret = cred[param.Secret].(string)
-		verifyCode = cred[param.VerifyCode].(string)
-		result = passport != "" && secret != ""
-		if result {
-			return
-		}
-	}
-
-	// 2. X-Access-Key/X-Access-Secret
-	passport = c.GetHeader("X-Access-Key")
-	secret = c.GetHeader("X-Access-Secret")
-	verifyCode = c.GetHeader("X-Access-VerifyCode")
-	result = passport != "" && secret != ""
-	if result {
-		return
-	}
-
-	// 3. Basic auth
-	passport, secret, result = c.Request.BasicAuth()
-	if verifyCode == "" {
-		verifyCode = c.Query(param.VerifyCode)
-	}
-	return
-}
-
-func gwAuthChecker(vars map[string]string, urls []conf.AllowUrl) gin.HandlerFunc {
+// GW framework auth Check Middleware
+func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 	var allowUrls = make(map[string]bool)
 	for _, url := range urls {
 		for _, p := range url.Urls {
 			s := p
-			for k, v := range vars {
-				s = strings.Replace(s, k, v, 4)
-			}
 			allowUrls[s] = true
 		}
 	}
@@ -394,15 +350,72 @@ func gwAuthChecker(vars map[string]string, urls []conf.AllowUrl) gin.HandlerFunc
 	}
 }
 
-//type IUser interface {
-//	Id() uint64
-//	TenantId() uint64
-//	IsAuth() bool
-//	IsAdmin() bool
-//	IsTenancyAdmin() bool
-//	HasPerms(perms ...Permission) bool
-//}
+// helpers
+func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, verifyCode string, credType string, result bool) {
+	//
+	// Auth Param configuration.
+	param := s.conf.Service.Security.Auth.ParamKey
+	//
+	// supports
+	// 1. User/Password
+	// 2. X-Access-Key/X-Access-Secret
+	// 3. Realm auth
+	// ===============================
+	//
 
+	// 1. User/Password
+	credType = "passport"
+	passport, _ = c.GetPostForm(param.Passport)
+	secret, _ = c.GetPostForm(param.Secret)
+	verifyCode, _ = c.GetPostForm(param.VerifyCode)
+	result = passport != "" && secret != ""
+	if result {
+		return
+	}
+
+	// JSON
+	if c.ContentType() == "application/json" {
+		// json decode
+		cred := gin.H{
+			param.Passport:   "",
+			param.Secret:     "",
+			param.VerifyCode: "",
+		}
+		err := c.Bind(&cred)
+		if err != nil {
+			return
+		}
+		passport = cred[param.Passport].(string)
+		secret = cred[param.Secret].(string)
+		verifyCode = cred[param.VerifyCode].(string)
+		result = passport != "" && secret != ""
+		if result {
+			return
+		}
+	}
+
+	credType = "aks"
+	// 2. X-Access-Key/X-Access-Secret
+	passport = c.GetHeader("X-Access-Key")
+	secret = c.GetHeader("X-Access-Secret")
+	verifyCode = c.GetHeader("X-Access-VerifyCode")
+	result = passport != "" && secret != ""
+	if result {
+		return
+	}
+
+	// 3. Basic auth
+	credType = "account"
+	passport, secret, result = c.Request.BasicAuth()
+	if verifyCode == "" {
+		verifyCode = c.Query(param.VerifyCode)
+	}
+	return
+}
+
+//
+// Auth User
+//
 type User struct {
 	Id       uint64
 	TenantId uint64

@@ -1,6 +1,6 @@
 package param
 
-const (
+perms ...Permission) bool (
 	GetAuthRequestURL = "auth/auth"
 	GetConfRequestURL = "conf/query"
 )

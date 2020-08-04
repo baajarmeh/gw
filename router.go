@@ -35,14 +35,13 @@ type dynamicArgsBinder struct {
 // Context represents a gw Context object, it's extension from gin.Context.
 type Context struct {
 	*gin.Context
-	RequestID   string
-	User        User
-	Store       Store
-	Permissions []Permission
-	startTime   time.Time
-	logger      Logger
-	queries     map[string][]string
-	params      map[string]interface{}
+	RequestID string
+	User      User
+	Store     Store
+	startTime time.Time
+	logger    Logger
+	queries   map[string][]string
+	params    map[string]interface{}
 }
 
 // Query returns a string from queries.
@@ -79,90 +78,75 @@ type RouterGroup struct {
 	*Router
 }
 
-func calcPermName(perms ...Permission) string {
-	names := make([]string, len(perms))
-	for i := 0; i < len(perms); i++ {
-		names[i] = perms[i].Key
-	}
-	return strings.Join(names, ", ")
-}
-
 // GET register a http Get router of handler.
-func (router *Router) GET(relativePath string, handler Handler, perms ...Permission) {
-	permName := calcPermName(perms...)
+func (router *Router) GET(relativePath string, handler Handler, decorators ...IDecorator) {
 	api := fmt.Sprintf("%s -> %s", "GET", relativePath)
 	router.currentRouter.GET(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, permName, perms...)
+		handle(c, handler, api, decorators...)
 	})
 }
 
 // POST register a http POST router of handler.
-func (router *Router) POST(relativePath string, handler Handler, perms ...Permission) {
-	permName := calcPermName(perms...)
+func (router *Router) POST(relativePath string, handler Handler, decorators ...IDecorator) {
 	api := fmt.Sprintf("%s -> %s", "POST", relativePath)
 	router.currentRouter.POST(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, permName, perms...)
+		handle(c, handler, api, decorators...)
 	})
 }
 
 // PUT register a http PUT router of handler.
-func (router *Router) PUT(relativePath string, handler Handler, perms ...Permission) {
-	permName := calcPermName(perms...)
+func (router *Router) PUT(relativePath string, handler Handler, decorators ...IDecorator) {
 	api := fmt.Sprintf("%s -> %s", "PUT", relativePath)
 	router.currentRouter.PUT(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, permName, perms...)
+		handle(c, handler, api, decorators...)
 	})
 }
 
 // HEAD register a http HEAD router of handler.
-func (router *Router) HEAD(relativePath string, handler Handler, perms ...Permission) {
-	permName := calcPermName(perms...)
+func (router *Router) HEAD(relativePath string, handler Handler, decorators ...IDecorator) {
 	api := fmt.Sprintf("%s -> %s", "HEAD", relativePath)
 	router.currentRouter.HEAD(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, permName, perms...)
+		handle(c, handler, api, decorators...)
 	})
 }
 
 // DELETE register a http DELETE router of handler.
-func (router *Router) DELETE(relativePath string, handler Handler, perms ...Permission) {
-	permName := calcPermName(perms...)
+func (router *Router) DELETE(relativePath string, handler Handler, decorators ...IDecorator) {
 	api := fmt.Sprintf("%s -> %s", "DELETE", relativePath)
 	router.currentRouter.DELETE(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, permName, perms...)
+		handle(c, handler, api, decorators...)
 	})
 }
 
 // OPTIONS register a http OPTIONS router of handler.
-func (router *Router) OPTIONS(relativePath string, handler Handler, perms ...Permission) {
-	permName := calcPermName(perms...)
+func (router *Router) OPTIONS(relativePath string, handler Handler, decorators ...IDecorator) {
 	api := fmt.Sprintf("%s -> %s", "OPTIONS", relativePath)
 	router.currentRouter.OPTIONS(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, permName, perms...)
+		handle(c, handler, api, decorators...)
 	})
 }
 
 // PATCH register a http PATCH router of handler.
-func (router *Router) PATCH(relativePath string, handler Handler, perms ...Permission) {
-	permName := calcPermName(perms...)
+func (router *Router) PATCH(relativePath string, handler Handler, decorators ...IDecorator) {
 	api := fmt.Sprintf("%s -> %s", "PATCH", relativePath)
 	router.currentRouter.PATCH(relativePath, func(c *gin.Context) {
-		handle(c, handler, api, permName, perms...)
+		c.Set(apiNameKey, relativePath)
+		handle(c, handler, api, decorators...)
 	})
 }
 
 // Any register a any HTTP method router of handler.
-func (router *Router) Any(relativePath string, handler Handler, perms ...Permission) {
-	permName := calcPermName(perms...)
-	api := fmt.Sprintf("%s -> %s", "Any", relativePath)
+func (router *Router) Any(relativePath string, handler Handler, decorators ...IDecorator) {
+	api := fmt.Sprintf("%s -> %s", "ANY", relativePath)
 	router.currentRouter.Any(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
-		handle(c, handler, api, permName, perms...)
+		handle(c, handler, api, decorators...)
 	})
 }
 
@@ -177,15 +161,14 @@ func (router *Router) Handlers() gin.HandlersChain {
 }
 
 // Group returns a new route group.
-func (router *Router) Group(relativePath string, handler Handler, perms ...Permission) *RouterGroup {
+func (router *Router) Group(relativePath string, handler Handler, decorators ...IDecorator) *RouterGroup {
 	rg := &RouterGroup{
 		router,
 	}
 	if handler != nil {
-		permName := calcPermName(perms...)
 		api := fmt.Sprintf("%s -> %s", "Any-Group", relativePath)
 		rg.currentRouter = rg.router.Group(relativePath, func(c *gin.Context) {
-			handle(c, handler, api, permName, perms...)
+			handle(c, handler, api, decorators...)
 		})
 	} else {
 		rg.currentRouter = rg.router.Group(relativePath)
@@ -339,18 +322,30 @@ func RegisterControllers(router *RouterGroup, ctrls ...IController) {
 	}
 }
 
-func handle(c *gin.Context, handler Handler, api string, permsName string, perms ...Permission) {
+func handle(c *gin.Context, handler Handler, api string, decorators ...IDecorator) {
 	s := hostServer(c)
 	user := getUser(c)
 	requestID := getRequestID(c)
 	store := getStore(c, s, *user)
-	permissionManager := s.permissionManager
-	if len(perms) > 0 && !permissionManager.HasPermission(*user, perms...) {
-		body := fmt.Sprintf("Your have no permission[%s], to access API, %s", permsName, api)
-		payload := respBody(403, requestID, errDefault403Msg, body)
-		c.JSON(http.StatusForbidden, payload)
+	ctx := makeCtx(c, *user, *s, store, requestID)
+	if len(decorators) > 0 {
+		var msg string
+		var err error
+		for _, d := range decorators {
+			msg, err = d.Caller(ctx)
+			if err != nil {
+				break
+			}
+		}
+		if err != nil {
+			if msg == "" {
+				msg = "caller decorator fail."
+			}
+			body := respBody(http.StatusForbidden, requestID, errDefault403Msg, msg)
+			c.JSON(http.StatusForbidden, body)
+			return
+		}
 	}
-	ctx := makeCtx(c, *user, *s, store, requestID, perms...)
 	handler(ctx)
 }
 
@@ -375,17 +370,16 @@ func handle(c *gin.Context, handler Handler, api string, permsName string, perms
 // 	handler(makeCtx(c))
 // }
 
-func makeCtx(c *gin.Context, user User, s HostServer, store Store, requestID string, perms ...Permission) *Context {
+func makeCtx(c *gin.Context, user User, s HostServer, store Store, requestID string) *Context {
 	ctx := &Context{
-		User:        user,
-		RequestID:   requestID,
-		Store:       store,
-		Context:     c,
-		Permissions: perms,
-		startTime:   time.Now(),
-		logger:      getLogger(c),
-		queries:     make(map[string][]string),
-		params:      make(map[string]interface{}),
+		User:      user,
+		RequestID: requestID,
+		Store:     store,
+		Context:   c,
+		startTime: time.Now(),
+		logger:    getLogger(c),
+		queries:   make(map[string][]string),
+		params:    make(map[string]interface{}),
 	}
 	return ctx
 }

@@ -3,8 +3,6 @@ package gw
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
@@ -71,31 +69,30 @@ type ServerOption struct {
 	PermissionManager      IPermissionManager
 	StoreDbSetupHandler    StoreDbSetupHandler
 	StoreCacheSetupHandler StoreCacheSetupHandler
-	//ActionBeforeHandler    func(c *gin.Context)
-	//ActionResponseHandler  func(c *gin.Context)
-	cnf *conf.Config
-	bcs *conf.BootStrapConfig
+	cnf                    *conf.Config
+	bcs                    *conf.BootStrapConfig
 }
 
 // HostServer represents a  Host Server.
 type HostServer struct {
-	name                string
-	locker              sync.Mutex
-	options             *ServerOption
-	router              *Router
-	apps                map[string]App
-	conf                *conf.Config
-	store               Store
-	hash                ICryptoHash
-	protect             ICryptoProtect
-	authManager         IAuthManager
-	sessionStateManager ISessionStateManager
-	permissionManager   IPermissionManager
-	httpErrHandlers     map[int][]ErrorHandler
-	beforeHooks         map[string]*Hook
-	afterHooks          map[string]*Hook
-	modelValidators     map[string]*Validator
-	authParamValidators map[string]*regexp.Regexp
+	name                   string
+	locker                 sync.Mutex
+	options                *ServerOption
+	router                 *Router
+	apps                   map[string]App
+	conf                   *conf.Config
+	store                  Store
+	hash                   ICryptoHash
+	protect                ICryptoProtect
+	authManager            IAuthManager
+	sessionStateManager    ISessionStateManager
+	permissionManager      IPermissionManager
+	httpErrHandlers        map[int][]ErrorHandler
+	beforeHooks            map[string]*Hook
+	afterHooks             map[string]*Hook
+	authParamValidators    map[string]*regexp.Regexp
+	storeDbSetupHandler    StoreDbSetupHandler
+	storeCacheSetupHandler StoreCacheSetupHandler
 }
 
 var (
@@ -108,7 +105,7 @@ var (
 	appDefaultPluginSymbolSuffix    = ".so"
 	appDefaultVersion               = "Version 1.0"
 	appDefaultStartBeforeHandler    = func(server *HostServer) error { return nil }
-	appDefaultShutDownBeforeHandler = func(server *HostServer) error { return nil }
+	appDefaultShutdownBeforeHandler = func(server *HostServer) error { return nil }
 	appDefaultBackendHandler        = func(cnf conf.Config) Store {
 		return DefaultBackend(cnf)
 	}
@@ -149,7 +146,7 @@ func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 		PluginSymbolName:       appDefaultPluginSymbolName,
 		PluginSymbolSuffix:     appDefaultPluginSymbolSuffix,
 		StartBeforeHandler:     appDefaultStartBeforeHandler,
-		ShutDownBeforeHandler:  appDefaultShutDownBeforeHandler,
+		ShutDownBeforeHandler:  appDefaultShutdownBeforeHandler,
 		BackendStoreHandler:    appDefaultBackendHandler,
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
@@ -202,7 +199,6 @@ func New(sopt *ServerOption) *HostServer {
 		beforeHooks:         make(map[string]*Hook),
 		afterHooks:          make(map[string]*Hook),
 		authParamValidators: make(map[string]*regexp.Regexp),
-		modelValidators:     make(map[string]*Validator),
 	}
 	servers[sopt.Name] = server
 	return server
@@ -258,32 +254,6 @@ func (s *HostServer) ReplaceAfterHook(hookName string, hookHandler *Hook) {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	s.afterHooks[hookName] = hookHandler
-}
-
-// AddValidators register a global model binding validator into server object.
-func (s *HostServer) AddValidators(validators ...*Validator) {
-	if len(validators) == 0 {
-		return
-	}
-	s.locker.Lock()
-	defer s.locker.Unlock()
-	for _, val := range validators {
-		s.modelValidators[val.Name] = val
-	}
-}
-
-// DeleteValidators delete a global model binding validator from has registered validators.
-func (s *HostServer) DeleteValidators(validatorName string) {
-	s.locker.Lock()
-	defer s.locker.Unlock()
-	delete(s.modelValidators, validatorName)
-}
-
-// ReplaceValidators replace a global model binding validator from has registered validators.
-func (s *HostServer) ReplaceValidators(validatorName string, validator *Validator) {
-	s.locker.Lock()
-	defer s.locker.Unlock()
-	s.modelValidators[validatorName] = validator
 }
 
 // HandleError register a global http error handler API into the server.
@@ -373,36 +343,41 @@ func initial(s *HostServer) {
 	s.permissionManager = s.options.PermissionManager
 
 	registerAuthParamValidators(s)
-	registerModelBindValidators(s)
 
 	// Gin Engine configure.
 	gin.SetMode(s.options.Mode)
 	g := gin.New()
+
 	// g.Use(gin.Recovery())
-	g.Use(globalState(s.options.Name))
+	g.Use(gwState(s.options.Name))
 
 	// Auth(login/logout) API routers.
 	registerAuthRouter(cnf, s, g)
 
-	var vars = make(map[string]string)
-	vars["${PREFIX}"] = s.options.cnf.Service.Prefix
-	g.Use(gwAuthChecker(vars, s.options.cnf.Service.Security.Auth.AllowUrls))
+	// global Auth middleware.
+	g.Use(gwAuthChecker(s.options.cnf.Service.Security.Auth.AllowUrls))
 
-	if s.options.Mode == "debug" {
+	if gin.IsDebugging() {
 		g.Use(gin.Logger())
 	}
+
 	httpRouter := &Router{
 		server: g,
 	}
 
 	// Must ensure store handler is not nil.
-	if s.options.StoreDbSetupHandler == nil {
+	IfNullThen(s.options.StoreDbSetupHandler, func() {
 		s.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
-	}
-	if s.options.StoreCacheSetupHandler == nil {
+	})
+	IfNullThen(s.options.StoreCacheSetupHandler, func() {
 		s.options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
-	}
-
+	})
+	IfNullThen(s.storeDbSetupHandler, func() {
+		s.storeDbSetupHandler = s.options.StoreDbSetupHandler
+	})
+	IfNullThen(s.storeCacheSetupHandler, func() {
+		s.storeCacheSetupHandler = s.options.StoreCacheSetupHandler
+	})
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(s.options.Prefix)
 	s.router = httpRouter
@@ -426,20 +401,6 @@ func registerAuthParamValidators(s *HostServer) {
 	s.authParamValidators[p.ParamKey.Passport] = passportRegex
 	s.authParamValidators[p.ParamKey.Secret] = secretRegex
 	s.authParamValidators[p.ParamKey.VerifyCode] = verifyCodeRegex
-}
-
-func registerModelBindValidators(s *HostServer) {
-	//
-	// ref
-	// https://github.com/gin-gonic/gin#model-binding-and-validation
-	//
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		for _, val := range s.modelValidators {
-			v.RegisterValidation(val.Name, val.Handler)
-		}
-	} else {
-		panic("validator version did not match.")
-	}
 }
 
 func registerAuthRouter(cnf *conf.Config, server *HostServer, router *gin.Engine) {
