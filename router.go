@@ -332,7 +332,7 @@ func handle(c *gin.Context, handler Handler, api string, decorators ...IDecorato
 		var msg string
 		var err error
 		for _, d := range decorators {
-			msg, err = d.Caller(ctx)
+			msg, err = d.Call(ctx)
 			if err != nil {
 				break
 			}

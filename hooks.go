@@ -19,8 +19,7 @@ func NewHook(name string, handler gin.HandlerFunc) *Hook {
 }
 
 type IDecorator interface {
-	Type() string
-	Caller(ctx *Context) (friendlyMsg string, err error)
+	Call(ctx *Context) (friendlyMsg string, err error)
 }
 
 type PermissionDecoratorImpl struct {
@@ -28,13 +27,9 @@ type PermissionDecoratorImpl struct {
 	friendlyMsg string
 }
 
-func (p PermissionDecoratorImpl) Type() string {
-	return "permission"
-}
-
 var ErrPermissionDenied = fmt.Errorf("permission denied")
 
-func (p PermissionDecoratorImpl) Caller(ctx *Context) (friendlyMsg string, err error) {
+func (p PermissionDecoratorImpl) Call(ctx *Context) (friendlyMsg string, err error) {
 	s := hostServer(ctx.Context)
 	if !s.permissionManager.HasPermission(ctx.User, p.perms...) {
 		return p.friendlyMsg, ErrPermissionDenied
