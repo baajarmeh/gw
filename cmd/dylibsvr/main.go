@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	bcs := conf2.LoadBootStrapConfigFromFile("config/boot.yaml")
+	bcs := conf2.LoadBootConfigFromFile("config/boot.yaml")
 	conf := gw.NewServerOption(bcs)
 	conf.Name = "confsvr"
 	conf.Addr = ":8090"

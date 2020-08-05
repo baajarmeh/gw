@@ -53,7 +53,6 @@ type ErrorHandler func(requestId string, httpRequest string, headers []string, s
 type ServerOption struct {
 	Addr                   string
 	Name                   string
-	Mode                   string
 	Restart                string
 	Prefix                 string
 	PluginDir              string
@@ -62,15 +61,15 @@ type ServerOption struct {
 	StartBeforeHandler     func(s *HostServer) error
 	ShutDownBeforeHandler  func(s *HostServer) error
 	BackendStoreHandler    func(cnf conf.Config) Store
-	AppConfigHandler       func(cnf conf.BootStrapConfig) *conf.Config
+	AppConfigHandler       func(cnf conf.BootConfig) *conf.Config
 	Crypto                 func(conf conf.Config) ICrypto
-	SessionStateStore      func(conf conf.Config) ISessionStateManager
 	AuthManager            IAuthManager
 	PermissionManager      IPermissionManager
 	StoreDbSetupHandler    StoreDbSetupHandler
+	SessionStateManager    SessionStateHandler
 	StoreCacheSetupHandler StoreCacheSetupHandler
 	cnf                    *conf.Config
-	bcs                    *conf.BootStrapConfig
+	bcs                    *conf.BootConfig
 }
 
 // HostServer represents a  Host Server.
@@ -109,8 +108,8 @@ var (
 	appDefaultBackendHandler        = func(cnf conf.Config) Store {
 		return DefaultBackend(cnf)
 	}
-	appDefaultAppConfigHandler = func(cnf conf.BootStrapConfig) *conf.Config {
-		return conf.NewConfigByBootStrapConfig(&cnf)
+	appDefaultAppConfigHandler = func(cnf conf.BootConfig) *conf.Config {
+		return conf.NewConfigByBootConfig(&cnf)
 	}
 	appDefaultStoreDbSetupHandler = func(c gin.Context, db *gorm.DB, user User) *gorm.DB {
 		return db
@@ -131,13 +130,8 @@ func init() {
 }
 
 // NewServerOption returns a *ServerOption with bcs.
-func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
-	mode := os.Getenv(gin.EnvGinMode)
-	if mode == "" {
-		mode = appDefaultMode
-	}
+func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 	conf := &ServerOption{
-		Mode:                   mode,
 		Addr:                   appDefaultAddr,
 		Name:                   appDefaultName,
 		Restart:                appDefaultRestart,
@@ -152,7 +146,7 @@ func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
 		AuthManager:            defaultAm,
 		PermissionManager:      defaultPm,
-		SessionStateStore: func(conf conf.Config) ISessionStateManager {
+		SessionStateManager: func(conf conf.Config) ISessionStateManager {
 			return DefaultSessionStateManager(conf)
 		},
 		Crypto: func(conf conf.Config) ICrypto {
@@ -166,7 +160,7 @@ func NewServerOption(bcs *conf.BootStrapConfig) *ServerOption {
 
 // Default returns a default HostServer(the server instance's bcs,svr are default config items.)
 func Default() *HostServer {
-	bcs := conf.DefaultBootStrapConfig()
+	bcs := conf.DefaultBootConfig()
 	return New(NewServerOption(bcs))
 }
 
@@ -337,17 +331,15 @@ func initial(s *HostServer) {
 	s.protect = crypto.Protect()
 
 	s.store = s.options.BackendStoreHandler(*cnf)
-	s.sessionStateManager = s.options.SessionStateStore(*cnf)
+	s.sessionStateManager = s.options.SessionStateManager(*cnf)
 
 	s.authManager = s.options.AuthManager
 	s.permissionManager = s.options.PermissionManager
 
 	registerAuthParamValidators(s)
 
-	// Gin Engine configure.
-	gin.SetMode(s.options.Mode)
+	// gin engine.
 	g := gin.New()
-
 	// g.Use(gin.Recovery())
 	g.Use(gwState(s.options.Name))
 

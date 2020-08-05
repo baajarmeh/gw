@@ -66,12 +66,12 @@ localfs:
   formatter: yaml
 `
 
-func TestLoadBootStrapFromBytes_ShouldBe_OK(t *testing.T) {
-	bsc := LoadBootStrapConfigFromBytes("yaml", []byte(bf))
+func TestLoadBootFromBytes_ShouldBe_OK(t *testing.T) {
+	bsc := LoadBootConfigFromBytes("yaml", []byte(bf))
 	t.Logf("%v", bsc)
 }
 
 func TestLoadConfig_ShouldBe_OK(t *testing.T) {
-	bsc := LoadBootStrapConfigFromBytes("yaml", []byte(bf))
+	bsc := LoadBootConfigFromBytes("yaml", []byte(bf))
 	t.Logf("%v", bsc)
 }

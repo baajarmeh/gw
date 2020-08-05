@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	bcs := conf.DefaultBootStrapConfig()
+	bcs := conf.DefaultBootConfig()
 	opts := gw.NewServerOption(bcs)
 	opts.Name = "my-tester-api"
 	server := gw.New(opts)

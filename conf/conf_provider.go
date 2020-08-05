@@ -14,7 +14,7 @@ func (c GWHttpConfSvrConfigProvider) Name() string {
 	return "gwconf"
 }
 
-func (c GWHttpConfSvrConfigProvider) Provide(bcs BootStrapConfig, out *Config) error {
+func (c GWHttpConfSvrConfigProvider) Provide(bcs BootConfig, out *Config) error {
 	panic("implement me")
 }
 
@@ -29,7 +29,7 @@ func (c LocalFileConfigProvider) Name() string {
 	return "localfs"
 }
 
-func (c LocalFileConfigProvider) Provide(bcs BootStrapConfig, out *Config) error {
+func (c LocalFileConfigProvider) Provide(bcs BootConfig, out *Config) error {
 	formatter := bcs.LocalFS.Formatter
 	if formatter == "" {
 		formatter = filepath.Ext(bcs.LocalFS.Path)

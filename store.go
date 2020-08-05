@@ -26,6 +26,9 @@ type StoreDbSetupHandler func(ctx gin.Context, db *gorm.DB, user User) *gorm.DB
 // StoreCacheSetupHandler defines a redis Client object handler.
 type StoreCacheSetupHandler func(ctx gin.Context, client *redis.Client, user User) *redis.Client
 
+// SessionStateHandler defines a Session state manager handler.
+type SessionStateHandler func(conf conf.Config) ISessionStateManager
+
 type backendWrapper struct {
 	ctx                    gin.Context
 	user                   User

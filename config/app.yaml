@@ -15,11 +15,6 @@ service:
         privateKey: "config/etc/gw.key"
         publicKey: "config/etc/gw.pem"
         isFile: True # true/false. The key,cert can be base64 string or A file path.
-    timeout:  # Timeout control, units is millisecond
-      redis: 1000
-      database: 2000
-      mongo: 2000
-      http: 2000
     auth:
       trustSidKey: "x-gw-trust-sid" # 如果配置这项，请务必确保您发送到后端节点的 http header -> <trustSidKey> 是可信的.
       paramKey:
@@ -79,7 +74,13 @@ service:
       methods:
         - "Get"
   settings:
-    requestIdKey: "X-Request-Id"
+    headerKey:
+      requestIdKey: "X-Request-Id"
+    timeoutControl:  # Timeout control, units is millisecond
+      redis: 1000
+      database: 2000
+      mongo: 2000
+      http: 2000
   services:
     plugin: "/apps/dylib/s/*.so"
 common:

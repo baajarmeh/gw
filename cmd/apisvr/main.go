@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	bcs := conf.DefaultBootStrapConfig()
+	bcs := conf.DefaultBootConfig()
 	opts := gw.NewServerOption(bcs)
 	opts.Name = "my api"
 	server := gw.New(opts)

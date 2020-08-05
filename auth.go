@@ -69,7 +69,7 @@ type DefaultSessionStateManagerImpl struct {
 
 func DefaultSessionStateManager(cnf conf.Config) *DefaultSessionStateManagerImpl {
 	defaultSs.cnf = cnf
-	timeout := cnf.Service.Security.Timeout.Redis
+	timeout := cnf.Service.Settings.TimeoutControl.Redis
 	defaultSs.storeName = cnf.Service.Security.Auth.Session.DefaultStore.Name
 	defaultSs.storePrefix = cnf.Service.Security.Auth.Session.DefaultStore.Prefix
 	defaultSs.expirationDuration = time.Duration(cnf.Service.Security.Auth.Cookie.MaxAge) * time.Second
@@ -326,14 +326,14 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 			payload := gin.H{
 				"Auth": gin.H{
 					"LogIn": gin.H{
-						"Url":       fmt.Sprintf("%s/%s",
-							strings.TrimRight(auth.Addr,"/"), strings.TrimLeft(auth.LogIn.Url,"/")),
+						"Url": fmt.Sprintf("%s/%s",
+							strings.TrimRight(auth.Addr, "/"), strings.TrimLeft(auth.LogIn.Url, "/")),
 						"Methods":   auth.LogIn.Methods,
 						"AuthTypes": auth.LogIn.AuthTypes,
 					},
 					"LogOut": gin.H{
-						"Url":       fmt.Sprintf("%s/%s",
-							strings.TrimRight(auth.Addr,"/"), strings.TrimLeft(auth.LogOut.Url,"/")),
+						"Url": fmt.Sprintf("%s/%s",
+							strings.TrimRight(auth.Addr, "/"), strings.TrimLeft(auth.LogOut.Url, "/")),
 						"Methods": auth.LogOut.Methods,
 					},
 				},

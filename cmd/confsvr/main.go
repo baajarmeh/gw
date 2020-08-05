@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	bsc := conf.DefaultBootStrapConfig()
+	bsc := conf.DefaultBootConfig()
 	conf := gw.NewServerOption(bsc)
 	conf.Name = "confsvr"
 	conf.Addr = ":8090"

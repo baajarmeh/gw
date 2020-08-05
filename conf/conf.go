@@ -14,16 +14,17 @@ import (
 
 type ConfigProvider interface {
 	Name() string
-	Provide(bcs BootStrapConfig, out *Config) error
+	Provide(bcs BootConfig, out *Config) error
 }
 
 // ========================================================== //
 //                                                            //
-//    Define all of configuration Items for app BootStrap     //
+//    Define all of configuration Items for app Boot     //
 //                                                            //                                                              ////                                                              ////
 // ========================================================== //
 
-type BootStrapConfig struct {
+// BootConfig represents a Application boot strap configuration object. It's likes linux boot.cnf
+type BootConfig struct {
 	AppCnf struct {
 		Provider string `yaml:"provider" toml:"provider" json:"provider"`
 		Section  string `yaml:"section" toml:"section" json:"section"`
@@ -43,7 +44,7 @@ type BootStrapConfig struct {
 	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
 }
 
-func (bsc BootStrapConfig) String() string {
+func (bsc BootConfig) String() string {
 	b, _ := json.MarshalIndent(bsc, "", "  ")
 	return string(b)
 }
@@ -76,12 +77,6 @@ type Config struct {
 					IsFile     bool   `yaml:"isFile" toml:"isFile" json:"isFile"`
 				} `yaml:"cert" toml:"cert" json:"cert"`
 			} `yaml:"crypto" toml:"crypto" json:"crypto"`
-			Timeout struct {
-				HTTP     int `yaml:"http" toml:"http" json:"http"`
-				Redis    int `yaml:"redis" toml:"redis" json:"redis"`
-				MongoDB  int `yaml:"mongo" toml:"mongo" json:"mongo"`
-				Database int `yaml:"database" toml:"database" json:"database"`
-			} `yaml:"timeout" toml:"timeout" json:"timeout"`
 			Auth struct {
 				TrustSidKey string `yaml:"trustSidKey" toml:"trustSidKey" json:"trustSidKey"`
 				ParamKey    struct {
@@ -140,7 +135,15 @@ type Config struct {
 			} `yaml:"logout" toml:"logout" json:"logout"`
 		} `yaml:"authServer" toml:"authServer" json:"authServer"`
 		Settings struct {
-			RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
+			HeaderKey struct {
+				RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
+			} `yaml:"headerKey" toml:"headerKey" json:"headerKey"`
+			TimeoutControl struct {
+				HTTP     int `yaml:"http" toml:"http" json:"http"`
+				Redis    int `yaml:"redis" toml:"redis" json:"redis"`
+				MongoDB  int `yaml:"mongo" toml:"mongo" json:"mongo"`
+				Database int `yaml:"database" toml:"database" json:"database"`
+			} `yaml:"timeoutControl" toml:"timeoutControl" json:"timeoutControl"`
 		} `yaml:"settings" toml:"settings" json:"settings"`
 	} `yaml:"service" toml:"service" json:"service"`
 	Common struct {
@@ -213,10 +216,10 @@ localfs:
   formatter: yaml
 `
 var (
-	defaultBootStrapConfigFileName = "config/boot.yaml"
-	formatterDecoders              map[string]func(b []byte, out interface{}) error
-	configProviders                map[string]ConfigProvider
-	configVarModifier              func(cnf *Config) *Config
+	defaultBootConfigFileName = "config/boot.yaml"
+	formatterDecoders         map[string]func(b []byte, out interface{}) error
+	configProviders           map[string]ConfigProvider
+	configVarModifier         func(cnf *Config) *Config
 )
 
 func init() {
@@ -266,16 +269,16 @@ func RegisterProvider(provider ConfigProvider) {
 	configProviders[provider.Name()] = provider
 }
 
-func DefaultFromGWConfSvr(cnf BootStrapConfig) *Config {
+func DefaultFromGWConfSvr(cnf BootConfig) *Config {
 	panic("impl me.")
 }
 
 func NewConfigFromLocalFile(filename string) *Config {
-	bcs := LoadBootStrapConfigFromBytes("yaml", []byte(defaultBSCLocalFileData))
-	return NewConfigByBootStrapConfig(bcs)
+	bcs := LoadBootConfigFromBytes("yaml", []byte(defaultBSCLocalFileData))
+	return NewConfigByBootConfig(bcs)
 }
 
-func NewConfigByBootStrapConfig(bcs *BootStrapConfig) *Config {
+func NewConfigByBootConfig(bcs *BootConfig) *Config {
 	cp, ok := configProviders[bcs.AppCnf.Provider]
 	if !ok {
 		panic(fmt.Sprintf("provider: %s are not support. you can added by conf.RegisterProvider(...).", bcs.AppCnf.Provider))
@@ -288,15 +291,15 @@ func NewConfigByBootStrapConfig(bcs *BootStrapConfig) *Config {
 	return configVarModifier(cnf)
 }
 
-func LoadBootStrapConfigFromBytes(formatter string, bytes []byte) *BootStrapConfig {
-	logger.Debug("exec LoadBootStrapConfigFromBytes(...), formatter: %s", formatter)
+func LoadBootConfigFromBytes(formatter string, bytes []byte) *BootConfig {
+	logger.Debug("exec LoadBootConfigFromBytes(...), formatter: %s", formatter)
 	formatter = strings.TrimLeft(formatter, ".")
 	ext := fmt.Sprintf(".%s", formatter)
 	p, o := formatterDecoders[ext]
 	if !o {
 		panic(fmt.Sprintf("not supports bootstrap config suffix: %s.", ext))
 	}
-	out := &BootStrapConfig{}
+	out := &BootConfig{}
 	err := p(bytes, out)
 	if err != nil {
 		panic(fmt.Sprintf("read boostrap conf, err: %v", err))
@@ -304,17 +307,17 @@ func LoadBootStrapConfigFromBytes(formatter string, bytes []byte) *BootStrapConf
 	return out
 }
 
-func LoadBootStrapConfigFromFile(filename string) *BootStrapConfig {
-	logger.Debug("exec LoadBootStrapConfigFromFile(...) path: %s", filename)
+func LoadBootConfigFromFile(filename string) *BootConfig {
+	logger.Debug("exec LoadBootConfigFromFile(...) path: %s", filename)
 	ext := filepath.Ext(filename)
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("read boostrap conf file: %s, err: %v", filename, err))
 	}
-	return LoadBootStrapConfigFromBytes(ext, b)
+	return LoadBootConfigFromBytes(ext, b)
 }
 
-// DefaultBootStrapConfig returns a bcs from local file config/boot.yaml
-func DefaultBootStrapConfig() *BootStrapConfig {
-	return LoadBootStrapConfigFromFile(defaultBootStrapConfigFileName)
+// DefaultBootConfig returns a bcs from local file config/boot.yaml
+func DefaultBootConfig() *BootConfig {
+	return LoadBootConfigFromFile(defaultBootConfigFileName)
 }
