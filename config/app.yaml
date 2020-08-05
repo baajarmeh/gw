@@ -33,7 +33,7 @@ service:
         key: "_gid"
         domain: ""  # xxx.com / xxx.net
         path: "/"
-        maxAge: 7200
+        maxAge: "{{ .service.settings.expirationTimeControl.session }}"
         httpOnly: False
         secure: False
       server:
@@ -62,18 +62,18 @@ service:
         - 192.168.0.0/24
     limit:
       pagination:
-        minPageSize: 20
-        maxPageSize: 2000
+        minPageSize: "20"
+        maxPageSize: "2000"
   settings:
     headerKey:
       requestIdKey: "X-Request-Id"
     timeoutControl:  # Timeout control, units is millisecond
-      redis: 1000
-      database: 2000
-      mongo: 2000
-      http: 2000
+      redis: "1000"
+      database: "2000"
+      mongo: "2000"
+      http: "2000"
     expirationTimeControl:
-      session: 7200
+      session: "7200"
   services:
     plugin: "/apps/dylib/s/*.so"
 common:
@@ -82,7 +82,7 @@ common:
     - name: primary
       driver: mysql
       addr: 127.0.0.1
-      port: 3306
+      port: "3306"
       user: gw
       password: gw@123
       database: gwdb
@@ -95,12 +95,12 @@ common:
     - name: primary
       driver: redis
       addr: 127.0.0.1
-      port: 6379
+      port: "6379"
       type: redis
       auth:
         disable: True
         user: ocean
-        database: 1
+        database: "1"
         password: oceanho
 
 # Any Your custom configuration item at here.

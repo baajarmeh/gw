@@ -102,7 +102,7 @@ type Config struct {
 					Key      string `yaml:"key" toml:"key" json:"key"`
 					Path     string `yaml:"path" toml:"path" json:"path"`
 					HttpOnly bool   `yaml:"httpOnly" toml:"httpOnly" json:"httpOnly"`
-					MaxAge   int    `yaml:"maxAge" toml:"maxAge" json:"maxAge"`
+					MaxAge   int    `yaml:"maxAge" toml:"maxAge" json:"maxAge,string"`
 					Secure   bool   `yaml:"secure" toml:"secure" json:"secure"`
 					Domain   string `yaml:"domain" toml:"domain" json:"domain"`
 				} `yaml:"cookie" toml:"cookie" json:"cookie"`
@@ -123,8 +123,8 @@ type Config struct {
 			} `yaml:"auth" toml:"auth" json:"auth"`
 			Limit struct {
 				Pagination struct {
-					MinPageSize int `yaml:"minPageSize" toml:"minPageSize" json:"minPageSize"`
-					MaxPageSize int `yaml:"maxPageSize" toml:"maxPageSize" json:"maxPageSize"`
+					MinPageSize int `yaml:"minPageSize" toml:"minPageSize" json:"minPageSize,string"`
+					MaxPageSize int `yaml:"maxPageSize" toml:"maxPageSize" json:"maxPageSize,string"`
 				} `yaml:"pagination" toml:"pagination" json:"pagination"`
 			} `yaml:"limit" toml:"limit" json:"limit"`
 		} `yaml:"security" toml:"security" json:"security"`
@@ -133,13 +133,13 @@ type Config struct {
 				RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
 			} `yaml:"headerKey" toml:"headerKey" json:"headerKey"`
 			TimeoutControl struct {
-				HTTP     int `yaml:"http" toml:"http" json:"http"`
-				Redis    int `yaml:"redis" toml:"redis" json:"redis"`
-				MongoDB  int `yaml:"mongo" toml:"mongo" json:"mongo"`
-				Database int `yaml:"database" toml:"database" json:"database"`
+				HTTP     int `yaml:"http" toml:"http" json:"http,string"`
+				Redis    int `yaml:"redis" toml:"redis" json:"redis,string"`
+				MongoDB  int `yaml:"mongo" toml:"mongo" json:"mongo,string"`
+				Database int `yaml:"database" toml:"database" json:"database,string"`
 			} `yaml:"timeoutControl" toml:"timeoutControl" json:"timeoutControl"`
 			ExpirationTimeControl struct {
-				Session int `yaml:"session" toml:"session" json:"session"`
+				Session int `yaml:"session" toml:"session" json:"session,string"`
 			} `yaml:"expirationTimeControl" toml:"expirationTimeControl" json:"expirationTimeControl"`
 		} `yaml:"settings" toml:"settings" json:"settings"`
 	} `yaml:"service" toml:"service" json:"service"`
@@ -164,7 +164,7 @@ type Db struct {
 	Driver   string                 `yaml:"driver" toml:"driver" json:"driver"`
 	Name     string                 `yaml:"name" toml:"name" json:"name"`
 	Addr     string                 `yaml:"addr" toml:"addr" json:"addr"`
-	Port     int                    `yaml:"port" toml:"port" json:"port"`
+	Port     int                    `yaml:"port" toml:"port" json:"port,string"`
 	User     string                 `yaml:"user" toml:"user" json:"user"`
 	Password string                 `yaml:"password" toml:"password" json:"password"`
 	Database string                 `yaml:"database" toml:"database" json:"database"`
@@ -177,10 +177,10 @@ type Cache struct {
 	Driver           string                 `yaml:"driver" toml:"driver" json:"driver"`
 	Name             string                 `yaml:"name" toml:"name" json:"name"`
 	Addr             string                 `yaml:"addr" toml:"addr" json:"addr"`
-	Port             int                    `yaml:"port" toml:"port" json:"port"`
+	Port             int                    `yaml:"port" toml:"port" json:"port,string"`
 	User             string                 `yaml:"user" toml:"user" json:"user"`
 	Password         string                 `yaml:"password" toml:"password" json:"password"`
-	DB               int                    `yaml:"db" toml:"db" json:"db"`
+	DB               int                    `yaml:"db" toml:"db" json:"db,string"`
 	SSLMode          string                 `yaml:"ssl_mode" toml:"ssl_mode" json:"ssl_mode"`
 	SSLCert          string                 `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
 	SSLCertFormatter string                 `yaml:"ssl_cert_fmt" toml:"ssl_cert_fmt" json:"ssl_cert_fmt"`
