@@ -11,7 +11,6 @@ func main() {
 	conf := gw.NewServerOption(bsc)
 	conf.Name = "confsvr"
 	conf.Addr = ":8090"
-	conf.Mode = "release"
 
 	server := gw.New(conf)
 	registerApps(server)

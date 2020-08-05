@@ -1,11 +1,13 @@
 package conf
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/oceanho/gw/logger"
 	"gopkg.in/yaml.v3"
+	"html/template"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -105,8 +107,9 @@ type Config struct {
 					Domain   string `yaml:"domain" toml:"domain" json:"domain"`
 				} `yaml:"cookie" toml:"cookie" json:"cookie"`
 				Server struct {
-					Addr  string `yaml:"addr" toml:"addr" json:"addr"`
-					LogIn struct {
+					AuthServe bool   `yaml:"authServe" toml:"authServe" json:"authServe"`
+					Addr      string `yaml:"addr" toml:"addr" json:"addr"`
+					LogIn     struct {
 						Url       string   `yaml:"url" toml:"url" json:"url"`
 						Methods   []string `yaml:"methods" toml:"methods" json:"methods"`
 						AuthTypes []string `yaml:"authTypes" toml:"authTypes" json:"authTypes"`
@@ -118,22 +121,13 @@ type Config struct {
 				} `yaml:"server" toml:"server" json:"server"`
 				AllowUrls []AllowUrl `yaml:"allowUrls" toml:"allowUrls" json:"allowUrls"`
 			} `yaml:"auth" toml:"auth" json:"auth"`
-			QueryLimit struct {
-				MinPageSize int `yaml:"minPageSize" toml:"minPageSize" json:"minPageSize"`
-				MaxPageSize int `yaml:"maxPageSize" toml:"maxPageSize" json:"maxPageSize"`
-			} `yaml:"queryLimit" toml:"queryLimit" json:"queryLimit"`
+			Limit struct {
+				Pagination struct {
+					MinPageSize int `yaml:"minPageSize" toml:"minPageSize" json:"minPageSize"`
+					MaxPageSize int `yaml:"maxPageSize" toml:"maxPageSize" json:"maxPageSize"`
+				} `yaml:"pagination" toml:"pagination" json:"pagination"`
+			} `yaml:"limit" toml:"limit" json:"limit"`
 		} `yaml:"security" toml:"security" json:"security"`
-		AuthServer struct {
-			Disabled bool `yaml:"disabled" toml:"disabled" json:"disabled"`
-			LogIn    struct {
-				Url     string   `yaml:"url" toml:"url" json:"url"`
-				Methods []string `yaml:"methods" toml:"method" json:"methods"`
-			} `yaml:"login" toml:"login" json:"login"`
-			LogOut struct {
-				Url     string   `yaml:"url" toml:"url" json:"url"`
-				Methods []string `yaml:"methods" toml:"method" json:"methods"`
-			} `yaml:"logout" toml:"logout" json:"logout"`
-		} `yaml:"authServer" toml:"authServer" json:"authServer"`
 		Settings struct {
 			HeaderKey struct {
 				RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
@@ -144,10 +138,13 @@ type Config struct {
 				MongoDB  int `yaml:"mongo" toml:"mongo" json:"mongo"`
 				Database int `yaml:"database" toml:"database" json:"database"`
 			} `yaml:"timeoutControl" toml:"timeoutControl" json:"timeoutControl"`
+			ExpirationTimeControl struct {
+				Session int `yaml:"session" toml:"session" json:"session"`
+			} `yaml:"expirationTimeControl" toml:"expirationTimeControl" json:"expirationTimeControl"`
 		} `yaml:"settings" toml:"settings" json:"settings"`
 	} `yaml:"service" toml:"service" json:"service"`
 	Common struct {
-		Backend *Backend `yaml:"backend" toml:"backend" json:"backend"`
+		Backend Backend `yaml:"backend" toml:"backend" json:"backend"`
 	} `yaml:"common" toml:"common" json:"common"`
 	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
 }
@@ -159,35 +156,35 @@ type AllowUrl struct {
 }
 
 type Backend struct {
-	Db    []Db    `yaml:"db"`
-	Cache []Cache `yaml:"cache"`
+	Db    []Db    `yaml:"db" toml:"db" json:"db"`
+	Cache []Cache `yaml:"cache" toml:"cache" json:"cache"`
 }
 
 type Db struct {
-	Driver   string            `yaml:"driver" toml:"driver" json:"driver"`
-	Name     string            `yaml:"name" toml:"name" json:"name"`
-	Addr     string            `yaml:"addr" toml:"addr" json:"addr"`
-	Port     int               `yaml:"port" toml:"port" json:"port"`
-	User     string            `yaml:"user" toml:"user" json:"user"`
-	Password string            `yaml:"password" toml:"password" json:"password"`
-	Database string            `yaml:"database" toml:"database" json:"database"`
-	SSLMode  string            `yaml:"ssl_mode" toml:"ssl_mode" json:"ssl_mode"`
-	SSLCert  string            `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
-	Args     map[string]string `yaml:"args" toml:"args" json:"args"`
+	Driver   string                 `yaml:"driver" toml:"driver" json:"driver"`
+	Name     string                 `yaml:"name" toml:"name" json:"name"`
+	Addr     string                 `yaml:"addr" toml:"addr" json:"addr"`
+	Port     int                    `yaml:"port" toml:"port" json:"port"`
+	User     string                 `yaml:"user" toml:"user" json:"user"`
+	Password string                 `yaml:"password" toml:"password" json:"password"`
+	Database string                 `yaml:"database" toml:"database" json:"database"`
+	SSLMode  string                 `yaml:"ssl_mode" toml:"ssl_mode" json:"ssl_mode"`
+	SSLCert  string                 `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
+	Args     map[string]interface{} `yaml:"args" toml:"args" json:"args"`
 }
 
 type Cache struct {
-	Driver           string            `yaml:"driver" toml:"driver" json:"driver"`
-	Name             string            `yaml:"name" toml:"name" json:"name"`
-	Addr             string            `yaml:"addr" toml:"addr" json:"addr"`
-	Port             int               `yaml:"port" toml:"port" json:"port"`
-	User             string            `yaml:"user" toml:"user" json:"user"`
-	Password         string            `yaml:"password" toml:"password" json:"password"`
-	DB               int               `yaml:"db" toml:"db" json:"db"`
-	SSLMode          string            `yaml:"ssl_mode" toml:"ssl_mode" json:"ssl_mode"`
-	SSLCert          string            `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
-	SSLCertFormatter string            `yaml:"ssl_cert_fmt" toml:"ssl_cert_fmt" json:"ssl_cert_fmt"`
-	Args             map[string]string `yaml:"args" toml:"args" json:"args"`
+	Driver           string                 `yaml:"driver" toml:"driver" json:"driver"`
+	Name             string                 `yaml:"name" toml:"name" json:"name"`
+	Addr             string                 `yaml:"addr" toml:"addr" json:"addr"`
+	Port             int                    `yaml:"port" toml:"port" json:"port"`
+	User             string                 `yaml:"user" toml:"user" json:"user"`
+	Password         string                 `yaml:"password" toml:"password" json:"password"`
+	DB               int                    `yaml:"db" toml:"db" json:"db"`
+	SSLMode          string                 `yaml:"ssl_mode" toml:"ssl_mode" json:"ssl_mode"`
+	SSLCert          string                 `yaml:"ssl_cert" toml:"ssl_cert" json:"ssl_cert"`
+	SSLCertFormatter string                 `yaml:"ssl_cert_fmt" toml:"ssl_cert_fmt" json:"ssl_cert_fmt"`
+	Args             map[string]interface{} `yaml:"args" toml:"args" json:"args"`
 }
 
 func (cnf Config) String() string {
@@ -219,7 +216,7 @@ var (
 	defaultBootConfigFileName = "config/boot.yaml"
 	formatterDecoders         map[string]func(b []byte, out interface{}) error
 	configProviders           map[string]ConfigProvider
-	configVarModifier         func(cnf *Config) *Config
+	TemplateParser            func(prepare interface{},out *Config) error
 )
 
 func init() {
@@ -231,20 +228,22 @@ func init() {
 	RegisterProvider(newLocalFileConfigProvider())
 	RegisterProvider(newGWHttpConfSvrConfigProvider())
 
-	configVarModifier = func(cnf *Config) *Config {
+	TemplateParser = func(cnf interface{}, out *Config) error {
 		b, e := json.Marshal(cnf)
 		if e != nil {
-			panic(fmt.Errorf("configVarModifier fail on json.Marshal(). err: %v", e))
+			panic(fmt.Errorf("conf.TemplateParser(...) fail on json.Marshal(). err: %v", e))
 		}
 		s := string(b)
-		prefix := cnf.Service.Prefix
-		s = strings.Replace(s, "$PREFIX", prefix, -1)
-		s = strings.Replace(s, "${PREFIX}", prefix, -1)
-		cnfNew := &Config{}
-		if json.Unmarshal([]byte(s), cnfNew) != nil {
-			panic(fmt.Errorf("configVarModifier fail on json.Unmarshal(). err: %v", e))
+		tmpl, err := template.New("gw-config").Parse(s)
+		if err != nil {
+			panic(fmt.Sprintf("parse template fail. %v", err))
 		}
-		return cnfNew
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, cnf)
+		if err != nil {
+			panic(fmt.Sprintf("execute template fail. %v", err))
+		}
+		return json.Unmarshal(buf.Bytes(), out)
 	}
 }
 
@@ -269,15 +268,6 @@ func RegisterProvider(provider ConfigProvider) {
 	configProviders[provider.Name()] = provider
 }
 
-func DefaultFromGWConfSvr(cnf BootConfig) *Config {
-	panic("impl me.")
-}
-
-func NewConfigFromLocalFile(filename string) *Config {
-	bcs := LoadBootConfigFromBytes("yaml", []byte(defaultBSCLocalFileData))
-	return NewConfigByBootConfig(bcs)
-}
-
 func NewConfigByBootConfig(bcs *BootConfig) *Config {
 	cp, ok := configProviders[bcs.AppCnf.Provider]
 	if !ok {
@@ -288,7 +278,7 @@ func NewConfigByBootConfig(bcs *BootConfig) *Config {
 	if err != nil {
 		panic(fmt.Sprintf("config provider: %s call Provide(...) fail. err: %v", bcs.AppCnf.Provider, err))
 	}
-	return configVarModifier(cnf)
+	return cnf
 }
 
 func LoadBootConfigFromBytes(formatter string, bytes []byte) *BootConfig {

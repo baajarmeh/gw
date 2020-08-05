@@ -130,13 +130,21 @@ func createDb(db conf.Db) *gorm.DB {
 		panic("not supports db.Driver: %s, only supports mysql.")
 	}
 
+	params := make(map[string]string)
+	for k, v := range db.Args {
+		params[k] = fmt.Sprintf("%v", v)
+	}
+
 	dbConf := mysqlDb.NewConfig()
-	dbConf.Addr = fmt.Sprintf("%s:%d", db.Addr, db.Port)
 	dbConf.DBName = db.Database
 	dbConf.User = db.User
 	dbConf.Passwd = db.Password
-	pt, _ := strconv.ParseBool(db.Args["parseTime"])
-	dbConf.ParseTime = pt
+	parseTime, ok := params["parseTime"]
+	if ok {
+		dbConf.ParseTime, _ = strconv.ParseBool(parseTime)
+	}
+	dbConf.Addr = fmt.Sprintf("%s:%d", db.Addr, db.Port)
+	dbConf.Params = params
 
 	gDialect := mysql.Open(dbConf.FormatDSN())
 	gDbConf := &gorm.Config{}

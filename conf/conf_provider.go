@@ -41,11 +41,12 @@ func (c LocalFileConfigProvider) Provide(bcs BootConfig, out *Config) error {
 		return fmt.Errorf("not supports app config provider, suffix: %s", providerName)
 	}
 	b, err := ioutil.ReadFile(bcs.LocalFS.Path)
-	err = provider(b, out)
+	var outPrepare interface{}
+	err = provider(b, &outPrepare)
 	if err != nil {
 		return fmt.Errorf("provider . %v", err)
 	}
-	return nil
+	return TemplateParser(outPrepare, out)
 }
 
 func newLocalFileConfigProvider() LocalFileConfigProvider {

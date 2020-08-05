@@ -38,8 +38,9 @@ service:
         secure: False
       server:
         addr: https://auth.gw-framework.com
+        authServe: False # Enable(True)/Disable(False) Auth features.
         login:
-          url: ${PREFIX}/gw/auth/login
+          url: "{{ .service.prefix }}/gw/auth/login"
           authTypes:
             - basicAuth
             - credentials
@@ -48,31 +49,21 @@ service:
             - "Get"
             - "Post"
         logout:
-          url: ${PREFIX}/gw/auth/logout
+          url: "{{ .service.prefix }}/gw/auth/logout"
           methods:
             - "Get"
       allowUrls:
       - name: auth
         urls:
-        - POST:${PREFIX}/ucp/account/login
-        - POST:${PREFIX}/ucp/account/login
+        - "POST:{{ .service.prefix }}/ucp/account/login"
+        - "POST:{{ .service.prefix }}/ucp/account/login"
         ips:
         - 127.0.0.1/32
         - 192.168.0.0/24
-    queryLimit:
-      minPageSize: 20
-      maxPageSize: 2000
-  authServer:
-    disabled: False # True, enable auth server router. False disable auth server router.
-    login:
-      url: ${PREFIX}/gw/auth/login
-      methods:
-        - "Get"
-        - "Post"
-    logout:
-      url: ${PREFIX}/gw/auth/logout
-      methods:
-        - "Get"
+    limit:
+      pagination:
+        minPageSize: 20
+        maxPageSize: 2000
   settings:
     headerKey:
       requestIdKey: "X-Request-Id"
@@ -81,6 +72,8 @@ service:
       database: 2000
       mongo: 2000
       http: 2000
+    expirationTimeControl:
+      session: 7200
   services:
     plugin: "/apps/dylib/s/*.so"
 common:

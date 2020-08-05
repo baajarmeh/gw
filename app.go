@@ -397,8 +397,8 @@ func registerAuthParamValidators(s *HostServer) {
 }
 
 func registerAuthRouter(cnf *conf.Config, router *gin.Engine) {
-	authServer := cnf.Service.AuthServer
-	if !authServer.Disabled {
+	authServer := cnf.Service.Security.Auth.Server
+	if !authServer.AuthServe {
 		for _, m := range authServer.LogIn.Methods {
 			router.Handle(strings.ToUpper(m), authServer.LogIn.Url, gwLogin)
 		}
