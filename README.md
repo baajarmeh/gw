@@ -70,8 +70,12 @@ openssl rsa -in config/etc/gw.key -pubout -out config/etc/gw.pem
 
 ## Quick Start
 
-``` shell
-go get github.com/oceanho/gw/gwcli
+```shell script
+go install github.com/oceanho/gw/cmd/gwcli
 ```
 
 ### Create Project
+
+```shell script
+mkdir -p ~/workspace/myapp
+```

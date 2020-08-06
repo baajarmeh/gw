@@ -24,3 +24,7 @@ require (
 	gorm.io/driver/mysql v0.3.1
 	gorm.io/gorm v0.2.26
 )
+
+replace (
+	github.com/oceanho/gw/cmd/gwcli  => ./cmd/gwcli 
+)
