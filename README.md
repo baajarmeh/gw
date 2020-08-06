@@ -71,7 +71,10 @@ openssl rsa -in config/etc/gw.key -pubout -out config/etc/gw.pem
 ## Quick Start
 
 ```shell script
-wget -O $GOROOT/bin/gwcli https://raw.githubusercontent.com/oceanho/gw/dev/cmd/gwcli/scripts/cli.sh
+export GO111MODULE="on"
+export GOPROXY="https://goproxy.cn"
+go get -u github.com/oceanho/gw@dev
+\cp -r $GOPATH/src/github.com/oceanho/gw/cmd/gwcli/scripts/cli.sh $GOROOT/bin/gwcli
 chmod +x $GOROOT/bin/gwcli
 ```
 
