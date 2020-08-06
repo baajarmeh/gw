@@ -1,4 +1,4 @@
-package api
+package rest
 
 //
 // written your rest style APIs at here.

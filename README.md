@@ -71,11 +71,13 @@ openssl rsa -in config/etc/gw.key -pubout -out config/etc/gw.pem
 ## Quick Start
 
 ```shell script
-go install github.com/oceanho/gw/cmd/gwcli
+wget -O $GOROOT/bin/gwcli https://raw.githubusercontent.com/oceanho/gw/dev/cmd/gwcli/scripts/cli.sh
+chmod +x $GOROOT/bin/gwcli
 ```
 
 ### Create Project
 
 ```shell script
 mkdir -p ~/workspace/myapp
+gwcli newproject mywebapi .
 ```

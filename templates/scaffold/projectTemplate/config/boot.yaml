@@ -1,0 +1,15 @@
+appconf:
+  provider: localfs
+  section: localfs
+gwconf:
+  addr: "https://configsvr.gw.com"
+  appid: ""
+  secret: ""
+  type: plaintext
+  provider: defaultHttpProvider
+  args:
+    salt: Salt$#NB
+localfs:
+  path: "config/app.yaml"
+  type: plaintext
+  formatter: yaml

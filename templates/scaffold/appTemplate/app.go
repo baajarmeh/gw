@@ -1,4 +1,4 @@
-package uap
+package appTemplate
 
 import (
 	"github.com/oceanho/gw"
