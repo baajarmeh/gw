@@ -74,7 +74,7 @@ openssl rsa -in config/etc/gw.key -pubout -out config/etc/gw.pem
 export GO111MODULE="on"
 export GOPROXY="https://goproxy.cn"
 go get -u github.com/oceanho/gw@dev
-\cp -r $GOPATH/src/github.com/oceanho/gw/cmd/gwcli/scripts/cli.sh $GOROOT/bin/gwcli
+\cp -r $(ls -d $GOPATH/pkg/mod/github.com/oceanho/gw* | head -n 1)/cmd/gwcli/scripts/cli.sh $GOROOT/bin/gwcli
 chmod +x $GOROOT/bin/gwcli
 ```
 
