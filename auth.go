@@ -56,7 +56,12 @@ type IPermissionManager interface {
 }
 
 type DefaultAuthManagerImpl struct {
-	users map[string]*User
+	users map[string]*defaultUser
+}
+
+type defaultUser struct {
+	User
+	secret string
 }
 
 type DefaultSessionStateManagerImpl struct {
@@ -123,7 +128,7 @@ func (d *DefaultSessionStateManagerImpl) Query(store Store, sid string) (*User, 
 func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, credType, verifyCode string) (*User, error) {
 	user, ok := d.users[passport]
 	if ok && user.secret == secret {
-		return user, nil
+		return &user.User, nil
 	}
 	return nil, fmt.Errorf("user:%s not found or serect not match", passport)
 }
@@ -141,27 +146,33 @@ var (
 
 func init() {
 	defaultAm = &DefaultAuthManagerImpl{
-		users: map[string]*User{
+		users: map[string]*defaultUser{
 			"admin": {
-				Id:       10000,
-				Passport: "admin",
-				TenantId: 0,
-				RoleId:   1,
-				secret:   "123@456",
+				User: User{
+					Id:         10000,
+					Passport:   "admin",
+					TenantId:   0,
+					MainRoleId: 1,
+				},
+				secret: "123@456",
 			},
 			"gw": {
-				Id:       10001,
-				Passport: "gw",
-				TenantId: 0,
-				RoleId:   2,
-				secret:   "123@456",
+				User: User{
+					Id:         10001,
+					Passport:   "gw",
+					TenantId:   0,
+					MainRoleId: 2,
+				},
+				secret: "123@456",
 			},
 			"gw-user1": {
-				Id:       100000,
-				Passport: "gw-user1",
-				TenantId: 10001,
-				RoleId:   3,
-				secret:   "123@456",
+				User: User{
+					Id:         100000,
+					Passport:   "gw-user1",
+					TenantId:   10001,
+					MainRoleId: 100000,
+				},
+				secret: "123@456",
 			},
 		},
 	}
@@ -414,11 +425,12 @@ func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, v
 // Auth User
 //
 type User struct {
-	Id       uint64
-	TenantId uint64
-	Passport string
-	RoleId   int // Platform Admin:1, Tenant Admin:2, roleId >= 10000 are custom role.
-	secret   string
+	Id              uint64
+	TenantId        uint64
+	Passport        string
+	MainRoleId      int // Platform Admin:1, Tenant Admin:2, roleId >= 10000 are custom role.
+	ExtraRoleIdList []string
+	Permissions     []Permission
 }
 
 func (user *User) UnmarshalBinary(data []byte) error {
@@ -434,11 +446,11 @@ func (user User) IsAuth() bool {
 }
 
 func (user User) IsAdmin() bool {
-	return user.IsAuth() && user.RoleId == 1
+	return user.IsAuth() && user.MainRoleId == 1
 }
 
 func (user User) IsTenantAdmin() bool {
-	return user.IsAuth() && user.RoleId == 2
+	return user.IsAuth() && user.MainRoleId == 2
 }
 
 func getUser(c *gin.Context) *User {

@@ -269,11 +269,38 @@ func (s *HostServer) HandleError(httpStatus int, handlers ...ErrorHandler) {
 
 // Register register a app instances into the server.
 func (s *HostServer) Register(apps ...App) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
 	for _, app := range apps {
 		appName := app.Name()
 		if _, ok := s.apps[appName]; !ok {
 			s.apps[appName] = app
 			// ServerOptions used AT first.
+			app.Use(s.options)
+		}
+	}
+}
+
+// Patch patch up for HostServer with apps.
+// It's Usage scenarios are need change server Options with other ge App but not need that's router features.
+//
+// Example:
+// Your have two gw App
+// 1. UAP(your app one), It's implementation User/Permission features
+// 2. DevOps(your app two), It's implementation DevOps features
+//    It's dependencies on UAP, but the UAP's router not necessary on DevOps service.
+//
+// Now, We can separate deployment of UAP and DevOps
+// And we should be patch up UAP into DevOps app.
+func (s *HostServer) Patch(apps ...App) {
+	if len(apps) == 0 {
+		return
+	}
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	for _, app := range apps {
+		appName := app.Name()
+		if _, ok := s.apps[appName]; !ok {
 			app.Use(s.options)
 		}
 	}
