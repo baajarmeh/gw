@@ -5,6 +5,7 @@ import (
 	"github.com/oceanho/gw/web/apps/tester/api"
 	"github.com/oceanho/gw/web/apps/tester/definations"
 	"github.com/oceanho/gw/web/apps/tester/dto"
+	"github.com/oceanho/gw/web/apps/tester/infra"
 	"github.com/oceanho/gw/web/apps/tester/rest"
 )
 
@@ -28,7 +29,7 @@ func (a App) Router() string {
 
 func (a App) Register(router *gw.RouterGroup) {
 
-	router.POST("test/create", api.CreateMyTester, definations.PermissionCreateTestDataDecorator)
+	router.POST("test/create", api.CreateMyTester, infra.DecoratorList.ReadAll())
 	router.GET("test/query", api.QueryMyTester)
 
 	router.GET("test/200", api.GetTester)

@@ -1,4 +1,4 @@
-package definations
+package infra
 
 import "github.com/oceanho/gw"
 

@@ -216,7 +216,7 @@ var (
 	defaultBootConfigFileName = "config/boot.yaml"
 	formatterDecoders         map[string]func(b []byte, out interface{}) error
 	configProviders           map[string]ConfigProvider
-	TemplateParser            func(prepare interface{},out *Config) error
+	TemplateParser            func(prepare interface{}, out *Config) error
 )
 
 func init() {

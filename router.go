@@ -69,7 +69,7 @@ func createRouterInfo(method, router string, handler Handler, decorators ...IDec
 	}, decorators...)
 	var perms []Permission
 	for _, p := range pds {
-		if pd, ok := p.(PermissionDecoratorImpl); ok {
+		if pd, ok := p.(DecoratorPermissionImpl); ok {
 			perms = append(val.permissions, pd.perms...)
 		}
 	}
