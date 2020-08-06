@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/conf"
-	"github.com/oceanho/gw/logger"
 	"net/http"
 	"reflect"
-	"strings"
+	"runtime"
 	"time"
 )
 
@@ -17,22 +16,6 @@ const (
 
 // Handler defines a http handler for gw framework.
 type Handler func(ctx *Context)
-
-// dynamicHandler
-type dynamicHandler func(relativePath string, r *RouterGroup, caller dynamicCaller)
-
-type dynamicCaller struct {
-	argsLength        int
-	ctrl              IRestAPI
-	handler           reflect.Value
-	methodName        string
-	argsOrderlyBinder []dynamicArgsBinder
-}
-
-type dynamicArgsBinder struct {
-	dataType reflect.Type
-	bindFunc func(p reflect.Type, c *Context) reflect.Value
-}
 
 // Context represents a gw Context object, it's extension from gin.Context.
 type Context struct {
@@ -79,7 +62,8 @@ func createRouterInfo(method, router string, handler Handler, decorators ...IDec
 }
 
 func getHandlerFullName(handler Handler) string {
-	return ""
+	var val = runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+	return fmt.Sprintf("%s(ctx *Context)", val)
 }
 
 // Query returns a string from queries.
@@ -119,7 +103,7 @@ type RouterGroup struct {
 
 // GET register a http Get router of handler.
 func (router *Router) GET(relativePath string, handler Handler, decorators ...IDecorator) {
-	a, b := groupDecorators(decorators...)
+	a, b := splitDecorators(decorators...)
 	router.routerInfos = append(router.routerInfos, createRouterInfo("GET", relativePath, handler, decorators...))
 	router.currentRouter.GET(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
@@ -129,7 +113,7 @@ func (router *Router) GET(relativePath string, handler Handler, decorators ...ID
 
 // POST register a http POST router of handler.
 func (router *Router) POST(relativePath string, handler Handler, decorators ...IDecorator) {
-	a, b := groupDecorators(decorators...)
+	a, b := splitDecorators(decorators...)
 	router.routerInfos = append(router.routerInfos, createRouterInfo("POST", relativePath, handler, decorators...))
 	router.currentRouter.POST(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
@@ -139,7 +123,7 @@ func (router *Router) POST(relativePath string, handler Handler, decorators ...I
 
 // PUT register a http PUT router of handler.
 func (router *Router) PUT(relativePath string, handler Handler, decorators ...IDecorator) {
-	a, b := groupDecorators(decorators...)
+	a, b := splitDecorators(decorators...)
 	router.routerInfos = append(router.routerInfos, createRouterInfo("PUT", relativePath, handler, decorators...))
 	router.currentRouter.PUT(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
@@ -149,7 +133,7 @@ func (router *Router) PUT(relativePath string, handler Handler, decorators ...ID
 
 // HEAD register a http HEAD router of handler.
 func (router *Router) HEAD(relativePath string, handler Handler, decorators ...IDecorator) {
-	a, b := groupDecorators(decorators...)
+	a, b := splitDecorators(decorators...)
 	router.routerInfos = append(router.routerInfos, createRouterInfo("HEAD", relativePath, handler, decorators...))
 	router.currentRouter.HEAD(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
@@ -159,7 +143,7 @@ func (router *Router) HEAD(relativePath string, handler Handler, decorators ...I
 
 // DELETE register a http DELETE router of handler.
 func (router *Router) DELETE(relativePath string, handler Handler, decorators ...IDecorator) {
-	a, b := groupDecorators(decorators...)
+	a, b := splitDecorators(decorators...)
 	router.routerInfos = append(router.routerInfos, createRouterInfo("DELETE", relativePath, handler, decorators...))
 	router.currentRouter.DELETE(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
@@ -169,7 +153,7 @@ func (router *Router) DELETE(relativePath string, handler Handler, decorators ..
 
 // OPTIONS register a http OPTIONS router of handler.
 func (router *Router) OPTIONS(relativePath string, handler Handler, decorators ...IDecorator) {
-	a, b := groupDecorators(decorators...)
+	a, b := splitDecorators(decorators...)
 	router.routerInfos = append(router.routerInfos, createRouterInfo("OPTIONS", relativePath, handler, decorators...))
 	router.currentRouter.OPTIONS(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
@@ -179,7 +163,7 @@ func (router *Router) OPTIONS(relativePath string, handler Handler, decorators .
 
 // PATCH register a http PATCH router of handler.
 func (router *Router) PATCH(relativePath string, handler Handler, decorators ...IDecorator) {
-	a, b := groupDecorators(decorators...)
+	a, b := splitDecorators(decorators...)
 	router.routerInfos = append(router.routerInfos, createRouterInfo("PATCH", relativePath, handler, decorators...))
 	router.currentRouter.PATCH(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
@@ -189,7 +173,7 @@ func (router *Router) PATCH(relativePath string, handler Handler, decorators ...
 
 // Any register a any HTTP method router of handler.
 func (router *Router) Any(relativePath string, handler Handler, decorators ...IDecorator) {
-	a, b := groupDecorators(decorators...)
+	a, b := splitDecorators(decorators...)
 	router.routerInfos = append(router.routerInfos, createRouterInfo("Any", relativePath, handler, decorators...))
 	router.currentRouter.Any(relativePath, func(c *gin.Context) {
 		c.Set(apiNameKey, relativePath)
@@ -213,7 +197,7 @@ func (router *Router) Group(relativePath string, handler Handler, decorators ...
 		router,
 	}
 	if handler != nil {
-		a, b := groupDecorators(decorators...)
+		a, b := splitDecorators(decorators...)
 		router.routerInfos = append(router.routerInfos, createRouterInfo("Any Group", relativePath, handler, decorators...))
 		rg.currentRouter = rg.router.Group(relativePath, func(c *gin.Context) {
 			handle(c, handler, a, b)
@@ -222,11 +206,6 @@ func (router *Router) Group(relativePath string, handler Handler, decorators ...
 		rg.currentRouter = rg.router.Group(relativePath)
 	}
 	return rg
-}
-
-// RegisterRestAPIs register a collection HTTP routes by gw.IRestAPI.
-func (router *RouterGroup) RegisterRestAPIs(ctrls ...IRestAPI) {
-	RegisterRestAPI(router, ctrls...)
 }
 
 // Config returns a snapshot of the current Context's conf.Config object.
@@ -256,126 +235,12 @@ func (c *Context) BindQuery(out interface{}) error {
 	return nil
 }
 
-func RegisterRestAPI(router *RouterGroup, restList ...IRestAPI) {
-	logger.Info("register router by API RegisterRestAPI(...)")
-	for _, ctrl := range restList {
-		typ := reflect.TypeOf(ctrl)
-		val := reflect.ValueOf(ctrl)
-		var relativePath string
-		nameCaller, ok := typ.MethodByName("Name")
-		if ok {
-			relativePath = nameCaller.Func.Call([]reflect.Value{val})[0].String()
-		}
-		nm := typ.NumMethod()
-		for i := 0; i < nm; i++ {
-			m := typ.Method(i)
-			h, ok := methodParsers[strings.ToLower(m.Name)]
-			if ok {
-				// FIXME(Ocean): how to check the arguments type is *gw.Context.
-				n := 1
-				prefix := fmt.Sprintf("invalid operation, method:%s.%s", val.Interface(), m.Name)
-				if m.Type.NumOut() != 0 {
-					panic(fmt.Sprintf("%s, should be not return any values.", prefix))
-				}
-				dynBinders := make([]dynamicArgsBinder, n)
-				dynBinders[0] = dynamicArgsBinder{
-					dataType: reflect.TypeOf(&Context{}),
-					bindFunc: ctxBinder,
-				}
-				dynCaller := dynamicCaller{
-					argsLength:        n,
-					ctrl:              ctrl,
-					methodName:        m.Name,
-					handler:           val.MethodByName(m.Name),
-					argsOrderlyBinder: dynBinders,
-				}
-				h(relativePath, router, dynCaller)
-			}
-		}
-	}
-}
-
-var methodParsers map[string]dynamicHandler
-
-func init() {
-	methodParsers = make(map[string]dynamicHandler)
-	methodParsers["get"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		r.GET(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["query"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		relativePath = strings.TrimRight(relativePath, "/")
-		relativePath = fmt.Sprintf("%s/query", relativePath)
-		r.GET(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["post"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		r.POST(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["put"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		r.PUT(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["delete"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		r.DELETE(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["options"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		r.OPTIONS(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["option"] = methodParsers["options"]
-	methodParsers["patch"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		r.PATCH(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["head"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		r.HEAD(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["any"] = func(relativePath string, r *RouterGroup, caller dynamicCaller) {
-		r.Any(relativePath, func(ctx *Context) {
-			handleDynamic(ctx, caller)
-		})
-	}
-	methodParsers["all"] = methodParsers["any"]
-}
-
-func handleDynamic(ctx *Context, caller dynamicCaller) {
-	caller.handler.Call(caller.makeArgs(ctx))
-}
-
-func (d dynamicCaller) makeArgs(ctx *Context) []reflect.Value {
-	if d.argsLength > 0 {
-		var args = make([]reflect.Value, d.argsLength)
-		for i := 0; i < d.argsLength; i++ {
-			binder := d.argsOrderlyBinder[i]
-			args[i] = binder.bindFunc(binder.dataType, ctx)
-		}
-		return args
-	}
-	return nil
-}
-
-func ctxBinder(typ reflect.Type, ctx *Context) reflect.Value {
-	return reflect.ValueOf(ctx)
-}
-
 func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators []IDecorator) {
 	s := hostServer(c)
 	user := getUser(c)
 	requestID := getRequestID(s, c)
 	store := getStore(c, s, *user)
-	ctx := makeCtx(c, *user, *s, store, requestID)
+	ctx := makeCtx(c, *user, store, requestID)
 	// action before Decorators
 	var msg string
 	var err error
@@ -414,7 +279,7 @@ func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators [
 	}
 }
 
-func makeCtx(c *gin.Context, user User, s HostServer, store Store, requestID string) *Context {
+func makeCtx(c *gin.Context, user User, store Store, requestID string) *Context {
 	ctx := &Context{
 		User:      user,
 		RequestID: requestID,
@@ -428,16 +293,16 @@ func makeCtx(c *gin.Context, user User, s HostServer, store Store, requestID str
 	return ctx
 }
 
-func groupDecorators(decorators ...IDecorator) (a, b []IDecorator) {
-	var before, after []IDecorator
+func splitDecorators(decorators ...IDecorator) (before, after []IDecorator) {
+	var a, b []IDecorator
 	for _, d := range decorators {
 		if d.Point() == DecoratorPointActionBefore {
-			before = append(before, d)
+			b = append(b, d)
 		} else if d.Point() == DecoratorPointActionAfter {
-			after = append(after, d)
+			a = append(a, d)
 		} else {
 			panic(fmt.Sprintf("invalid pointer(%d). decorator: %v", d.Point(), d))
 		}
 	}
-	return before, after
+	return b, a
 }

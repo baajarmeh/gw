@@ -4,14 +4,16 @@ gw (golang web), gin + gorm + go-redis + mysql
 
 out-of-the-box, Fully features:
 
-- Auth
+- Auth manager
 - Permission manager
 - Multi-tenancy
-- ORM (gorm + mysql)
+- ORM (gorm. mysql, postgresql)
 - Cache (redis)
 - Modular module application.
-- REST style Api support.
+- REST/Dynamic style Api support.
 - Out-of-the-box Web Api framework.
+- Api decorator.
+- Base on go template config generator.
 
 ## Step by step.
 

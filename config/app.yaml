@@ -38,7 +38,7 @@ service:
         secure: False
       server:
         addr: https://auth.gw-framework.com
-        authServe: False # Enable(True)/Disable(False) Auth features.
+        authServe: True # Enable(True)/Disable(False) Auth features.
         login:
           url: "{{ .service.prefix }}/gw/auth/login"
           authTypes:

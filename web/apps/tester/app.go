@@ -3,7 +3,6 @@ package tester
 import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/web/apps/tester/api"
-	"github.com/oceanho/gw/web/apps/tester/definations"
 	"github.com/oceanho/gw/web/apps/tester/dto"
 	"github.com/oceanho/gw/web/apps/tester/infra"
 	"github.com/oceanho/gw/web/apps/tester/rest"

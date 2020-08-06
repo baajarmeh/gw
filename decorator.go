@@ -45,9 +45,9 @@ func (p DecoratorPermissionImpl) Call(ctx *Context) (friendlyMsg string, err err
 }
 
 type PermissionDecoratorList struct {
-	permDecorators map[string]IDecorator
-	items          []IDecorator
 	locker         sync.Mutex
+	items          []IDecorator
+	permDecorators map[string]IDecorator
 }
 
 func (p PermissionDecoratorList) Administration() IDecorator {

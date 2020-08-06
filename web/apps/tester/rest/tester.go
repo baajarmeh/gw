@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/logger"
 	"github.com/oceanho/gw/web/apps/tester/dto"
 )
 
@@ -22,6 +23,16 @@ func (MyTesterRestAPI) Get(c *gw.Context) {
 	c.JSON(err, out)
 }
 
+// http Get before handler
+func (MyTesterRestAPI) OnGetBefore(c *gw.Context) {
+	logger.Info("Exec func (MyTesterRestAPI) OnGetBefore(c *gw.Context)")
+}
+
+// http Get after handler
+func (MyTesterRestAPI) OnGetAfter(c *gw.Context) {
+	logger.Info("Exec func (MyTesterRestAPI) OnGetAfter(c *gw.Context)")
+}
+
 // http Get pager Query.
 func (MyTesterRestAPI) Query(c *gw.Context) {
 	expr := &gw.QueryExpr{}
@@ -39,11 +50,50 @@ func (MyTesterRestAPI) Query(c *gw.Context) {
 	c.PagerJSON(total, expr.PagerExpr, out)
 }
 
+type MyTesterGlobalBeforeDecorator struct {
+}
+type MyTesterGlobalAfterDecorator struct {
+}
+
+func (m MyTesterGlobalBeforeDecorator) Catalog() string {
+	return "my-tester-global-decorator"
+}
+
+func (m MyTesterGlobalBeforeDecorator) Point() gw.DecoratorPoint {
+	return gw.DecoratorPointActionBefore
+}
+
+func (m MyTesterGlobalBeforeDecorator) Call(ctx *gw.Context) (friendlyMsg string, err error) {
+	logger.Info("requestID %s, func (m MyTesterGlobalBeforeDecorator) Call(ctx *gw.Context) (friendlyMsg string, err error)", ctx.RequestID)
+	return "", nil
+}
+
+func (m MyTesterGlobalAfterDecorator) Catalog() string {
+	return "my-tester-global-decorator"
+}
+
+func (m MyTesterGlobalAfterDecorator) Point() gw.DecoratorPoint {
+	return gw.DecoratorPointActionBefore
+}
+
+func (m MyTesterGlobalAfterDecorator) Call(ctx *gw.Context) (friendlyMsg string, err error) {
+	logger.Info("requestID %s, func (m MyTesterGlobalAfterDecorator) Call(ctx *gw.Context) (friendlyMsg string, err error)", ctx.RequestID)
+	return "", nil
+}
+
 // http Post
 func (MyTesterRestAPI) Post(c *gw.Context) {
 	obj := &dto.MyTester{}
-	err := c.Store.GetDbStore().Create(obj)
+	err := c.Store.GetDbStore().Create(obj).Error
 	c.JSON(err, obj)
+}
+
+//
+// MyTesterRestAPI global decorators.
+func (m MyTesterRestAPI) SetupDecorator() []gw.IDecorator {
+	var d []gw.IDecorator
+	d = append(d, MyTesterGlobalBeforeDecorator{}, MyTesterGlobalAfterDecorator{})
+	return d
 }
 
 //
