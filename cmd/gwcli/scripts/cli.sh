@@ -4,7 +4,7 @@
 #
 
 readonly workDir=$(pwd)
-readonly gwSrcDir="$GOPATH/src/github.com/oceanho/gw"
+readonly gwSrcDir="$(ls -l -r -d $GOPATH/pkg/mod/github.com/oceanho/gw* | awk -F '[ ]+' 'NR==1{print $NF}')"
 readonly projectTemplate="$gwSrcDir/templates/scaffold/projectTemplate"
 readonly applicationTemplate="$gwSrcDir/templates/scaffold/applicationTemplate"
 

@@ -71,15 +71,30 @@ openssl rsa -in config/etc/gw.key -pubout -out config/etc/gw.pem
 ## Quick Start
 
 ```shell script
-
 export GO111MODULE="on"
 export GOPROXY="https://goproxy.cn"
 
 go get -u github.com/oceanho/gw
-\cp -r $(ls -d $GOPATH/pkg/mod/github.com/oceanho/gw* | head -n 1)/cmd/gwcli/scripts/cli.sh \
+dir=$(ls -l -r -d $GOPATH/pkg/mod/github.com/oceanho/gw* | awk -F '[ ]+' 'NR==1{print $NF}')
+sudo \cp -r $dir/cmd/gwcli/scripts/cli.sh \
  $GOROOT/bin/gwcli
 
-chmod +x $GOROOT/bin/gwcli
+sudo chmod +x $GOROOT/bin/gwcli
+
+ocean@ocean:~$ gwcli
+|-------------------------------------------------------------------------|
+| gw framework cli tools                                                  |
+|-------------------------------------------------------------------------|
+|                                                                         |
+| Usage:                                                                  |
+|    gwcli <Command> <options>                                            |
+| Commands:                                                               |
+|    newproject <Project Name> <Directory>, Create a gw project scaffold  |
+|    createapp <Application Name> <Directory>, Create a gw app scaffold   |
+|                                                                         |
+|--------------- gw cli v0.1  --------------------------------------------|
+ ocean@ocean:~$
+
 ```
 
 ### Create Project
