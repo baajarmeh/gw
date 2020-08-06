@@ -67,3 +67,11 @@ mkdir -p config/etc
 openssl genrsa -out config/etc/gw.key 2048
 openssl rsa -in config/etc/gw.key -pubout -out config/etc/gw.pem
 ```
+
+## Quick Start
+
+``` shell
+go get github.com/oceanho/gw/gwcli
+```
+
+### Create Project
