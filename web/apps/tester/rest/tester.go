@@ -50,34 +50,14 @@ func (MyTesterRestAPI) Query(c *gw.Context) {
 	c.PagerJSON(total, expr.PagerExpr, out)
 }
 
-type MyTesterGlobalBeforeDecorator struct {
-}
-type MyTesterGlobalAfterDecorator struct {
+type MyTesterGlobalDecorator struct {
 }
 
-func (m MyTesterGlobalBeforeDecorator) Catalog() string {
-	return "my-tester-global-decorator"
-}
-
-func (m MyTesterGlobalBeforeDecorator) Point() gw.DecoratorPoint {
-	return gw.DecoratorPointActionBefore
-}
-
-func (m MyTesterGlobalBeforeDecorator) Call(ctx *gw.Context) (friendlyMsg string, err error) {
-	logger.Info("requestID %s, func (m MyTesterGlobalBeforeDecorator) Call(ctx *gw.Context) (friendlyMsg string, err error)", ctx.RequestID)
+func (m MyTesterGlobalDecorator) OnBeforeCall(ctx *gw.Context) (friendlyMsg string, err error) {
 	return "", nil
 }
 
-func (m MyTesterGlobalAfterDecorator) Catalog() string {
-	return "my-tester-global-decorator"
-}
-
-func (m MyTesterGlobalAfterDecorator) Point() gw.DecoratorPoint {
-	return gw.DecoratorPointActionBefore
-}
-
-func (m MyTesterGlobalAfterDecorator) Call(ctx *gw.Context) (friendlyMsg string, err error) {
-	logger.Info("requestID %s, func (m MyTesterGlobalAfterDecorator) Call(ctx *gw.Context) (friendlyMsg string, err error)", ctx.RequestID)
+func (m MyTesterGlobalDecorator) OnAfterCall(ctx *gw.Context) (friendlyMsg string, err error) {
 	return "", nil
 }
 
@@ -90,9 +70,8 @@ func (MyTesterRestAPI) Post(c *gw.Context) {
 
 //
 // MyTesterRestAPI global decorators.
-func (m MyTesterRestAPI) SetupDecorator() []gw.IDecorator {
-	var d []gw.IDecorator
-	d = append(d, MyTesterGlobalBeforeDecorator{}, MyTesterGlobalAfterDecorator{})
+func (m MyTesterRestAPI) SetupDecorator() []gw.Decorator {
+	var d []gw.Decorator
 	return d
 }
 

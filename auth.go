@@ -255,7 +255,7 @@ func gwLogin(c *gin.Context) {
 	}
 
 	// Login
-	user, err := s.authManager.Login(s.store, passport, secret, credType, verifyCode)
+	user, err := s.AuthManager.Login(s.Store, passport, secret, credType, verifyCode)
 	if err != nil || user == nil {
 		c.JSON(http.StatusOK, respBody(400, reqId, err.Error(), nil))
 		c.Abort()
@@ -267,7 +267,7 @@ func gwLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	if err := s.sessionStateManager.Save(s.store, user.Passport, user); err != nil {
+	if err := s.SessionStateManager.Save(s.Store, user.Passport, user); err != nil {
 		c.JSON(http.StatusInternalServerError, respBody(-1, reqId, "Save session fail.", err.Error()))
 		c.Abort()
 		return
@@ -295,7 +295,7 @@ func gwLogout(c *gin.Context) {
 	reqId := getRequestID(s, c)
 	user := getUser(c)
 	cks := s.conf.Service.Security.Auth.Cookie
-	ok := s.authManager.Logout(s.store, user)
+	ok := s.AuthManager.Logout(s.Store, user)
 	if !ok {
 		respBody(500, reqId, "auth logout fail", nil)
 		return
@@ -305,7 +305,7 @@ func gwLogout(c *gin.Context) {
 		respBody(500, reqId, "session store logout fail", nil)
 		return
 	}
-	_ = s.sessionStateManager.Remove(s.store, sid)
+	_ = s.SessionStateManager.Remove(s.Store, sid)
 	domain := cks.Domain
 	if domain == ":host" || domain == "" {
 		domain = c.Request.Host

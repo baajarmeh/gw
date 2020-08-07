@@ -74,21 +74,25 @@ type ServerOption struct {
 
 // HostServer represents a  Host Server.
 type HostServer struct {
+	Store               Store
+	Hash                ICryptoHash
+	Protect             ICryptoProtect
+	AuthManager         IAuthManager
+	SessionStateManager ISessionStateManager
+	PermissionManager   IPermissionManager
+	// private
+	state                  int
 	name                   string
 	locker                 sync.Mutex
 	options                *ServerOption
 	router                 *Router
 	apps                   map[string]App
 	conf                   *conf.Config
-	store                  Store
-	hash                   ICryptoHash
-	protect                ICryptoProtect
-	authManager            IAuthManager
-	sessionStateManager    ISessionStateManager
-	permissionManager      IPermissionManager
 	httpErrHandlers        map[int][]ErrorHandler
-	beforeHooks            map[string]*Hook
-	afterHooks             map[string]*Hook
+	hooks                  []*Hook
+	beforeHooks            []*Hook
+	afterHooks             []*Hook
+	afterHookMaxIdx        int
 	authParamValidators    map[string]*regexp.Regexp
 	storeDbSetupHandler    StoreDbSetupHandler
 	storeCacheSetupHandler StoreCacheSetupHandler
@@ -98,11 +102,9 @@ var (
 	appDefaultAddr                  = ":8080"
 	appDefaultName                  = "gw.app"
 	appDefaultRestart               = "always"
-	appDefaultMode                  = "debug"
 	appDefaultPrefix                = "/api/v1"
 	appDefaultPluginSymbolName      = "AppPlugin"
 	appDefaultPluginSymbolSuffix    = ".so"
-	appDefaultVersion               = "Version 1.0"
 	appDefaultStartBeforeHandler    = func(server *HostServer) error { return nil }
 	appDefaultShutdownBeforeHandler = func(server *HostServer) error { return nil }
 	appDefaultBackendHandler        = func(cnf conf.Config) Store {
@@ -117,7 +119,7 @@ var (
 	appDefaultStoreCacheSetupHandler = func(c gin.Context, client *redis.Client, user User) *redis.Client {
 		return client
 	}
-	internLogFormatter = "[$prefix-$level] - $msg\n"
+	internLogFormatter = "[$prefix-$level] $msg\n"
 )
 
 var (
@@ -190,64 +192,58 @@ func New(sopt *ServerOption) *HostServer {
 		name:                sopt.Name,
 		apps:                make(map[string]App),
 		httpErrHandlers:     make(map[int][]ErrorHandler),
-		beforeHooks:         make(map[string]*Hook),
-		afterHooks:          make(map[string]*Hook),
+		hooks:               make([]*Hook, 0),
+		beforeHooks:         make([]*Hook, 0),
+		afterHooks:          make([]*Hook, 0),
 		authParamValidators: make(map[string]*regexp.Regexp),
 	}
 	servers[sopt.Name] = server
 	return server
 }
 
-// AddBeforeHooks register a global http handler API into the server, it's called AT handling http request before.
-func (s *HostServer) AddBeforeHooks(handlers ...*Hook) {
+// AddHook register a global http handler API into the server.
+func (s *HostServer) AddHook(handlers ...*Hook) {
 	if len(handlers) == 0 {
 		return
 	}
 	s.locker.Lock()
 	defer s.locker.Unlock()
-	for _, val := range handlers {
-		s.beforeHooks[val.Name] = val
+	for j := 0; j < len(handlers); j++ {
+		for i := 0; i < len(s.hooks); i++ {
+			if s.hooks[i].Name == handlers[j].Name {
+				s.hooks[i] = handlers[j]
+				continue
+			}
+			s.hooks = append(s.hooks, handlers[j])
+		}
 	}
 }
 
-// DeleteBeforeHooks delete a global hook from has registered before hooks.
-func (s *HostServer) DeleteBeforeHook(hookName string) {
+// DeleteHook delete a global hook from has registered before hooks.
+func (s *HostServer) DeleteHook(name string) {
 	s.locker.Lock()
 	defer s.locker.Unlock()
-	delete(s.beforeHooks, hookName)
-}
-
-// ReplaceBeforeHook replace a global hook from has registered before hooks.
-func (s *HostServer) ReplaceBeforeHook(hookName string, hookHandler *Hook) {
-	s.locker.Lock()
-	defer s.locker.Unlock()
-	s.beforeHooks[hookName] = hookHandler
-}
-
-// AddAfterHooks register a global http handler API into the server, it's called AT handled http request After.
-func (s *HostServer) AddAfterHooks(handlers ...*Hook) {
-	if len(handlers) == 0 {
-		return
-	}
-	s.locker.Lock()
-	defer s.locker.Unlock()
-	for _, val := range handlers {
-		s.afterHooks[val.Name] = val
+	for i := 0; i < len(s.hooks); i++ {
+		if s.hooks[i].Name == name {
+			left := s.hooks[0:i]
+			right := s.hooks[i+1:]
+			s.hooks = left
+			s.hooks = append(s.hooks, right...)
+			break
+		}
 	}
 }
 
-// DeleteAfterHooks delete a global hook from has registered after hooks.
-func (s *HostServer) DeleteAfterHook(hookName string) {
+// ReplaceHook replace a global hook from has registered before hooks.
+func (s *HostServer) ReplaceHook(name string, hookHandler *Hook) {
 	s.locker.Lock()
 	defer s.locker.Unlock()
-	delete(s.afterHooks, hookName)
-}
-
-// ReplaceAfterHook replace a global hook from has registered after hooks.
-func (s *HostServer) ReplaceAfterHook(hookName string, hookHandler *Hook) {
-	s.locker.Lock()
-	defer s.locker.Unlock()
-	s.afterHooks[hookName] = hookHandler
+	for i := 0; i < len(s.hooks); i++ {
+		if s.hooks[i].Name == name {
+			s.hooks[i] = hookHandler
+			break
+		}
+	}
 }
 
 // HandleError register a global http error handler API into the server.
@@ -354,14 +350,14 @@ func initial(s *HostServer) {
 
 	s.options.cnf = cnf
 	s.conf = cnf
-	s.hash = crypto.Hash()
-	s.protect = crypto.Protect()
+	s.Hash = crypto.Hash()
+	s.Protect = crypto.Protect()
 
-	s.store = s.options.BackendStoreHandler(*cnf)
-	s.sessionStateManager = s.options.SessionStateManager(*cnf)
+	s.Store = s.options.BackendStoreHandler(*cnf)
+	s.SessionStateManager = s.options.SessionStateManager(*cnf)
 
-	s.authManager = s.options.AuthManager
-	s.permissionManager = s.options.PermissionManager
+	s.AuthManager = s.options.AuthManager
+	s.PermissionManager = s.options.PermissionManager
 
 	registerAuthParamValidators(s)
 
@@ -382,9 +378,9 @@ func initial(s *HostServer) {
 
 	httpRouter := &Router{
 		server:      g,
+		prefix:      s.options.Prefix,
 		routerInfos: make([]RouterInfo, 0),
 	}
-
 	// Must ensure store handler is not nil.
 	if s.options.StoreDbSetupHandler == nil {
 		s.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
@@ -444,17 +440,60 @@ func registerApps(server *HostServer) {
 
 		// migrate
 		logger.Info("migrate app: %s", app.Name())
-		app.Migrate(server.store)
+		app.Migrate(server.Store)
 	}
 }
 
-// Serve represents start the Server.
-func (s *HostServer) Serve() {
-	//
+func prepareHooks(s *HostServer) {
+	if len(s.hooks) < 1 {
+		return
+	}
+	for i := 0; i < len(s.hooks); i++ {
+		if s.hooks[i].OnAfter != nil {
+			s.afterHooks = append(s.afterHooks, s.hooks[i])
+		}
+		if s.hooks[i].OnBefore != nil {
+			s.beforeHooks = append(s.beforeHooks, s.hooks[i])
+		}
+	}
+	s.afterHookMaxIdx = len(s.afterHooks) - 1
+}
+
+func (s *HostServer) compile() {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	if s.state > 0 {
+		return
+	}
 	// All of app server initial AT here.
 	initial(s)
 	registerApps(s)
+	prepareHooks(s)
+	s.state++
+}
 
+// GetRouters returns has registered routers on the Server.
+func (s *HostServer) GetRouters() []RouterInfo {
+	s.compile()
+	var routerInfos = make([]RouterInfo, len(s.router.routerInfos))
+	copy(routerInfos, s.router.routerInfos)
+	return routerInfos
+}
+
+// PrintRouterInfo ...
+func (s *HostServer) PrintRouterInfo() {
+	logger.Info("==================================")
+	logger.Info("%s", s.conf.Service.Settings.GwFramework.PrintRouterInfo.Title)
+	logger.Info("==================================")
+	var routers = s.GetRouters()
+	for _, r := range routers {
+		logger.Info("%s", r.String())
+	}
+}
+
+// Serve start the Server.
+func (s *HostServer) Serve() {
+	s.compile()
 	// signal watch.
 	sigs := make(chan os.Signal, 1)
 	handler := s.options.StartBeforeHandler
@@ -464,6 +503,11 @@ func (s *HostServer) Serve() {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
+
+	if !s.conf.Service.Settings.GwFramework.PrintRouterInfo.Disabled {
+		s.PrintRouterInfo()
+	}
+
 	logger.Info("Listening and serving HTTP on: %s", s.options.Addr)
 	logger.ResetLogFormatter()
 	var err error

@@ -179,7 +179,7 @@ func getStore(ctx *gin.Context, server *HostServer, user User) Store {
 	storeWrapper := &backendWrapper{
 		ctx:                    *ctx,
 		user:                   user,
-		store:                  server.store,
+		store:                  server.Store,
 		storeDbSetupHandler:    server.storeDbSetupHandler,
 		storeCacheSetupHandler: server.storeCacheSetupHandler,
 	}

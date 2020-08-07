@@ -102,21 +102,25 @@ func gwState(serverName string) gin.HandlerFunc {
 				}
 			}
 			// After handlers.
-			for _, hook := range s.afterHooks {
-				hook.Handler(c)
+			if s.afterHookMaxIdx > 0 {
+				for i := s.afterHookMaxIdx; i >= 0; i-- {
+					s.afterHooks[i].OnAfter(c)
+				}
 			}
 		}()
-
+		//
 		// before handlers
 		for _, hook := range s.beforeHooks {
-			hook.Handler(c)
+			if hook.OnBefore != nil {
+				hook.OnBefore(c)
+			}
 		}
 
 		// gw framework handler.
 		sid, ok := getSid(s, c)
 		if ok {
 			c.Set(gwSidKey, sid)
-			user, err := s.sessionStateManager.Query(s.store, sid)
+			user, err := s.SessionStateManager.Query(s.Store, sid)
 			if err == nil && user != nil {
 				// set User State.
 				c.Set(gwUserKey, user)
@@ -140,14 +144,14 @@ func encryptSid(s *HostServer, passport string) (secureSid string, ok bool) {
 
 	rdnKeySrc := []byte(rdnKey)
 	rdnKeyDst := make([]byte, len(rdnKeySrc))
-	_ = s.protect.Encrypt(rdnKeyDst, rdnKeySrc)
+	_ = s.Protect.Encrypt(rdnKeyDst, rdnKeySrc)
 	encryptedRdnKey := string(rdnKeyDst)
 
 	sid := fmt.Sprintf("%s,%s", encryptedPassport, encryptedRdnKey)
 
 	sidSrc := []byte(sid)
 	sidDst := make([]byte, len(sidSrc))
-	_ = s.hash.Hash(sidDst, sidSrc)
+	_ = s.Hash.Hash(sidDst, sidSrc)
 	sigSum := string(sidDst)
 
 	// Append sid Hash.
@@ -155,7 +159,7 @@ func encryptSid(s *HostServer, passport string) (secureSid string, ok bool) {
 
 	src := []byte(sid)
 	dst := make([]byte, len(src))
-	err := s.protect.Encrypt(dst, src)
+	err := s.Protect.Encrypt(dst, src)
 	if err != nil {
 		logger.Error("encryptSid() -> s.crypto.Encrypt(dst,b) fail, err: %v.", err)
 		return "", false
@@ -171,7 +175,7 @@ func decryptSid(s *HostServer, secureSid string, client string) (passport string
 		return "", false
 	}
 	dst := make([]byte, len(sid))
-	err = s.protect.Decrypt(dst, sid)
+	err = s.Protect.Decrypt(dst, sid)
 	if err != nil {
 		logger.Error("decryptSid() -> s.crypto.Decrypt(dst,[]byte(sid)) fail, err:%v . sid=%s", err, sid)
 		return "", false
@@ -188,7 +192,7 @@ func decryptSid(s *HostServer, secureSid string, client string) (passport string
 	sidSumOri := fmt.Sprintf("%s,%s", encryptedSid, encryptedRdnKey)
 	sidSumSrc := []byte(sidSumOri)
 	sidSumDst := make([]byte, len(sidSumSrc))
-	_ = s.hash.Hash(sidSumDst, sidSumSrc)
+	_ = s.Hash.Hash(sidSumDst, sidSumSrc)
 	// data sum Not match, maybe has modified.
 	if sids[2] != string(sidSumDst) {
 		logger.Warn("got a invalid secureSid data sum from %s", client)
@@ -197,7 +201,7 @@ func decryptSid(s *HostServer, secureSid string, client string) (passport string
 
 	rdnKeySrc := []byte(encryptedRdnKey)
 	rdnKeyDst := make([]byte, len(rdnKeySrc))
-	_ = s.protect.Decrypt(rdnKeyDst, rdnKeySrc)
+	_ = s.Protect.Decrypt(rdnKeyDst, rdnKeySrc)
 	rdnKey := string(rdnKeyDst)
 
 	block := secure.AesBlock(rdnKey)
@@ -247,6 +251,14 @@ func hostServer(c *gin.Context) *HostServer {
 
 func config(c *gin.Context) conf.Config {
 	return *hostServer(c).conf
+}
+
+func GetHostServer(c *gin.Context) HostServer {
+	return *hostServer(c)
+}
+
+func GetHostServerName(c *gin.Context) string {
+	return c.MustGet(gwAppKey).(string)
 }
 
 //

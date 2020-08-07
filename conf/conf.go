@@ -129,6 +129,12 @@ type Config struct {
 			} `yaml:"limit" toml:"limit" json:"limit"`
 		} `yaml:"security" toml:"security" json:"security"`
 		Settings struct {
+			GwFramework struct {
+				PrintRouterInfo struct {
+					Disabled bool   `yaml:"disabled" toml:"disabled" json:"disabled"`
+					Title    string `yaml:"title" toml:"title" json:"title"`
+				} `yaml:"printRouterInfo" toml:"printRouterInfo" json:"printRouterInfo"`
+			} `yaml:"gw" toml:"gw" json:"gw"`
 			HeaderKey struct {
 				RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
 			} `yaml:"headerKey" toml:"headerKey" json:"headerKey"`

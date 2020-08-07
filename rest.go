@@ -16,66 +16,100 @@ var (
 
 func init() {
 	restApiRegister = make(map[string]restHandler)
-	restApiRegister["get"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		r.GET(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["get"] = restHandler{
+		"Get",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			r.GET(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
-	restApiRegister["query"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		relativePath = strings.TrimRight(relativePath, "/")
-		relativePath = fmt.Sprintf("%s/query", relativePath)
-		r.GET(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+
+	restApiRegister["query"] = restHandler{
+		"Get",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			relativePath = strings.TrimRight(relativePath, "/")
+			relativePath = fmt.Sprintf("%s/query", relativePath)
+			r.GET(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
-	restApiRegister["queryList"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		relativePath = strings.TrimRight(relativePath, "/")
-		relativePath = fmt.Sprintf("%s/queryList", relativePath)
-		r.GET(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["queryList"] = restHandler{
+		"Get",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			relativePath = strings.TrimRight(relativePath, "/")
+			relativePath = fmt.Sprintf("%s/queryList", relativePath)
+			r.GET(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
-	restApiRegister["post"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		r.POST(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["post"] = restHandler{
+		"Post",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			r.POST(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
-	restApiRegister["put"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		r.PUT(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["put"] = restHandler{
+		"Put",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			r.PUT(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
-	restApiRegister["delete"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		r.DELETE(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["delete"] = restHandler{
+		"Delete",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			r.DELETE(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
-	restApiRegister["options"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		r.OPTIONS(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["options"] = restHandler{
+		"Options",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			r.OPTIONS(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
 	restApiRegister["option"] = restApiRegister["options"]
-	restApiRegister["patch"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		r.PATCH(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["patch"] = restHandler{
+		"Patch",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			r.PATCH(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
-	restApiRegister["head"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		r.HEAD(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["head"] = restHandler{
+		"Head",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			r.HEAD(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
-	restApiRegister["any"] = func(relativePath string, r *RouterGroup, caller restCaller) {
-		r.Any(relativePath, func(ctx *Context) {
-			handleDynamicRestApi(ctx, caller)
-		})
+	restApiRegister["any"] = restHandler{
+		"Any",
+		func(relativePath string, r *RouterGroup, caller restCaller) {
+			r.Any(relativePath, func(ctx *Context) {
+				handleDynamicRestApi(ctx, caller)
+			})
+		},
 	}
 	restApiRegister["all"] = restApiRegister["any"]
 }
 
 // restHandler
-type restHandler func(relativePath string, r *RouterGroup, caller restCaller)
+type restHandler struct {
+	httpMethod string
+	register   func(relativePath string, r *RouterGroup, caller restCaller)
+}
 
 // restCaller
 type restCaller struct {
@@ -86,8 +120,9 @@ type restCaller struct {
 	hasActionAfterHandler  bool
 	beforeHandler          reflect.Value
 	afterHandler           reflect.Value
-	beforeDecorators       []IDecorator
-	afterDecorators        []IDecorator
+	beforeDecorators       []Decorator
+	afterDecorators        []Decorator
+	afterDecoratorsMaxIdx  int
 	handlerActionName      string
 	argsOrderlyBinder      []restArgsBinder
 }
@@ -114,20 +149,20 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 			relativePath = nameCaller.Func.Call([]reflect.Value{val})[0].String()
 		}
 		var name = "SetupDecorator"
-		var restDecorators []IDecorator
+		var restDecorators []Decorator
 		_, ok = typ.MethodByName(name)
 		if ok {
-			restDecorators = val.MethodByName(name).Call(nil)[0].Interface().([]IDecorator)
+			restDecorators = val.MethodByName(name).Call(nil)[0].Interface().([]Decorator)
 		}
 		for i := 0; i < typ.NumMethod(); i++ {
 			m := typ.Method(i)
 			dyApiRegister, ok := restApiRegister[strings.ToLower(m.Name)]
 			if ok {
-				var actionDecorators []IDecorator
+				var actionDecorators []Decorator
 				name = "SetupOn" + m.Name + "Decorator"
 				dm, ok := typ.MethodByName(name)
 				if ok {
-					actionDecorators = dm.Func.Call(nil)[0].Interface().([]IDecorator)
+					actionDecorators = dm.Func.Call(nil)[0].Interface().([]Decorator)
 				}
 				// FIXME(Ocean): how to check the arguments type is *gw.Context.
 				n := 1
@@ -140,7 +175,7 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 					dataType: reflect.TypeOf(&Context{}),
 					bindFunc: ctxBinder,
 				}
-				var decorators []IDecorator
+				var decorators []Decorator
 				decorators = append(decorators, restDecorators...)
 				decorators = append(decorators, actionDecorators...)
 				before, after := splitDecorators(decorators...)
@@ -149,6 +184,7 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 					argsNumber:             n,
 					beforeDecorators:       before,
 					afterDecorators:        after,
+					afterDecoratorsMaxIdx:  len(after) - 1,
 					rest:                   rest,
 					handlerActionName:      handlerActionName,
 					handler:                val.MethodByName(m.Name),
@@ -168,7 +204,9 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 					dynCaller.hasActionAfterHandler = true
 					dynCaller.afterHandler = val.MethodByName(name)
 				}
-				dyApiRegister(relativePath, router, dynCaller)
+				router.storeRouterStateWithHandlerName(
+					strings.ToUpper(dyApiRegister.httpMethod), relativePath, handlerActionName, nil, decorators...)
+				dyApiRegister.register(relativePath, router, dynCaller)
 			}
 		}
 	}
@@ -223,7 +261,7 @@ func handleDynamicRestApi(c *Context, caller restCaller) {
 	msg = ""
 	err = nil
 	for _, d := range caller.beforeDecorators {
-		msg, err = d.Call(c)
+		msg, err = d.Before(c)
 		if err != nil {
 			break
 		}
@@ -241,23 +279,24 @@ func handleDynamicRestApi(c *Context, caller restCaller) {
 	caller.handler.Call(caller.makeArgs(c))
 
 	// after decorators
-	msg = ""
-	err = nil
-	for _, d := range caller.afterDecorators {
-		msg, err = d.Call(c)
+	if caller.afterDecoratorsMaxIdx >= 0 {
+		msg = ""
+		err = nil
+		for i := caller.afterDecoratorsMaxIdx; i >= 0; i-- {
+			msg, err = caller.afterDecorators[i].After(c)
+			if err != nil {
+				break
+			}
+		}
 		if err != nil {
-			break
+			if msg == "" {
+				msg = "rest call before decorator fail."
+			}
+			body := respBody(http.StatusBadRequest, requestID, errDefault400Msg, msg)
+			c.JSON(http.StatusBadRequest, body)
+			return
 		}
 	}
-	if err != nil {
-		if msg == "" {
-			msg = "rest call before decorator fail."
-		}
-		body := respBody(http.StatusBadRequest, requestID, errDefault400Msg, msg)
-		c.JSON(http.StatusBadRequest, body)
-		return
-	}
-
 	// after caller handler
 	msg = ""
 	err = nil

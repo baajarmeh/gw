@@ -65,6 +65,10 @@ service:
         minPageSize: "20"
         maxPageSize: "2000"
   settings:
+    gw:
+      printRouterInfo:
+        disabled: False # enable/disable Print gw router info.
+        title: "\tGw Router Information"
     headerKey:
       requestIdKey: "X-Request-Id"
     timeoutControl:  # Timeout control, units is millisecond

@@ -17,16 +17,14 @@ func main() {
 	opts.Name = "my-tester-api"
 	server := gw.New(opts)
 
-	server.AddBeforeHooks(gw.NewHook("my-tester-before", func(c *gin.Context) {
+	server.AddHook(gw.NewHook("my-tester-before", func(c *gin.Context) {
 		c.Set("my-tester-id", 1000)
 		c.Set("my-tester-start-at", time.Now().UnixNano())
-	}))
-
-	server.AddAfterHooks(gw.NewHook("my-tester-after", func(c *gin.Context) {
-		mytestid := c.MustGet("my-tester-id").(int)
+	}, func(c *gin.Context) {
+		id := c.MustGet("my-tester-id").(int)
 		startAt, _ := c.MustGet("my-tester-start-at").(int64)
 		nanoSeconds := time.Now().UnixNano() - startAt
-		logger.Info("mytestid: %d, cost Nano Second: %d", mytestid, nanoSeconds)
+		logger.Info("mytestid: %d, cost Nano Second: %d", id, nanoSeconds)
 	}))
 
 	server.HandleError(500, func(requestId, httpRequest string, headers []string, stack string, err []*gin.Error) {
@@ -45,5 +43,6 @@ func main() {
 }
 
 func registerApps(server *gw.HostServer) {
-	server.Register(tester.New())
+	//server.Register(tester.New())
+	server.Register(tester.NewAppRestOnly())
 }

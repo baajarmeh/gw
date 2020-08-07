@@ -6,13 +6,23 @@ import (
 
 // Hook represents a global gin engine http Middleware.
 type Hook struct {
-	Name    string
-	Handler gin.HandlerFunc
+	Name     string
+	OnBefore gin.HandlerFunc
+	OnAfter  gin.HandlerFunc
 }
 
-func NewHook(name string, handler gin.HandlerFunc) *Hook {
+func NewBeforeHook(name string, before gin.HandlerFunc) *Hook {
+	return NewHook(name, before, nil)
+}
+
+func NewAfterHook(name string, after gin.HandlerFunc) *Hook {
+	return NewHook(name, nil, after)
+}
+
+func NewHook(name string, before gin.HandlerFunc, after gin.HandlerFunc) *Hook {
 	return &Hook{
-		Name:    name,
-		Handler: handler,
+		Name:     name,
+		OnBefore: before,
+		OnAfter:  after,
 	}
 }
