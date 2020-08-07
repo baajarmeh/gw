@@ -58,11 +58,23 @@ func (bsc BootConfig) String() string {
 // ======================================================= //
 
 type Config struct {
+	Common struct {
+		Server struct {
+			ListenAddr string `yaml:"listenAddr" toml:"listenAddr" json:"listenAddr"`
+		} `yaml:"server" toml:"server" json:"server"`
+		Backend Backend `yaml:"backend" toml:"backend" json:"backend"`
+	} `yaml:"common" toml:"common" json:"common"`
 	Service struct {
-		Name     string `yaml:"name" toml:"name" json:"name"`
-		Prefix   string `yaml:"prefix" toml:"prefix" json:"prefix"`
-		Version  string `yaml:"version" toml:"version" json:"version"`
-		Remarks  string `yaml:"remarks" toml:"remarks" json:"remarks"`
+		Name             string `yaml:"name" toml:"name" json:"name"`
+		Prefix           string `yaml:"prefix" toml:"prefix" json:"prefix"`
+		Version          string `yaml:"version" toml:"version" json:"version"`
+		Remarks          string `yaml:"remarks" toml:"remarks" json:"remarks"`
+		ServiceDiscovery struct {
+			Disabled       bool `yaml:"disabled" toml:"disabled" json:"disabled"`
+			RegistryCenter struct {
+				Addr string `yaml:"addr" toml:"addr" json:"addr"`
+			} `yaml:"registryCenter" toml:"registryCenter" json:"registryCenter"`
+		} `yaml:"serviceDiscovery" toml:"serviceDiscovery" json:"serviceDiscovery"`
 		Security struct {
 			Crypto struct {
 				Hash struct {
@@ -149,9 +161,6 @@ type Config struct {
 			} `yaml:"expirationTimeControl" toml:"expirationTimeControl" json:"expirationTimeControl"`
 		} `yaml:"settings" toml:"settings" json:"settings"`
 	} `yaml:"service" toml:"service" json:"service"`
-	Common struct {
-		Backend Backend `yaml:"backend" toml:"backend" json:"backend"`
-	} `yaml:"common" toml:"common" json:"common"`
 	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
 }
 

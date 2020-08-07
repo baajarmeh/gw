@@ -397,6 +397,10 @@ func initial(s *HostServer) {
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(s.options.Prefix)
 	s.router = httpRouter
+
+	if s.conf.Common.Server.ListenAddr != "" {
+		s.options.Addr = s.conf.Common.Server.ListenAddr
+	}
 }
 
 func registerAuthParamValidators(s *HostServer) {

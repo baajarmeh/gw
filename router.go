@@ -44,7 +44,9 @@ type RouterInfo struct {
 }
 
 func (r RouterInfo) String() string {
-	return fmt.Sprintf("%s \t %s \t-> %s", r.Method, r.Router, r.handlerActionName)
+	// https://books.studygolang.com/gobyexample/string-formatting
+	// Padding left.
+	return fmt.Sprintf("%-8s%s -> %s", r.Method, r.Router, r.handlerActionName)
 }
 
 func createRouterInfo(method, router string, handlerActionName string, handler Handler, decorators ...Decorator) RouterInfo {

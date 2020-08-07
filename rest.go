@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/oceanho/gw/logger"
 	"net/http"
+	"path"
 	"reflect"
 	"strings"
 )
@@ -18,6 +19,7 @@ func init() {
 	restApiRegister = make(map[string]restHandler)
 	restApiRegister["get"] = restHandler{
 		"Get",
+		"",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			r.GET(relativePath, func(ctx *Context) {
 				handleDynamicRestApi(ctx, caller)
@@ -27,6 +29,7 @@ func init() {
 
 	restApiRegister["query"] = restHandler{
 		"Get",
+		"query",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			relativePath = strings.TrimRight(relativePath, "/")
 			relativePath = fmt.Sprintf("%s/query", relativePath)
@@ -37,6 +40,7 @@ func init() {
 	}
 	restApiRegister["queryList"] = restHandler{
 		"Get",
+		"queryList",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			relativePath = strings.TrimRight(relativePath, "/")
 			relativePath = fmt.Sprintf("%s/queryList", relativePath)
@@ -47,6 +51,7 @@ func init() {
 	}
 	restApiRegister["post"] = restHandler{
 		"Post",
+		"",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			r.POST(relativePath, func(ctx *Context) {
 				handleDynamicRestApi(ctx, caller)
@@ -55,6 +60,7 @@ func init() {
 	}
 	restApiRegister["put"] = restHandler{
 		"Put",
+		"",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			r.PUT(relativePath, func(ctx *Context) {
 				handleDynamicRestApi(ctx, caller)
@@ -63,6 +69,7 @@ func init() {
 	}
 	restApiRegister["delete"] = restHandler{
 		"Delete",
+		"",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			r.DELETE(relativePath, func(ctx *Context) {
 				handleDynamicRestApi(ctx, caller)
@@ -71,6 +78,7 @@ func init() {
 	}
 	restApiRegister["options"] = restHandler{
 		"Options",
+		"",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			r.OPTIONS(relativePath, func(ctx *Context) {
 				handleDynamicRestApi(ctx, caller)
@@ -80,6 +88,7 @@ func init() {
 	restApiRegister["option"] = restApiRegister["options"]
 	restApiRegister["patch"] = restHandler{
 		"Patch",
+		"",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			r.PATCH(relativePath, func(ctx *Context) {
 				handleDynamicRestApi(ctx, caller)
@@ -88,6 +97,7 @@ func init() {
 	}
 	restApiRegister["head"] = restHandler{
 		"Head",
+		"",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			r.HEAD(relativePath, func(ctx *Context) {
 				handleDynamicRestApi(ctx, caller)
@@ -96,6 +106,7 @@ func init() {
 	}
 	restApiRegister["any"] = restHandler{
 		"Any",
+		"",
 		func(relativePath string, r *RouterGroup, caller restCaller) {
 			r.Any(relativePath, func(ctx *Context) {
 				handleDynamicRestApi(ctx, caller)
@@ -107,8 +118,9 @@ func init() {
 
 // restHandler
 type restHandler struct {
-	httpMethod string
-	register   func(relativePath string, r *RouterGroup, caller restCaller)
+	httpMethod  string
+	extraRouter string
+	register    func(relativePath string, r *RouterGroup, caller restCaller)
 }
 
 // restCaller
@@ -207,8 +219,9 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 					dynCaller.hasActionAfterHandler = true
 					dynCaller.afterHandler = val.MethodByName(name)
 				}
+				url := path.Join(relativePath, dyApiRegister.extraRouter)
 				router.storeRouterStateWithHandlerName(
-					strings.ToUpper(dyApiRegister.httpMethod), relativePath, handlerActionName, nil, decorators...)
+					strings.ToUpper(dyApiRegister.httpMethod), url, handlerActionName, nil, decorators...)
 				dyApiRegister.register(relativePath, router, dynCaller)
 			}
 		}

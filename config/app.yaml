@@ -1,8 +1,50 @@
+#
+# Gw framework configurations.
+#
+# -----------------------
+#  Common configurations
+# -----------------------
+common:
+  server:
+    listenAddr: ":8090"
+  backend:
+    db:
+    - name: primary
+      driver: mysql
+      addr: 127.0.0.1
+      port: "3306"
+      user: gw
+      password: gw@123
+      database: gwdb
+      ssl_mode: on
+      ssl_cert: ap
+      args:
+        charset: utf8
+        parseTime: True
+    cache:
+    - name: primary
+      driver: redis
+      addr: 127.0.0.1
+      port: "6379"
+      type: redis
+      auth:
+        disable: True
+        user: ocean
+        database: "1"
+        password: oceanho
+
+# -----------------------
+#  Service configurations
+# -----------------------
 service:
   name: "My App"
   prefix: "/api/v1"
   version: "Version 1.0"
   remarks: "User Account Platform  Services."
+  serviceDiscovery:
+    disabled: True
+    registryCenter:
+      addr: ""
   security:
     crypto:
       hash:
@@ -80,32 +122,6 @@ service:
       session: "7200"
   services:
     plugin: "/apps/dylib/s/*.so"
-common:
-  backend:
-    db:
-    - name: primary
-      driver: mysql
-      addr: 127.0.0.1
-      port: "3306"
-      user: gw
-      password: gw@123
-      database: gwdb
-      ssl_mode: on
-      ssl_cert: ap
-      args:
-        charset: utf8
-        parseTime: True
-    cache:
-    - name: primary
-      driver: redis
-      addr: 127.0.0.1
-      port: "6379"
-      type: redis
-      auth:
-        disable: True
-        user: ocean
-        database: "1"
-        password: oceanho
 
 # Any Your custom configuration item at here.
 # More: https://github.com/oceanho/gw/master/docs/configuration#custom
