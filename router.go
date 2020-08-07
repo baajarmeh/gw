@@ -135,73 +135,73 @@ func (router *Router) storeRouterState(method string, relativePath string, handl
 
 // GET register a http Get router of handler.
 func (router *Router) GET(relativePath string, handler Handler, decorators ...Decorator) {
-	a, b := splitDecorators(decorators...)
+	before, after := splitDecorators(decorators...)
 	router.storeRouterState("GET", relativePath, handler, decorators...)
 	router.currentRouter.GET(relativePath, func(c *gin.Context) {
-		handle(c, handler, a, b)
+		handle(c, handler, before, after)
 	})
 }
 
 // POST register a http POST router of handler.
 func (router *Router) POST(relativePath string, handler Handler, decorators ...Decorator) {
-	a, b := splitDecorators(decorators...)
+	before, after := splitDecorators(decorators...)
 	router.storeRouterState("POST", relativePath, handler, decorators...)
 	router.currentRouter.POST(relativePath, func(c *gin.Context) {
-		handle(c, handler, a, b)
+		handle(c, handler, before, after)
 	})
 }
 
 // PUT register a http PUT router of handler.
 func (router *Router) PUT(relativePath string, handler Handler, decorators ...Decorator) {
-	a, b := splitDecorators(decorators...)
+	before, after := splitDecorators(decorators...)
 	router.storeRouterState("PUT", relativePath, handler, decorators...)
 	router.currentRouter.PUT(relativePath, func(c *gin.Context) {
-		handle(c, handler, a, b)
+		handle(c, handler, before, after)
 	})
 }
 
 // HEAD register a http HEAD router of handler.
 func (router *Router) HEAD(relativePath string, handler Handler, decorators ...Decorator) {
-	a, b := splitDecorators(decorators...)
+	before, after := splitDecorators(decorators...)
 	router.storeRouterState("HEAD", relativePath, handler, decorators...)
 	router.currentRouter.HEAD(relativePath, func(c *gin.Context) {
-		handle(c, handler, a, b)
+		handle(c, handler, before, after)
 	})
 }
 
 // DELETE register a http DELETE router of handler.
 func (router *Router) DELETE(relativePath string, handler Handler, decorators ...Decorator) {
-	a, b := splitDecorators(decorators...)
+	before, after := splitDecorators(decorators...)
 	router.storeRouterState("DELETE", relativePath, handler, decorators...)
 	router.currentRouter.DELETE(relativePath, func(c *gin.Context) {
-		handle(c, handler, a, b)
+		handle(c, handler, before, after)
 	})
 }
 
 // OPTIONS register a http OPTIONS router of handler.
 func (router *Router) OPTIONS(relativePath string, handler Handler, decorators ...Decorator) {
-	a, b := splitDecorators(decorators...)
+	before, after := splitDecorators(decorators...)
 	router.storeRouterState("OPTIONS", relativePath, handler, decorators...)
 	router.currentRouter.OPTIONS(relativePath, func(c *gin.Context) {
-		handle(c, handler, a, b)
+		handle(c, handler, before, after)
 	})
 }
 
 // PATCH register a http PATCH router of handler.
 func (router *Router) PATCH(relativePath string, handler Handler, decorators ...Decorator) {
-	a, b := splitDecorators(decorators...)
+	before, after := splitDecorators(decorators...)
 	router.storeRouterState("PATCH", relativePath, handler, decorators...)
 	router.currentRouter.PATCH(relativePath, func(c *gin.Context) {
-		handle(c, handler, a, b)
+		handle(c, handler, before, after)
 	})
 }
 
 // Any register a any HTTP method router of handler.
 func (router *Router) Any(relativePath string, handler Handler, decorators ...Decorator) {
-	a, b := splitDecorators(decorators...)
+	before, after := splitDecorators(decorators...)
 	router.storeRouterState("Any", relativePath, handler, decorators...)
 	router.currentRouter.Any(relativePath, func(c *gin.Context) {
-		handle(c, handler, a, b)
+		handle(c, handler, before, after)
 	})
 }
 
@@ -221,10 +221,10 @@ func (router *Router) Group(relativePath string, handler Handler, decorators ...
 		router,
 	}
 	if handler != nil {
-		a, b := splitDecorators(decorators...)
+		before, after := splitDecorators(decorators...)
 		router.storeRouterState("Group", relativePath, handler, decorators...)
 		rg.currentRouter = rg.router.Group(relativePath, func(c *gin.Context) {
-			handle(c, handler, a, b)
+			handle(c, handler, before, after)
 		})
 	} else {
 		rg.currentRouter = rg.router.Group(relativePath)
@@ -279,8 +279,8 @@ func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators [
 		if msg == "" {
 			msg = "caller decorator fail."
 		}
-		body := respBody(http.StatusBadRequest, requestID, errDefault403Msg, msg)
-		c.JSON(http.StatusBadRequest, body)
+		status, body := parseErrToRespBody(requestID, msg, err)
+		c.JSON(status, body)
 		return
 	}
 
@@ -302,10 +302,21 @@ func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators [
 		if msg == "" {
 			msg = "caller decorator fail."
 		}
-		body := respBody(http.StatusBadRequest, requestID, errDefault403Msg, msg)
-		c.JSON(http.StatusBadRequest, body)
-		return
+		status, body := parseErrToRespBody(requestID, msg, err)
+		c.JSON(status, body)
 	}
+}
+
+func parseErrToRespBody(requestID string, msgBody string, err error) (int, interface{}) {
+	var status = http.StatusBadRequest
+	if err == ErrPermissionDenied {
+		status = http.StatusForbidden
+	} else if err == ErrInternalServerError {
+		status = http.StatusInternalServerError
+	} else if err == ErrUnauthorized {
+		status = http.StatusUnauthorized
+	}
+	return status, respBody(status, requestID, err.Error(), msgBody)
 }
 
 func makeCtx(c *gin.Context, user User, store Store, requestID string) *Context {
@@ -323,14 +334,13 @@ func makeCtx(c *gin.Context, user User, store Store, requestID string) *Context 
 }
 
 func splitDecorators(decorators ...Decorator) (before, after []Decorator) {
-	var a, b []Decorator
 	for _, d := range decorators {
 		if d.After != nil {
-			b = append(b, d)
+			after = append(after, d)
 		}
 		if d.Before != nil {
-			a = append(a, d)
+			before = append(before, d)
 		}
 	}
-	return b, a
+	return before, after
 }

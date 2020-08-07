@@ -156,10 +156,10 @@ func init() {
 				},
 				secret: "123@456",
 			},
-			"gw": {
+			"gw-tenant-admin": {
 				User: User{
 					Id:         10001,
-					Passport:   "gw",
+					Passport:   "gw-tenant-admin",
 					TenantId:   0,
 					MainRoleId: 2,
 				},
@@ -431,10 +431,6 @@ type User struct {
 	MainRoleId      int // Platform Admin:1, Tenant Admin:2, roleId >= 10000 are custom role.
 	ExtraRoleIdList []string
 	Permissions     []Permission
-}
-
-func (user *User) UnmarshalBinary(data []byte) error {
-	return json.Unmarshal(data, user)
 }
 
 func (user *User) MarshalBinary() (data []byte, err error) {

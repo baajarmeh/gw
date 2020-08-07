@@ -13,7 +13,12 @@ type DecoratorPermissionImpl struct {
 
 const permissionDecoratorCatalog = "permission"
 
-var ErrPermissionDenied = fmt.Errorf("permission denied")
+var (
+	ErrUnauthorized        = fmt.Errorf("has no credentitals")
+	ErrInternalServerError = fmt.Errorf("server internal error")
+	ErrBadRequest          = fmt.Errorf("bad request")
+	ErrPermissionDenied    = fmt.Errorf("permission denied")
+)
 
 type PermissionDecorator struct {
 	locker         sync.Mutex
@@ -58,7 +63,8 @@ func (p *PermissionDecorator) All() []Decorator {
 		for _, v := range p.permDecorators {
 			items = append(items, v)
 		}
-		p.items = items
+		p.items = make([]Decorator, len(items))
+		copy(p.items, items)
 	}
 	var list = make([]Decorator, len(p.items))
 	copy(list, p.items)
@@ -73,10 +79,22 @@ func NewAllPermDecorator(resource string) PermissionDecorator {
 	return pdList
 }
 
-// NewResourceCreationPermDecorator returns a resources of has perm Permission Decorator.
-func NewPermDecorator(perm, resource string, suffix ...string) Decorator {
+// NewPermDecorator returns a resources of has perm Permission Decorator.
+func NewPermDecorator(perm, resource string) Decorator {
+	return NewPermDecoratorWithSuffix(perm, resource, "")
+}
+
+// NewPermDecoratorWithSuffix returns a resources of has perm Permission Decorator.
+func NewPermDecoratorWithSuffix(perm, resource string, suffix string) Decorator {
 	kn := fmt.Sprintf("%s%s%sPermission", perm, resource, suffix)
 	desc := fmt.Sprintf("A %s%s permssion for %s", perm, suffix, resource)
+	return NewPermissionDecorator(NewPermSameKeyName(kn, desc))
+}
+
+// NewPermDecoratorWithPrefix returns a resources of has perm Permission Decorator.
+func NewPermDecoratorWithPrefix(perm, resource string, prefix string) Decorator {
+	kn := fmt.Sprintf("%s%s%sPermission", perm, prefix, resource)
+	desc := fmt.Sprintf("A %s%s permssion for %s", perm, prefix, resource)
 	return NewPermissionDecorator(NewPermSameKeyName(kn, desc))
 }
 
@@ -85,7 +103,7 @@ func NewAdministrationPermDecorator(resource string) Decorator {
 	return NewPermDecorator("Administration", resource)
 }
 
-// NewResourceCreationPermDecorator returns a resources of has Creation Permission object.
+// NewCreationPermDecorator returns a resources of has Creation Permission object.
 func NewCreationPermDecorator(resource string) Decorator {
 	return NewPermDecorator("Creation", resource)
 }
@@ -102,12 +120,12 @@ func NewDeletionPermDecorator(resource string) Decorator {
 
 // NewReadDetailPermDecorator returns a has Read detail Permission of resources.
 func NewReadDetailPermDecorator(resource string) Decorator {
-	return NewPermDecorator("Read", resource, "Detail")
+	return NewPermDecoratorWithSuffix("Read", resource, "Detail")
 }
 
 // NewReadAllPermDecorator returns a has Read all/pager List Permission of resources.
 func NewReadAllPermDecorator(resource string) Decorator {
-	return NewPermDecorator("Read", resource, "All")
+	return NewPermDecoratorWithPrefix("Read", resource, "All")
 }
 
 // NewCrudPermDecorator returns
