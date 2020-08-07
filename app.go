@@ -486,9 +486,8 @@ func (s *HostServer) GetRouters() []RouterInfo {
 
 // PrintRouterInfo ...
 func (s *HostServer) PrintRouterInfo() {
-	logger.Info("==================================")
-	logger.Info("%s", s.conf.Service.Settings.GwFramework.PrintRouterInfo.Title)
-	logger.Info("==================================")
+	logger.Info("%s ", s.conf.Service.Settings.GwFramework.PrintRouterInfo.Title)
+	logger.Info("=======================")
 	var routers = s.GetRouters()
 	for _, r := range routers {
 		logger.Info("%s", r.String())
@@ -509,10 +508,19 @@ func (s *HostServer) Serve() {
 	}
 
 	if !s.conf.Service.Settings.GwFramework.PrintRouterInfo.Disabled {
+		logger.NewLine(2)
 		s.PrintRouterInfo()
 	}
 
-	logger.Info("Listening and serving HTTP on: %s", s.options.Addr)
+	logger.NewLine(2)
+	logger.Info("Service Information  ")
+	logger.Info("=======================")
+	logger.Info(" Name: %s", s.conf.Service.Name)
+	logger.Info(" Version: %s", s.conf.Service.Version)
+	logger.Info(" Remarks: %s", s.conf.Service.Remarks)
+	logger.NewLine(2)
+	logger.Info(" Serving HTTP on: %s", s.options.Addr)
+
 	logger.ResetLogFormatter()
 	var err error
 	go func() {

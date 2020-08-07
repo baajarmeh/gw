@@ -46,6 +46,10 @@ func formatLog(level, format string, a ...interface{}) string {
 	return strings.Replace(s, "$msg", msg, 1)
 }
 
+func NewLine(n int) {
+	fmt.Printf(strings.Repeat("\n", n))
+}
+
 func Info(format string, a ...interface{}) {
 	if logLevel >= INFO {
 		fmt.Printf(formatLog("INFO", format, a...))

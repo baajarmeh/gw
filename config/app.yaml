@@ -110,7 +110,7 @@ service:
     gw:
       printRouterInfo:
         disabled: False # enable/disable Print gw router info.
-        title: "\tGw Router Information"
+        title: "Router Information"
     headerKey:
       requestIdKey: "X-Request-Id"
     timeoutControl:  # Timeout control, units is millisecond
