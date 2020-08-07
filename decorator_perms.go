@@ -15,58 +15,42 @@ const permissionDecoratorCatalog = "permission"
 
 var ErrPermissionDenied = fmt.Errorf("permission denied")
 
-func (p DecoratorPermissionImpl) Catalog() string {
-	return permissionDecoratorCatalog
-}
-
-func (p DecoratorPermissionImpl) OnBeforeCall(ctx *Context) (friendlyMsg string, err error) {
-	s := GetHostServer(ctx.Context)
-	if !s.PermissionManager.HasPermission(ctx.User, p.perms...) {
-		return p.friendlyMsg, ErrPermissionDenied
-	}
-	return "", nil
-}
-
-func (p DecoratorPermissionImpl) OnAfterCall(ctx *Context) (friendlyMsg string, err error) {
-	return "", nil
-}
-
-type PermissionDecoratorList struct {
+type PermissionDecorator struct {
 	locker         sync.Mutex
 	items          []Decorator
 	permDecorators map[string]Decorator
 }
 
-func (p PermissionDecoratorList) Administration() Decorator {
+func (p PermissionDecorator) Administration() Decorator {
 	return p.permDecorators["Administration"]
 }
 
-func (p PermissionDecoratorList) Creation() Decorator {
+func (p PermissionDecorator) Creation() Decorator {
 	return p.permDecorators["Creation"]
 }
 
-func (p PermissionDecoratorList) Modification() Decorator {
+func (p PermissionDecorator) Modification() Decorator {
 	return p.permDecorators["Modification"]
 }
 
-func (p PermissionDecoratorList) Deletion() Decorator {
+func (p PermissionDecorator) Deletion() Decorator {
 	return p.permDecorators["Deletion"]
 }
 
-func (p PermissionDecoratorList) ReadAll() Decorator {
+func (p PermissionDecorator) ReadAll() Decorator {
 	return p.permDecorators["ReadAll"]
 }
 
-func (p PermissionDecoratorList) ReadDetail() Decorator {
+func (p PermissionDecorator) ReadDetail() Decorator {
 	return p.permDecorators["ReadDetail"]
 }
 
-func (p PermissionDecoratorList) Has(name string) bool {
+func (p PermissionDecorator) Has(name string) bool {
 	var _, ok = p.permDecorators[name]
 	return ok
 }
 
-func (p *PermissionDecoratorList) All() []Decorator {
+func (p *PermissionDecorator) All() []Decorator {
 	p.locker.Lock()
 	defer p.locker.Unlock()
 	if p.items == nil {
@@ -83,7 +67,7 @@ func (p *PermissionDecoratorList) All() []Decorator {
 
 // NewAllPermDecorator returns a PermissionDecoratorList, that has
 // Administration,Creation,Deletion,Modification,RealAll,ReadDetail Permission
-func NewAllPermDecorator(resource string) PermissionDecoratorList {
+func NewAllPermDecorator(resource string) PermissionDecorator {
 	var pdList = NewCrudPermDecorator(resource)
 	pdList.permDecorators["Administration"] = NewAdministrationPermDecorator(resource)
 	return pdList
@@ -128,8 +112,8 @@ func NewReadAllPermDecorator(resource string) Decorator {
 
 // NewCrudPermDecorator returns
 // A resources Create, Delete,
-func NewCrudPermDecorator(resource string) PermissionDecoratorList {
-	var pdList = PermissionDecoratorList{
+func NewCrudPermDecorator(resource string) PermissionDecorator {
+	var pdList = PermissionDecorator{
 		permDecorators: make(map[string]Decorator),
 	}
 	pdList.permDecorators["ReadAll"] = NewReadAllPermDecorator(resource)

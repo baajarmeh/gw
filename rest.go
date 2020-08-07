@@ -140,10 +140,13 @@ func (router *RouterGroup) RegisterRestAPIs(ctrls ...IRestAPI) {
 func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 	logger.Info("register router by API RegisterRestAPI(...)")
 	for _, rest := range restAPIs {
-		var relativePath string
+		var relativePath, restName string
 		typ := reflect.TypeOf(rest)
 		val := reflect.ValueOf(rest)
-		restName := fmt.Sprintf("%s.%s", typ.Elem().PkgPath(), typ.Elem().Name())
+		if typ.Kind() != reflect.Ptr {
+			panic(fmt.Sprintf("%s should be are pointer.", rest.Name()))
+		}
+		restName = fmt.Sprintf("%s.%s", typ.Elem().PkgPath(), typ.Elem().Name())
 		nameCaller, ok := typ.MethodByName("Name")
 		if ok {
 			relativePath = nameCaller.Func.Call([]reflect.Value{val})[0].String()
