@@ -14,7 +14,7 @@ type DecoratorList struct {
 	locker sync.Mutex
 }
 
-func NewDecoratorList(decorators ...Decorator) *DecoratorList {
+func NewDecorators(decorators ...Decorator) *DecoratorList {
 	dList := &DecoratorList{}
 	dList.Append(decorators...)
 	return dList

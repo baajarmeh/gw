@@ -30,7 +30,7 @@ func (a App) Router() string {
 func (a App) Register(router *gw.RouterGroup) {
 
 	router.POST("test/create", api.CreateMyTester, infra.DecoratorList.Creation())
-	router.GET("test/query", api.QueryMyTester, gw.NewDecoratorList(gw.NewStoreDbFilterDecorator(func(ctx gw.Context, db *gorm.DB) *gorm.DB {
+	router.GET("test/query", api.QueryMyTester, gw.NewDecorators(gw.NewStoreDbFilterDecorator(func(ctx gw.Context, db *gorm.DB) *gorm.DB {
 		return db.Where("id >= 10")
 	})...).Append(gw.NewAllPermDecorator("a").All()...).All()...)
 

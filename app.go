@@ -298,6 +298,7 @@ func (s *HostServer) Patch(apps ...App) {
 		appName := app.Name()
 		if _, ok := s.apps[appName]; !ok {
 			app.Use(s.options)
+			app.Migrate(s.Store)
 		}
 	}
 }

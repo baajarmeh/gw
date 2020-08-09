@@ -23,15 +23,15 @@ type Handler func(ctx *Context)
 // Context represents a gw Context object, it's extension from gin.Context.
 type Context struct {
 	*gin.Context
-	RequestID      string
-	User           User
-	Store          Store
-	startTime      time.Time
-	server         HostServer
-	logger         Logger
-	queries        map[string][]string
-	params         map[string]interface{}
-	globalDbFilter []interface{}
+	RequestID  string
+	User       User
+	Store      Store
+	startTime  time.Time
+	server     HostServer
+	logger     Logger
+	queries    map[string][]string
+	params     map[string]interface{}
+	bindModels map[interface{}]bool
 }
 
 // Router represents a gw's Router info.
@@ -324,15 +324,16 @@ func makeCtx(c *gin.Context, requestID string) *Context {
 	s := hostServer(c)
 	user := getUser(c)
 	ctx := &Context{
-		User:      *user,
-		Store:     s.Store,
-		Context:   c,
-		RequestID: requestID,
-		startTime: time.Now(),
-		server:    *s,
-		logger:    getLogger(c),
-		queries:   make(map[string][]string),
-		params:    make(map[string]interface{}),
+		server:     *s,
+		Context:    c,
+		User:       *user,
+		Store:      s.Store,
+		RequestID:  requestID,
+		startTime:  time.Now(),
+		logger:     getLogger(c),
+		bindModels: make(map[interface{}]bool),
+		queries:    make(map[string][]string),
+		params:     make(map[string]interface{}),
 	}
 	return ctx
 }
