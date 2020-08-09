@@ -2,8 +2,8 @@ package rest
 
 import (
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/tester/dto"
 	"github.com/oceanho/gw/logger"
-	"github.com/oceanho/gw/web/apps/tester/dto"
 )
 
 type MyTesterRestAPI struct {

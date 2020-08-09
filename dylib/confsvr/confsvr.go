@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/oceanho/gw/web/apps/confsvr"
+	"github.com/oceanho/gw/contrib/apps/confsvr"
 )
 
 var AppPlugin confsvr.App

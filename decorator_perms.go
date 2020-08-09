@@ -6,12 +6,7 @@ import (
 	"sync"
 )
 
-type DecoratorPermissionImpl struct {
-	perms       []Permission
-	friendlyMsg string
-}
-
-const permissionDecoratorCatalog = "permission"
+const permissionDecoratorCatalog = "gw_framework_permission"
 
 var (
 	ErrUnauthorized        = fmt.Errorf("has no credentitals")
@@ -55,7 +50,7 @@ func (p PermissionDecorator) Has(name string) bool {
 	return ok
 }
 
-func (p *PermissionDecorator) All() []Decorator {
+func (p PermissionDecorator) All() []Decorator {
 	p.locker.Lock()
 	defer p.locker.Unlock()
 	if p.items == nil {
@@ -151,7 +146,7 @@ func NewPermissionDecorator(perms ...Permission) Decorator {
 	return Decorator{
 		MetaData: perms,
 		Before: func(c *Context) (friendlyMsg string, err error) {
-			s := GetHostServer(c.Context)
+			s := GetHostServer(c)
 			if s.PermissionManager.HasPermission(c.User, perms...) {
 				return "", nil
 			}

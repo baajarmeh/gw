@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/web/apps/uap/dto"
+	"github.com/oceanho/gw/contrib/apps/uap/dto"
 )
 
 func GetUser(c *gw.Context) {

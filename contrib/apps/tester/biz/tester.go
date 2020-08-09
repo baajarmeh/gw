@@ -1,7 +1,7 @@
 package biz
 
 import (
-	"github.com/oceanho/gw/web/apps/tester/dto"
+	"github.com/oceanho/gw/contrib/apps/tester/dto"
 	"gorm.io/gorm"
 )
 

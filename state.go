@@ -253,11 +253,11 @@ func config(c *gin.Context) conf.Config {
 	return *hostServer(c).conf
 }
 
-func GetHostServer(c *gin.Context) HostServer {
-	return *hostServer(c)
+func GetHostServer(c *Context) HostServer {
+	return *hostServer(c.Context)
 }
 
-func GetHostServerName(c *gin.Context) string {
+func GetHostServerName(c *Context) string {
 	return c.MustGet(gwAppKey).(string)
 }
 

@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/conf"
-	"github.com/oceanho/gw/web/apps/confsvr"
+	"github.com/oceanho/gw/contrib/apps/confsvr"
 )
 
 func main() {

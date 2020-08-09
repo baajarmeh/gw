@@ -2,8 +2,8 @@ package uap
 
 import (
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/web/apps/uap/api"
-	"github.com/oceanho/gw/web/apps/uap/dbModel"
+	"github.com/oceanho/gw/contrib/apps/uap/api"
+	"github.com/oceanho/gw/contrib/apps/uap/dbModel"
 )
 
 func init() {

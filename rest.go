@@ -152,7 +152,7 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 			panic(fmt.Sprintf("%s should be are pointer.", rest.Name()))
 		}
 		el := typ.Elem()
-		restPkgId = fmt.Sprintf("%s.*%s{}", el.PkgPath(), el.Name())
+		restPkgId = fmt.Sprintf("%s.(*%s)", el.PkgPath(), el.Name())
 		relativePath := strings.ToLower(val.MethodByName("Name").Call(nil)[0].String())
 		var name = "SetupDecorator"
 		var globalDecorators []Decorator
@@ -183,7 +183,7 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 				var decorators []Decorator
 				decorators = append(decorators, apiSpecifyDecorators...)
 				decorators = append(decorators, globalDecorators...)
-				bindingFuncPkgName := fmt.Sprintf("%s.%s(*gw.Context)", restPkgId, m.Name)
+				bindingFuncPkgName := fmt.Sprintf("%s.%s", restPkgId, m.Name)
 				dynCaller := DynamicCaller{
 					argInNumber:        n,
 					decorators:         decorators,

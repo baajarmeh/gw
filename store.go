@@ -3,7 +3,6 @@ package gw
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	mysqlDb "github.com/go-sql-driver/mysql"
 	"github.com/oceanho/gw/conf"
@@ -21,16 +20,16 @@ type Store interface {
 }
 
 // StoreDbSetupHandler defines a database ORM object handler.
-type StoreDbSetupHandler func(ctx gin.Context, db *gorm.DB, user User) *gorm.DB
+type StoreDbSetupHandler func(ctx Context, db *gorm.DB) *gorm.DB
 
 // StoreCacheSetupHandler defines a redis Client object handler.
-type StoreCacheSetupHandler func(ctx gin.Context, client *redis.Client, user User) *redis.Client
+type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *redis.Client
 
 // SessionStateHandler defines a Session state manager handler.
 type SessionStateHandler func(conf conf.Config) ISessionStateManager
 
 type backendWrapper struct {
-	ctx                    gin.Context
+	ctx                    Context
 	user                   User
 	store                  Store
 	storeDbSetupHandler    StoreDbSetupHandler
@@ -54,7 +53,7 @@ func (b backendWrapper) GetDbStoreByName(name string) *gorm.DB {
 }
 
 func (b backendWrapper) globalDbStep(db *gorm.DB) *gorm.DB {
-	return b.storeDbSetupHandler(b.ctx, db, b.user)
+	return b.storeDbSetupHandler(b.ctx, db)
 }
 
 func (b backendWrapper) globalCacheSetup(db *redis.Client) *redis.Client {
@@ -175,9 +174,9 @@ func createCache(cache conf.Cache) *redis.Client {
 	return client
 }
 
-func getStore(ctx *gin.Context, server *HostServer, user User) Store {
+func getStore(ctx Context, server *HostServer, user User) Store {
 	storeWrapper := &backendWrapper{
-		ctx:                    *ctx,
+		ctx:                    ctx,
 		user:                   user,
 		store:                  server.Store,
 		storeDbSetupHandler:    server.storeDbSetupHandler,

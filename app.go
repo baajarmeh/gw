@@ -113,10 +113,10 @@ var (
 	appDefaultAppConfigHandler = func(cnf conf.BootConfig) *conf.Config {
 		return conf.NewConfigByBootConfig(&cnf)
 	}
-	appDefaultStoreDbSetupHandler = func(c gin.Context, db *gorm.DB, user User) *gorm.DB {
+	appDefaultStoreDbSetupHandler = func(c Context, db *gorm.DB) *gorm.DB {
 		return db
 	}
-	appDefaultStoreCacheSetupHandler = func(c gin.Context, client *redis.Client, user User) *redis.Client {
+	appDefaultStoreCacheSetupHandler = func(c Context, client *redis.Client, user User) *redis.Client {
 		return client
 	}
 	internLogFormatter = "[$prefix-$level] $msg\n"

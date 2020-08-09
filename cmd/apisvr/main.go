@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/conf"
-	"github.com/oceanho/gw/web/apps/stor"
-	"github.com/oceanho/gw/web/apps/uap"
+	"github.com/oceanho/gw/contrib/apps/stor"
+	"github.com/oceanho/gw/contrib/apps/uap"
 )
 
 func main() {

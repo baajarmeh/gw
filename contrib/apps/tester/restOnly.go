@@ -2,7 +2,7 @@ package tester
 
 import (
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/web/apps/tester/rest"
+	"github.com/oceanho/gw/contrib/apps/tester/rest"
 )
 
 func init() {
@@ -16,11 +16,11 @@ func NewAppRestOnly() AppRestOnly {
 }
 
 func (a AppRestOnly) Name() string {
-	return "gw-rest-app"
+	return "gw-rest-app-only"
 }
 
 func (a AppRestOnly) Router() string {
-	return "tester"
+	return "router-only-tester"
 }
 
 func (a AppRestOnly) Register(router *gw.RouterGroup) {

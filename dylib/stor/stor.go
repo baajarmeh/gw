@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/oceanho/gw/web/apps/stor"
+	"github.com/oceanho/gw/contrib/apps/stor"
 )
 
 var AppPlugin stor.App

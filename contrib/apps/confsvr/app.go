@@ -2,7 +2,7 @@ package confsvr
 
 import (
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/web/apps/confsvr/api"
+	"github.com/oceanho/gw/contrib/apps/confsvr/api"
 )
 
 type App struct {

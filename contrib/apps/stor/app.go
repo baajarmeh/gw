@@ -2,7 +2,7 @@ package stor
 
 import (
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/web/apps/stor/api"
+	"github.com/oceanho/gw/contrib/apps/stor/api"
 )
 
 func init() {

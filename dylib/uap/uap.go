@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/oceanho/gw/web/apps/uap"
+	"github.com/oceanho/gw/contrib/apps/uap"
 )
 
 var AppPlugin uap.App

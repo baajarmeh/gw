@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/web/apps/tester/biz"
-	"github.com/oceanho/gw/web/apps/tester/dto"
+	"github.com/oceanho/gw/contrib/apps/tester/biz"
+	"github.com/oceanho/gw/contrib/apps/tester/dto"
 )
 
 func CreateMyTester(c *gw.Context) {

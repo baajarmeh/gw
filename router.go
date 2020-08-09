@@ -27,10 +27,26 @@ type Context struct {
 	User           User
 	Store          Store
 	startTime      time.Time
+	server         HostServer
 	logger         Logger
 	queries        map[string][]string
 	params         map[string]interface{}
 	globalDbFilter []interface{}
+}
+
+// Router represents a gw's Router info.
+type Router struct {
+	locker        sync.Mutex
+	prefix        string
+	server        *gin.Engine
+	router        *gin.RouterGroup
+	currentRouter *gin.RouterGroup
+	routerInfos   []RouterInfo
+}
+
+// RouterGroup represents a gw's Group Router info.
+type RouterGroup struct {
+	*Router
 }
 
 // RouterInfo represents a gw Router Info.
@@ -46,7 +62,9 @@ type RouterInfo struct {
 func (r RouterInfo) String() string {
 	// https://books.studygolang.com/gobyexample/string-formatting
 	// Padding left.
-	return fmt.Sprintf("%-8s%s -> %s", r.Method, r.Router, r.handlerActionName)
+	before, after := splitDecorators(r.Decorators...)
+	return fmt.Sprintf("%-8s%s -> %s "+
+		"[decorator info (%d before, %d after)]", r.Method, r.Router, r.handlerActionName, len(before), len(after))
 }
 
 func createRouterInfo(method, router string, handlerActionName string, handler Handler, decorators ...Decorator) RouterInfo {
@@ -98,21 +116,6 @@ func (c Context) QueryArray(key string) []string {
 // StartTime returns the Context start *time.Time
 func (c Context) StartTime() *time.Time {
 	return &c.startTime
-}
-
-// Router represents a gw's Router info.
-type Router struct {
-	locker        sync.Mutex
-	prefix        string
-	server        *gin.Engine
-	router        *gin.RouterGroup
-	currentRouter *gin.RouterGroup
-	routerInfos   []RouterInfo
-}
-
-// RouterGroup represents a gw's Group Router info.
-type RouterGroup struct {
-	*Router
 }
 
 func (router *Router) storeRouterStateWithHandlerName(method string, relativePath,
@@ -262,10 +265,8 @@ func (c *Context) BindQuery(out interface{}) error {
 
 func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators []Decorator) {
 	s := hostServer(c)
-	user := getUser(c)
 	requestID := getRequestID(s, c)
-	store := getStore(c, s, *user)
-	ctx := makeCtx(c, *user, store, requestID)
+	ctx := makeCtx(c, requestID)
 	// action before Decorators
 	var msg string
 	var err error
@@ -319,13 +320,16 @@ func parseErrToRespBody(requestID string, msgBody string, err error) (int, inter
 	return status, respBody(status, requestID, err.Error(), msgBody)
 }
 
-func makeCtx(c *gin.Context, user User, store Store, requestID string) *Context {
+func makeCtx(c *gin.Context, requestID string) *Context {
+	s := hostServer(c)
+	user := getUser(c)
 	ctx := &Context{
-		User:      user,
-		RequestID: requestID,
-		Store:     store,
+		User:      *user,
+		Store:     s.Store,
 		Context:   c,
+		RequestID: requestID,
 		startTime: time.Now(),
+		server:    *s,
 		logger:    getLogger(c),
 		queries:   make(map[string][]string),
 		params:    make(map[string]interface{}),
