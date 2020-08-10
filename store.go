@@ -19,13 +19,13 @@ type Store interface {
 	GetCacheStoreByName(name string) *redis.Client
 }
 
-// StoreDbSetupHandler defines a database ORM object handler.
+// StoreDbSetupHandler represents a database ORM object handler that can be replace A *gorm.DB instances features.
 type StoreDbSetupHandler func(ctx Context, db *gorm.DB) *gorm.DB
 
-// StoreCacheSetupHandler defines a redis Client object handler.
+// StoreCacheSetupHandler represents a redis Client object handler that can be replace A *redis.Client instances features.
 type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *redis.Client
 
-// SessionStateHandler defines a Session state manager handler.
+// SessionStateHandler represents a Session state manager handler.
 type SessionStateHandler func(conf conf.Config) ISessionStateManager
 
 type backendWrapper struct {

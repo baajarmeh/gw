@@ -11,9 +11,8 @@ type StoreDbFilterDecorator struct {
 	items  []Decorator
 }
 
-func NewStoreDbFilterDecorator(setupDbFilterHandler StoreDbSetupHandler) []Decorator {
-	var decorators []Decorator
-	d := Decorator{
+func NewStoreDbFilterDecorator(setupDbFilterHandler StoreDbSetupHandler) Decorator {
+	var d = Decorator{
 		Catalog:  storeDbFilterDecoratorCatalog,
 		MetaData: nil,
 		Before: func(ctx *Context) (friendlyMsg string, err error) {
@@ -25,6 +24,5 @@ func NewStoreDbFilterDecorator(setupDbFilterHandler StoreDbSetupHandler) []Decor
 			return "", nil
 		},
 	}
-	decorators = append(decorators, d)
-	return decorators
+	return d
 }
