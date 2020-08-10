@@ -308,7 +308,7 @@ func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators [
 	}
 }
 
-func parseErrToRespBody(s *HostServer, requestID string, msgBody string, err error) (int, interface{}) {
+func parseErrToRespBody(s HostServer, requestID string, msgBody string, err error) (int, interface{}) {
 	var status = http.StatusBadRequest
 	if err == ErrPermissionDenied {
 		status = http.StatusForbidden
@@ -324,9 +324,9 @@ func makeCtx(c *gin.Context, requestID string) *Context {
 	s := hostServer(c)
 	user := getUser(c)
 	ctx := &Context{
-		server:     *s,
+		server:     s,
 		Context:    c,
-		User:       *user,
+		User:       user,
 		Store:      s.Store,
 		RequestID:  requestID,
 		startTime:  time.Now(),

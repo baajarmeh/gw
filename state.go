@@ -131,7 +131,7 @@ func gwState(serverName string) gin.HandlerFunc {
 	}
 }
 
-func encryptSid(s *HostServer, passport string) (secureSid string, ok bool) {
+func encryptSid(s HostServer, passport string) (secureSid string, ok bool) {
 
 	rdnKey := secure.RandomStr(32)
 
@@ -168,7 +168,7 @@ func encryptSid(s *HostServer, passport string) (secureSid string, ok bool) {
 	return secureSid, true
 }
 
-func decryptSid(s *HostServer, secureSid string, client string) (passport string, ok bool) {
+func decryptSid(s HostServer, secureSid string, client string) (passport string, ok bool) {
 	sid, err := secure.DecodeBase64URL(secureSid)
 	if err != nil {
 		logger.Error("decryptSid() -> security.DecodeBase64URL(_sid) fail, err:%v . sid=%s", err, sid)
@@ -216,7 +216,7 @@ func getClient(c *gin.Context) string {
 	return c.Request.RemoteAddr
 }
 
-func getSid(s *HostServer, c *gin.Context) (string, bool) {
+func getSid(s HostServer, c *gin.Context) (string, bool) {
 	sid, ok := c.Get(gwSidKey)
 	if ok {
 		return sid.(string), true
@@ -244,9 +244,9 @@ func getSid(s *HostServer, c *gin.Context) (string, bool) {
 	return decryptSid(s, _sid, client)
 }
 
-func hostServer(c *gin.Context) *HostServer {
+func hostServer(c *gin.Context) HostServer {
 	serverName := c.MustGet(gwAppKey).(string)
-	return servers[serverName]
+	return *servers[serverName]
 }
 
 func config(c *gin.Context) conf.Config {
@@ -254,11 +254,7 @@ func config(c *gin.Context) conf.Config {
 }
 
 func GetHostServer(c *Context) HostServer {
-	return *hostServer(c.Context)
-}
-
-func GetHostServerName(c *Context) string {
-	return c.MustGet(gwAppKey).(string)
+	return hostServer(c.Context)
 }
 
 //

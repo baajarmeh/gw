@@ -41,7 +41,7 @@ func NewPermSameKeyNameDesc(knd string) Permission {
 
 type IAuthManager interface {
 	Login(store Store, passport, secret, credType, verifyCode string) (User, error)
-	Logout(store Store, user *User) bool
+	Logout(store Store, user User) bool
 }
 
 type ISessionStateManager interface {
@@ -141,7 +141,7 @@ func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, credType, 
 	return emptyUser, fmt.Errorf("user:%s not found or serect not match", passport)
 }
 
-func (d *DefaultAuthManagerImpl) Logout(store Store, user *User) bool {
+func (d *DefaultAuthManagerImpl) Logout(store Store, user User) bool {
 	// Nothing to do.
 	return true
 }
@@ -359,7 +359,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 		// No auth and request URI not in allowed urls.
 		// UnAuthorized
 		//
-		if (user == nil || !user.IsAuth()) && !allowUrls[path] {
+		if (user.IsEmpty() || !user.IsAuth()) && !allowUrls[path] {
 			auth := hostServer(c).conf.Service.Security.Auth.Server
 			// Check url are allow dict.
 			payload := gin.H{
@@ -387,7 +387,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 }
 
 // helpers
-func parseCredentials(s *HostServer, c *gin.Context) (passport, secret string, verifyCode string, credType string, result bool) {
+func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, verifyCode string, credType string, result bool) {
 	//
 	// Auth Param configuration.
 	param := s.conf.Service.Security.Auth.ParamKey
@@ -469,6 +469,10 @@ func (user User) IsAuth() bool {
 	return &user != nil && user.Id > 0
 }
 
+func (user User) IsEmpty() bool {
+	return user.Id == emptyUser.Id
+}
+
 func (user User) IsAdmin() bool {
 	return user.IsAuth() && user.MainRoleId == 1
 }
@@ -477,10 +481,10 @@ func (user User) IsTenantAdmin() bool {
 	return user.IsAuth() && user.MainRoleId == 2
 }
 
-func getUser(c *gin.Context) *User {
+func getUser(c *gin.Context) User {
 	obj, ok := c.Get(gwUserKey)
 	if ok {
-		return obj.(*User)
+		return obj.(User)
 	}
-	return nil
+	return emptyUser
 }

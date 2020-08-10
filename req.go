@@ -8,7 +8,7 @@ import (
 
 var requestIdStateKey = "gwState-X-Request-Id"
 
-func getRequestID(s *HostServer, c *gin.Context) string {
+func getRequestID(s HostServer, c *gin.Context) string {
 	shouldSave := true
 	requestID := c.GetHeader(s.conf.Service.Settings.HeaderKey.RequestIDKey)
 	if requestID == "" {
