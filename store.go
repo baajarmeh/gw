@@ -28,6 +28,9 @@ type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *
 // SessionStateHandler represents a Session state manager handler.
 type SessionStateHandler func(conf conf.Config) ISessionStateManager
 
+// RespBodyCreationHandler represents a response body build handler.
+type RespBodyCreationHandler func(status int, requestID string, err interface{}, msgBody interface{}) interface{}
+
 type backendWrapper struct {
 	ctx                    Context
 	user                   User

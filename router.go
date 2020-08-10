@@ -280,7 +280,7 @@ func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators [
 		if msg == "" {
 			msg = "caller decorator fail."
 		}
-		status, body := parseErrToRespBody(requestID, msg, err)
+		status, body := parseErrToRespBody(s, requestID, msg, err)
 		c.JSON(status, body)
 		return
 	}
@@ -303,12 +303,12 @@ func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators [
 		if msg == "" {
 			msg = "caller decorator fail."
 		}
-		status, body := parseErrToRespBody(requestID, msg, err)
+		status, body := parseErrToRespBody(s, requestID, msg, err)
 		c.JSON(status, body)
 	}
 }
 
-func parseErrToRespBody(requestID string, msgBody string, err error) (int, interface{}) {
+func parseErrToRespBody(s *HostServer, requestID string, msgBody string, err error) (int, interface{}) {
 	var status = http.StatusBadRequest
 	if err == ErrPermissionDenied {
 		status = http.StatusForbidden
@@ -317,7 +317,7 @@ func parseErrToRespBody(requestID string, msgBody string, err error) (int, inter
 	} else if err == ErrUnauthorized {
 		status = http.StatusUnauthorized
 	}
-	return status, respBody(status, requestID, err.Error(), msgBody)
+	return status, s.RespBodyBuildFunc(status, requestID, err.Error(), msgBody)
 }
 
 func makeCtx(c *gin.Context, requestID string) *Context {

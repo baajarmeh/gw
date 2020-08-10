@@ -83,7 +83,7 @@ func gwState(serverName string) gin.HandlerFunc {
 					c.Error(err.(error)) // nolint: errcheck
 					c.Abort()
 				} else {
-					body := respBody(http.StatusInternalServerError, requestId, errDefault500Msg, nil)
+					body := s.RespBodyBuildFunc(http.StatusInternalServerError, requestId, errDefault500Msg, nil)
 					c.JSON(http.StatusInternalServerError, body)
 				}
 			}

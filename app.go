@@ -68,6 +68,7 @@ type ServerOption struct {
 	StoreDbSetupHandler    StoreDbSetupHandler
 	SessionStateManager    SessionStateHandler
 	StoreCacheSetupHandler StoreCacheSetupHandler
+	RespBodyBuildFunc      RespBodyCreationHandler
 	cnf                    *conf.Config
 	bcs                    *conf.BootConfig
 }
@@ -80,6 +81,7 @@ type HostServer struct {
 	AuthManager         IAuthManager
 	SessionStateManager ISessionStateManager
 	PermissionManager   IPermissionManager
+	RespBodyBuildFunc   RespBodyCreationHandler
 	// private
 	state                  int
 	name                   string
@@ -155,7 +157,8 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 			c := conf.Service.Security.Crypto
 			return DefaultCrypto(c.Protect.Secret, c.Hash.Salt)
 		},
-		bcs: bcs,
+		RespBodyBuildFunc: defaultRespBodyBuildFunc,
+		bcs:               bcs,
 	}
 	return conf
 }
@@ -389,11 +392,17 @@ func initial(s *HostServer) {
 	if s.options.StoreCacheSetupHandler == nil {
 		s.options.StoreCacheSetupHandler = appDefaultStoreCacheSetupHandler
 	}
+	if s.options.RespBodyBuildFunc == nil {
+		s.options.RespBodyBuildFunc = s.RespBodyBuildFunc
+	}
 	if s.storeDbSetupHandler == nil {
 		s.storeDbSetupHandler = s.options.StoreDbSetupHandler
 	}
 	if s.storeCacheSetupHandler == nil {
 		s.storeCacheSetupHandler = s.options.StoreCacheSetupHandler
+	}
+	if s.RespBodyBuildFunc == nil {
+		s.RespBodyBuildFunc = s.options.RespBodyBuildFunc
 	}
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(s.options.Prefix)

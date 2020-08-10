@@ -226,7 +226,7 @@ func gwLogin(c *gin.Context) {
 	// 3. Realm auth (Basic auth)
 	passport, secret, verifyCode, credType, ok := parseCredentials(s, c)
 	if !ok {
-		c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials.", nil))
+		c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials.", nil))
 		c.Abort()
 		return
 	}
@@ -234,21 +234,21 @@ func gwLogin(c *gin.Context) {
 	// check params
 	if p, ok := s.authParamValidators[pKey.Passport]; ok {
 		if !p.MatchString(passport) {
-			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials Formatter.", nil))
 			c.Abort()
 			return
 		}
 	}
 	if p, ok := s.authParamValidators[pKey.Secret]; ok {
 		if !p.MatchString(secret) {
-			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials Formatter.", nil))
 			c.Abort()
 			return
 		}
 	}
 	if p, ok := s.authParamValidators[pKey.VerifyCode]; ok {
 		if !p.MatchString(verifyCode) {
-			c.JSON(http.StatusBadRequest, respBody(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials Formatter.", nil))
 			c.Abort()
 			return
 		}
@@ -257,18 +257,18 @@ func gwLogin(c *gin.Context) {
 	// Login
 	user, err := s.AuthManager.Login(s.Store, passport, secret, credType, verifyCode)
 	if err != nil || user == nil {
-		c.JSON(http.StatusOK, respBody(400, reqId, err.Error(), nil))
+		c.JSON(http.StatusOK, s.RespBodyBuildFunc(400, reqId, err.Error(), nil))
 		c.Abort()
 		return
 	}
 	sid, ok := encryptSid(s, passport)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, respBody(-1, reqId, "Create session ID fail.", nil))
+		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(-1, reqId, "Create session ID fail.", nil))
 		c.Abort()
 		return
 	}
 	if err := s.SessionStateManager.Save(s.Store, user.Passport, user); err != nil {
-		c.JSON(http.StatusInternalServerError, respBody(-1, reqId, "Save session fail.", err.Error()))
+		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(-1, reqId, "Save session fail.", err.Error()))
 		c.Abort()
 		return
 	}
@@ -282,7 +282,7 @@ func gwLogin(c *gin.Context) {
 		"Token":     sid,
 		"ExpiredAt": time.Now().Add(expiredAt).Unix(),
 	}
-	payload := respBody(0, reqId, nil, token)
+	payload := s.RespBodyBuildFunc(0, reqId, nil, token)
 	// token, header, X-Auth-Token
 	c.Header("X-Auth-Token", sid)
 	c.SetCookie(cks.Key, sid, cks.MaxAge, cks.Path, domain, cks.Secure, cks.HttpOnly)
@@ -297,12 +297,12 @@ func gwLogout(c *gin.Context) {
 	cks := s.conf.Service.Security.Auth.Cookie
 	ok := s.AuthManager.Logout(s.Store, user)
 	if !ok {
-		respBody(500, reqId, "auth logout fail", nil)
+		s.RespBodyBuildFunc(500, reqId, "auth logout fail", nil)
 		return
 	}
 	sid, ok := getSid(s, c)
 	if !ok {
-		respBody(500, reqId, "session store logout fail", nil)
+		s.RespBodyBuildFunc(500, reqId, "session store logout fail", nil)
 		return
 	}
 	_ = s.SessionStateManager.Remove(s.Store, sid)
@@ -349,7 +349,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 					},
 				},
 			}
-			body := respBody(http.StatusUnauthorized, requestId, errDefault401Msg, payload)
+			body := s.RespBodyBuildFunc(http.StatusUnauthorized, requestId, errDefault401Msg, payload)
 			c.JSON(http.StatusUnauthorized, body)
 			c.Abort()
 			return
