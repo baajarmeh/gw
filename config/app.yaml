@@ -71,6 +71,10 @@ service:
         defaultStore:
           name: primary
           prefix: gw-sid
+      permission:
+        defaultStore:
+          type: db        # db/cache
+          name: primary
       cookie:
         key: "_gid"
         domain: ""  # xxx.com / xxx.net

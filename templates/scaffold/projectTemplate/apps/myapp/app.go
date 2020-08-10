@@ -31,7 +31,7 @@ func (a App) Register(router *gw.RouterGroup) {
 	// your app routers
 }
 
-func (a App) Migrate(store gw.Store) {
+func (a App) Migrate(ctx gw.MigrationContext) {
 	// your database migrations
 }
 

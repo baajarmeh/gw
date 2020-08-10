@@ -32,11 +32,17 @@ type App interface {
 	// Register define a API that for register your app router inside.
 	Register(router *RouterGroup)
 
-	// Migrate define a API that for create your app database migrations inside.
-	Migrate(store Store)
+	// Migrate define a API that for create your app's database migrations and permission initialization inside.
+	Migrate(ctx MigrationContext)
 
 	// Use define a API that for RestAPI Server Options for your Application.
 	Use(option *ServerOption)
+}
+
+// MigrationContext represents a Migration Context Object.
+type MigrationContext struct {
+	Store             Store
+	PermissionManager IPermissionManager
 }
 
 // IRestAPI represents a Rest Style API instance.
@@ -51,26 +57,26 @@ type ErrorHandler func(requestId string, httpRequest string, headers []string, s
 
 // ServerOption represents a Server Options.
 type ServerOption struct {
-	Addr                   string
-	Name                   string
-	Restart                string
-	Prefix                 string
-	PluginDir              string
-	PluginSymbolName       string
-	PluginSymbolSuffix     string
-	StartBeforeHandler     func(s *HostServer) error
-	ShutDownBeforeHandler  func(s *HostServer) error
-	BackendStoreHandler    func(cnf conf.Config) Store
-	AppConfigHandler       func(cnf conf.BootConfig) *conf.Config
-	Crypto                 func(conf conf.Config) ICrypto
-	AuthManager            IAuthManager
-	PermissionManager      IPermissionManager
-	StoreDbSetupHandler    StoreDbSetupHandler
-	SessionStateManager    SessionStateHandler
-	StoreCacheSetupHandler StoreCacheSetupHandler
-	RespBodyBuildFunc      RespBodyCreationHandler
-	cnf                    *conf.Config
-	bcs                    *conf.BootConfig
+	Addr                     string
+	Name                     string
+	Restart                  string
+	Prefix                   string
+	PluginDir                string
+	PluginSymbolName         string
+	PluginSymbolSuffix       string
+	StartBeforeHandler       func(s *HostServer) error
+	ShutDownBeforeHandler    func(s *HostServer) error
+	BackendStoreHandler      func(cnf conf.Config) Store
+	AppConfigHandler         func(cnf conf.BootConfig) *conf.Config
+	Crypto                   func(conf conf.Config) ICrypto
+	AuthManager              IAuthManager
+	PermissionManagerHandler PermissionManagerHandler
+	StoreDbSetupHandler      StoreDbSetupHandler
+	SessionStateManager      SessionStateHandler
+	StoreCacheSetupHandler   StoreCacheSetupHandler
+	RespBodyBuildFunc        RespBodyCreationHandler
+	cnf                      *conf.Config
+	bcs                      *conf.BootConfig
 }
 
 // HostServer represents a  Host Server.
@@ -98,6 +104,8 @@ type HostServer struct {
 	authParamValidators    map[string]*regexp.Regexp
 	storeDbSetupHandler    StoreDbSetupHandler
 	storeCacheSetupHandler StoreCacheSetupHandler
+
+	migrateContext MigrationContext
 }
 
 var (
@@ -149,7 +157,9 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
 		AuthManager:            defaultAm,
-		PermissionManager:      defaultPm,
+		PermissionManagerHandler: func(conf conf.Config, store Store) IPermissionManager {
+			return DefaultPermissionManager(conf, store)
+		},
 		SessionStateManager: func(conf conf.Config) ISessionStateManager {
 			return DefaultSessionStateManager(conf)
 		},
@@ -295,13 +305,17 @@ func (s *HostServer) Patch(apps ...App) {
 	if len(apps) == 0 {
 		return
 	}
+	ctx := MigrationContext{
+		Store:             s.Store,
+		PermissionManager: s.PermissionManager,
+	}
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	for _, app := range apps {
 		appName := app.Name()
 		if _, ok := s.apps[appName]; !ok {
 			app.Use(s.options)
-			app.Migrate(s.Store)
+			app.Migrate(ctx)
 		}
 	}
 }
@@ -361,7 +375,7 @@ func initial(s *HostServer) {
 	s.SessionStateManager = s.options.SessionStateManager(*cnf)
 
 	s.AuthManager = s.options.AuthManager
-	s.PermissionManager = s.options.PermissionManager
+	s.PermissionManager = s.options.PermissionManagerHandler(*cnf, s.Store)
 
 	registerAuthParamValidators(s)
 
@@ -385,6 +399,7 @@ func initial(s *HostServer) {
 		prefix:      s.options.Prefix,
 		routerInfos: make([]RouterInfo, 0),
 	}
+
 	// Must ensure store handler is not nil.
 	if s.options.StoreDbSetupHandler == nil {
 		s.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
@@ -411,6 +426,9 @@ func initial(s *HostServer) {
 	if s.conf.Common.Server.ListenAddr != "" {
 		s.options.Addr = s.conf.Common.Server.ListenAddr
 	}
+
+	// permission manager initial
+	s.PermissionManager.Initial()
 }
 
 func registerAuthParamValidators(s *HostServer) {
@@ -445,16 +463,20 @@ func registerAuthRouter(cnf *conf.Config, router *gin.Engine) {
 	}
 }
 
-func registerApps(server *HostServer) {
-	for _, app := range server.apps {
+func registerApps(s *HostServer) {
+	ctx := MigrationContext{
+		Store:             s.Store,
+		PermissionManager: s.PermissionManager,
+	}
+	for _, app := range s.apps {
 		// app routers.
 		logger.Info("register app: %s", app.Name())
-		rg := server.router.Group(app.Router(), nil)
+		rg := s.router.Group(app.Router(), nil)
 		app.Register(rg)
 
 		// migrate
 		logger.Info("migrate app: %s", app.Name())
-		app.Migrate(server.Store)
+		app.Migrate(ctx)
 	}
 }
 

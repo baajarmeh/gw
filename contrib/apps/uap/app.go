@@ -74,8 +74,8 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.POST("perms/user/destroy", api.DeleteUserPerms)
 }
 
-func (a App) Migrate(store gw.Store) {
-	db := store.GetDbStore()
+func (a App) Migrate(ctx gw.MigrationContext) {
+	db := ctx.Store.GetDbStore()
 	db.AutoMigrate(&dbModel.User{}, &dbModel.Profile{})
 }
 

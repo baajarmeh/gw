@@ -110,6 +110,12 @@ type Config struct {
 						Prefix string `yaml:"prefix" toml:"prefix" json:"prefix"`
 					} `yaml:"defaultStore" toml:"defaultStore" json:"defaultStore"`
 				} `yaml:"session" toml:"session" json:"session"`
+				Permission struct {
+					DefaultStore struct {
+						Name string `yaml:"name" toml:"name" json:"name"`
+						Type string `yaml:"type" toml:"type" json:"type"`
+					} `yaml:"defaultStore" toml:"defaultStore" json:"defaultStore"`
+				} `yaml:"permission" toml:"permission" json:"permission"`
 				Cookie struct {
 					Key      string `yaml:"key" toml:"key" json:"key"`
 					Path     string `yaml:"path" toml:"path" json:"path"`

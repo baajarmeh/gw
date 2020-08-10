@@ -32,7 +32,7 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.POST("test/create", api.CreateMyTester, infra.DecoratorList.Creation())
 	router.GET("test/query", api.QueryMyTester, gw.NewDecorators(gw.NewStoreDbFilterDecorator(func(ctx gw.Context, db *gorm.DB) *gorm.DB {
 		return db.Where("id >= 10")
-	})).Append(gw.NewAllPermDecorator("a").All()...).All()...)
+	})).Append(gw.NewPermAllDecorator("a").All()...).All()...)
 
 	router.GET("test/200", api.GetTester)
 
@@ -46,7 +46,7 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("test/401-payload", api.GetTester401WithCustomPayload)
 	router.GET("test/401-err-payload", api.GetTester401WithCustomPayloadErr)
 
-	router.GET("test/403", api.GetTester403, gw.NewAllPermDecorator("test-403").All()...)
+	router.GET("test/403", api.GetTester403, gw.NewPermAllDecorator("test-403").All()...)
 	router.GET("test/403-err", api.GetTester403WithCustomErr)
 	router.GET("test/403-payload", api.GetTester403WithCustomPayload)
 	router.GET("test/403-err-payload", api.GetTester403WithCustomPayloadErr)
@@ -67,8 +67,8 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("err/500", api.Err500)
 }
 
-func (a App) Migrate(store gw.Store) {
-	db := store.GetDbStore()
+func (a App) Migrate(ctx gw.MigrationContext) {
+	db := ctx.Store.GetDbStore()
 	db.AutoMigrate(&dto.MyTester{})
 }
 

@@ -28,6 +28,9 @@ type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *
 // SessionStateHandler represents a Session state manager handler.
 type SessionStateHandler func(conf conf.Config) ISessionStateManager
 
+// PermissionManagerHandler represents a Permission state manager handler.
+type PermissionManagerHandler func(conf conf.Config, store Store) IPermissionManager
+
 // RespBodyCreationHandler represents a response body build handler.
 type RespBodyCreationHandler func(status int, requestID string, err interface{}, msgBody interface{}) interface{}
 
@@ -92,7 +95,7 @@ func (d DefaultBackendImpl) GetDbStoreByName(name string) *gorm.DB {
 	db, ok := d.dbs[name]
 	if !ok {
 		//logger.Warn("got db: %s fail. not found.", name)
-		panic(fmt.Sprintf("got cache: %s fail. not found.", name))
+		panic(fmt.Sprintf("got db: %s fail. not found.", name))
 	}
 	return db
 }

@@ -28,7 +28,7 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.POST("object/modify", api.ModifyObject)
 }
 
-func (a App) Migrate(store gw.Store) {
+func (a App) Migrate(ctx gw.MigrationContext) {
 	// db := store.GetDbStore()
 }
 

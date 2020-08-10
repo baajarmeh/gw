@@ -40,8 +40,8 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("ns/destroy", api.DestroyNS)
 }
 
-func (a App) Migrate(store gw.Store) {
-	db := store.GetDbStore()
+func (a App) Migrate(ctx gw.MigrationContext) {
+	db := ctx.Store.GetDbStore()
 	d, _ := db.DB()
 	d.Ping()
 }

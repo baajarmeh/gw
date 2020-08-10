@@ -17,7 +17,7 @@ func (a App) Register(router *gw.RouterGroup) {
 	//gw.RegisterRestAPIs(router,)
 }
 
-func (a App) Migrate(store gw.Store) {
+func (a App) Migrate(ctx gw.MigrationContext) {
 	// Nothing to do.
 }
 

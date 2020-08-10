@@ -27,7 +27,14 @@ func (a AppRestOnly) Register(router *gw.RouterGroup) {
 	gw.RegisterRestAPI(router, &rest.MyTesterRestAPI{})
 }
 
-func (a AppRestOnly) Migrate(store gw.Store) {
+func (a AppRestOnly) Migrate(ctx gw.MigrationContext) {
+	//db := ctx.Store.GetDbStore()
+	//pm := ctx.PermissionManager
+	perms := gw.NewPermAll("MyTester")
+	err := ctx.PermissionManager.Create("mytester" ,perms...)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (a AppRestOnly) Use(opt *gw.ServerOption) {

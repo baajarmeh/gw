@@ -96,6 +96,11 @@ func getHandlerFullName(handler Handler) string {
 	return fmt.Sprintf("%s(ctx *Context)", val)
 }
 
+// Gw framework's APIs.
+func (c Context) GetHostServer() HostServer {
+	return c.server
+}
+
 // Query returns a string from queries.
 func (c Context) Query(key string) string {
 	val := c.Context.Query(key)

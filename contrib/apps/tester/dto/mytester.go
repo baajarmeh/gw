@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/oceanho/gw/backend/gwDb"
+	"github.com/oceanho/gw/backend/gwdb"
 )
 
 type MyTester struct {

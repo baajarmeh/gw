@@ -66,9 +66,9 @@ func (p PermissionDecorator) All() []Decorator {
 	return list
 }
 
-// NewAllPermDecorator returns a PermissionDecoratorList, that has
+// NewPermAllDecorator returns a PermissionDecoratorList, that has
 // Administration,Creation,Deletion,Modification,RealAll,ReadDetail Permission
-func NewAllPermDecorator(resource string) PermissionDecorator {
+func NewPermAllDecorator(resource string) PermissionDecorator {
 	var pdList = NewCrudPermDecorator(resource)
 	pdList.permDecorators["Administration"] = NewAdministrationPermDecorator(resource)
 	return pdList
@@ -142,12 +142,12 @@ func NewPermissionDecorator(perms ...Permission) Decorator {
 	for idx := 0; idx < len(perms); idx++ {
 		names[idx] = perms[idx].Name
 	}
-	msg := fmt.Sprintf("Permission Deined, needs:(%s)", strings.Join(names, "|"))
+	msg := fmt.Sprintf("Permission Deined, need:(%s)", strings.Join(names, "|"))
 	return Decorator{
 		MetaData: perms,
 		Before: func(c *Context) (friendlyMsg string, err error) {
 			s := GetHostServer(c)
-			if s.PermissionManager.HasPermission(*c, c.User, perms...) {
+			if s.PermissionManager.Has(c.User, perms...) {
 				return "", nil
 			}
 			return msg, ErrPermissionDenied
