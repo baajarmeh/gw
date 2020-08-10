@@ -226,7 +226,7 @@ func gwLogin(c *gin.Context) {
 	// 3. Realm auth (Basic auth)
 	passport, secret, verifyCode, credType, ok := parseCredentials(s, c)
 	if !ok {
-		c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials.", nil))
+		c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Missing Credentials.", nil))
 		c.Abort()
 		return
 	}
@@ -234,21 +234,21 @@ func gwLogin(c *gin.Context) {
 	// check params
 	if p, ok := s.authParamValidators[pKey.Passport]; ok {
 		if !p.MatchString(passport) {
-			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials/Passport Formatter.", nil))
 			c.Abort()
 			return
 		}
 	}
 	if p, ok := s.authParamValidators[pKey.Secret]; ok {
 		if !p.MatchString(secret) {
-			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials/Secret Formatter.", nil))
 			c.Abort()
 			return
 		}
 	}
 	if p, ok := s.authParamValidators[pKey.VerifyCode]; ok {
 		if !p.MatchString(verifyCode) {
-			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid Credentials Formatter.", nil))
+			c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Invalid VerifyCode Formatter.", nil))
 			c.Abort()
 			return
 		}
