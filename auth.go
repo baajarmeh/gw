@@ -40,19 +40,25 @@ func NewPermSameKeyNameDesc(knd string) Permission {
 }
 
 type IAuthManager interface {
-	Login(store Store, passport, secret, credType, verifyCode string) (*User, error)
+	Login(store Store, passport, secret, credType, verifyCode string) (User, error)
 	Logout(store Store, user *User) bool
 }
 
 type ISessionStateManager interface {
-	Save(store Store, sid string, user *User) error
-	Query(store Store, sid string) (*User, error)
+	Save(store Store, sid string, user User) error
+	Query(store Store, sid string) (User, error)
 	Remove(store Store, sid string) error
 }
 
 type IPermissionManager interface {
-	HasPermission(user User, perms ...Permission) bool
-	CreatePermissions(group string, perms ...Permission) bool
+	HasPermission(c Context, user User, perms ...Permission) bool
+	CreatePermissions(c Context, catalog string, perms ...Permission) bool
+	DropPermissions(c Context, catalog string, perms ...Permission) bool
+	ModifyPermissions(c Context, catalog string, perms ...Permission) bool
+	GrantToUser(c Context, uid int64, catalog string, perms ...Permission) bool
+	GrantToRole(c Context, roleId int64, catalog string, perms ...Permission) bool
+	RevokeFromUser(c Context, uid int64, catalog string, perms ...Permission) bool
+	RevokeFromRole(c Context, roleId int64, catalog string, perms ...Permission) bool
 }
 
 type DefaultAuthManagerImpl struct {
@@ -100,7 +106,7 @@ func (d *DefaultSessionStateManagerImpl) Remove(store Store, sid string) error {
 	return redis.Del(ctx, d.storeKey(sid)).Err()
 }
 
-func (d *DefaultSessionStateManagerImpl) Save(store Store, sid string, user *User) error {
+func (d *DefaultSessionStateManagerImpl) Save(store Store, sid string, user User) error {
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
@@ -108,29 +114,31 @@ func (d *DefaultSessionStateManagerImpl) Save(store Store, sid string, user *Use
 	return redis.Set(ctx, d.storeKey(sid), user, d.expirationDuration).Err()
 }
 
-func (d *DefaultSessionStateManagerImpl) Query(store Store, sid string) (*User, error) {
+func (d *DefaultSessionStateManagerImpl) Query(store Store, sid string) (User, error) {
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
-	user := &User{}
+	user := User{}
 	redis := store.GetCacheStoreByName(d.storeName)
 	bytes, err := redis.Get(ctx, d.storeKey(sid)).Bytes()
 	if err != nil {
-		return nil, err
+		return emptyUser, err
 	}
-	err = json.Unmarshal(bytes, user)
+	err = json.Unmarshal(bytes, &user)
 	if err != nil {
-		return nil, err
+		return emptyUser, err
 	}
 	return user, nil
 }
 
-func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, credType, verifyCode string) (*User, error) {
+var emptyUser = User{Id: 0}
+
+func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, credType, verifyCode string) (User, error) {
 	user, ok := d.users[passport]
 	if ok && user.secret == secret {
-		return &user.User, nil
+		return user.User, nil
 	}
-	return nil, fmt.Errorf("user:%s not found or serect not match", passport)
+	return emptyUser, fmt.Errorf("user:%s not found or serect not match", passport)
 }
 
 func (d *DefaultAuthManagerImpl) Logout(store Store, user *User) bool {
@@ -187,10 +195,10 @@ type DefaultPermissionManagerImpl struct {
 	perms  map[string]map[string]Permission
 }
 
-func (p *DefaultPermissionManagerImpl) CreatePermissions(group string, perms ...Permission) bool {
+func (p *DefaultPermissionManagerImpl) CreatePermissions(c Context, catalog string, perms ...Permission) bool {
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	g := p.perms[group]
+	g := p.perms[catalog]
 	for _, pm := range perms {
 		if _, ok := g[pm.Name]; !ok {
 			g[pm.Name] = pm
@@ -199,7 +207,31 @@ func (p *DefaultPermissionManagerImpl) CreatePermissions(group string, perms ...
 	return true
 }
 
-func (p *DefaultPermissionManagerImpl) HasPermission(user User, perms ...Permission) bool {
+func (p *DefaultPermissionManagerImpl) DropPermissions(c Context, catalog string, perms ...Permission) bool {
+	panic("implement me")
+}
+
+func (p *DefaultPermissionManagerImpl) ModifyPermissions(c Context, catalog string, perms ...Permission) bool {
+	panic("implement me")
+}
+
+func (p *DefaultPermissionManagerImpl) GrantToUser(c Context, uid int64, catalog string, perms ...Permission) bool {
+	panic("implement me")
+}
+
+func (p *DefaultPermissionManagerImpl) GrantToRole(c Context, roleId int64, catalog string, perms ...Permission) bool {
+	panic("implement me")
+}
+
+func (p *DefaultPermissionManagerImpl) RevokeFromUser(c Context, uid int64, catalog string, perms ...Permission) bool {
+	panic("implement me")
+}
+
+func (p *DefaultPermissionManagerImpl) RevokeFromRole(c Context, roleId int64, catalog string, perms ...Permission) bool {
+	panic("implement me")
+}
+
+func (p *DefaultPermissionManagerImpl) HasPermission(c Context, user User, perms ...Permission) bool {
 	if user.IsAuth() {
 		if user.IsAdmin() {
 			return true
@@ -256,7 +288,7 @@ func gwLogin(c *gin.Context) {
 
 	// Login
 	user, err := s.AuthManager.Login(s.Store, passport, secret, credType, verifyCode)
-	if err != nil || user == nil {
+	if err != nil || user.Id == emptyUser.Id {
 		c.JSON(http.StatusOK, s.RespBodyBuildFunc(400, reqId, err.Error(), nil))
 		c.Abort()
 		return
@@ -306,11 +338,7 @@ func gwLogout(c *gin.Context) {
 		return
 	}
 	_ = s.SessionStateManager.Remove(s.Store, sid)
-	domain := cks.Domain
-	if domain == ":host" || domain == "" {
-		domain = c.Request.Host
-	}
-	c.SetCookie(cks.Key, "", -1, cks.Path, domain, cks.Secure, cks.HttpOnly)
+	c.SetCookie(cks.Key, "", -1, cks.Path, cks.Domain, cks.Secure, cks.HttpOnly)
 }
 
 // GW framework auth Check Middleware

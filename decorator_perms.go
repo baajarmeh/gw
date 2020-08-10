@@ -147,7 +147,7 @@ func NewPermissionDecorator(perms ...Permission) Decorator {
 		MetaData: perms,
 		Before: func(c *Context) (friendlyMsg string, err error) {
 			s := GetHostServer(c)
-			if s.PermissionManager.HasPermission(c.User, perms...) {
+			if s.PermissionManager.HasPermission(*c, c.User, perms...) {
 				return "", nil
 			}
 			return msg, ErrPermissionDenied

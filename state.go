@@ -121,7 +121,7 @@ func gwState(serverName string) gin.HandlerFunc {
 		if ok {
 			c.Set(gwSidKey, sid)
 			user, err := s.SessionStateManager.Query(s.Store, sid)
-			if err == nil && user != nil {
+			if err == nil && user.Id != emptyUser.Id {
 				// set User State.
 				c.Set(gwUserKey, user)
 			}
