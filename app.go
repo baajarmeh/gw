@@ -469,6 +469,7 @@ func registerApps(s *HostServer) {
 		PermissionManager: s.PermissionManager,
 	}
 	for _, app := range s.apps {
+		//
 		// app routers.
 		logger.Info("register app: %s", app.Name())
 		rg := s.router.Group(app.Router(), nil)

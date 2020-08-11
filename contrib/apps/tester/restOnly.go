@@ -31,7 +31,7 @@ func (a AppRestOnly) Migrate(ctx gw.MigrationContext) {
 	//db := ctx.Store.GetDbStore()
 	//pm := ctx.PermissionManager
 	perms := gw.NewPermAll("MyTester")
-	err := ctx.PermissionManager.Create("mytester" ,perms...)
+	err := ctx.PermissionManager.Create("mytester", perms...)
 	if err != nil {
 		panic(err)
 	}

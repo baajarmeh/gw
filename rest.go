@@ -144,7 +144,8 @@ func (router *RouterGroup) RegisterRestAPIs(restAPIs ...IRestAPI) {
 
 func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 	logger.Info("register router by API RegisterRestAPI(...)")
-	for _, rest := range restAPIs {
+	for i := 0; i < len(restAPIs); i++ {
+		rest := restAPIs[i]
 		var restPkgId string
 		typ := reflect.TypeOf(rest)
 		val := reflect.ValueOf(rest)
@@ -164,7 +165,7 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 			dyApiRegister, ok := restApiRegister[strings.ToLower(m.Name)]
 			if ok {
 				var apiSpecifyDecorators []Decorator
-				name = "Setup" + m.Name + "Decorator"
+				name = "SetupOn" + m.Name + "Decorator"
 				_, ok := typ.MethodByName(name)
 				if ok {
 					apiSpecifyDecorators = val.MethodByName(name).Call(nil)[0].Interface().([]Decorator)

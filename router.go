@@ -59,7 +59,7 @@ type RouterInfo struct {
 	handlerActionName string
 }
 
-func (r RouterInfo) String() string {
+func (r *RouterInfo) String() string {
 	// https://books.studygolang.com/gobyexample/string-formatting
 	// Padding left.
 	before, after := splitDecorators(r.Decorators...)
@@ -123,11 +123,11 @@ func (c Context) StartTime() *time.Time {
 	return &c.startTime
 }
 
-func (router *Router) storeRouterStateWithHandlerName(method string, relativePath,
-	handlerName string, handler Handler, decorators ...Decorator) {
+func (router *Router) storeRouterStateWithHandlerName(method string,
+	relativePath, handlerName string, handler Handler, decorators ...Decorator) {
 	router.locker.Lock()
 	defer router.locker.Unlock()
-	str := path.Join(router.prefix, relativePath)
+	str := path.Join(router.currentRouter.BasePath(), relativePath)
 	router.routerInfos = append(router.routerInfos, createRouterInfo(method, str, handlerName, handler, decorators...))
 }
 

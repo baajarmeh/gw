@@ -43,6 +43,6 @@ func main() {
 }
 
 func registerApps(server *gw.HostServer) {
-	server.Register(tester.New())
 	server.Register(tester.NewAppRestOnly())
+	server.Register(tester.New())
 }
