@@ -90,7 +90,6 @@ type HostServer struct {
 	RespBodyBuildFunc   RespBodyCreationHandler
 	// private
 	state                  int
-	name                   string
 	locker                 sync.Mutex
 	options                *ServerOption
 	router                 *Router
@@ -104,8 +103,9 @@ type HostServer struct {
 	authParamValidators    map[string]*regexp.Regexp
 	storeDbSetupHandler    StoreDbSetupHandler
 	storeCacheSetupHandler StoreCacheSetupHandler
-
-	migrateContext MigrationContext
+	migrateContext         MigrationContext
+	serverExitSignal       chan struct{}
+	serverStartDone        chan struct{}
 }
 
 var (
@@ -173,28 +173,39 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 	return conf
 }
 
-// Default returns a default HostServer(the server instance's bcs,svr are default config items.)
-func Default() *HostServer {
+// DefaultServer returns a default HostServer(the server instance's bcs,svr are default config items.)
+func DefaultServer() *HostServer {
 	bcs := conf.DefaultBootConfig()
-	return New(NewServerOption(bcs))
+	return NewServerWithOption(NewServerOption(bcs))
 }
 
-// GetDefaultHostServer return a default  Server of has registered.
-func GetDefaultHostServer() *HostServer {
-	return GetGwServer(appDefaultName)
+// NewServerWithName returns a specifies name, other use default HostServer(the server instance's bcs,svr are default config items.)
+func NewServerWithName(name string) *HostServer {
+	bcs := conf.DefaultBootConfig()
+	opts := NewServerOption(bcs)
+	opts.Name = name
+	return NewServerWithOption(opts)
 }
 
-// GetGwServer return a default  Server by name of has registered.
-func GetGwServer(name string) *HostServer {
-	server, ok := servers[name]
-	if ok {
-		return server
-	}
-	return nil
+// NewServerWithNameAddr returns a specifies name,addr, other use default HostServer(the server instance's bcs,svr are default config items.)
+func NewServerWithNameAddr(name, addr string) *HostServer {
+	bcs := conf.DefaultBootConfig()
+	opts := NewServerOption(bcs)
+	opts.Name = name
+	opts.Addr = addr
+	return NewServerWithOption(opts)
+}
+
+// NewServerWithName returns a specifies addr, other use default HostServer(the server instance's bcs,svr are default config items.)
+func NewServerWithAddr(addr string) *HostServer {
+	bcs := conf.DefaultBootConfig()
+	opts := NewServerOption(bcs)
+	opts.Addr = addr
+	return NewServerWithOption(opts)
 }
 
 // New return a  Server with ServerOptions.
-func New(sopt *ServerOption) *HostServer {
+func NewServerWithOption(sopt *ServerOption) *HostServer {
 	server, ok := servers[sopt.Name]
 	if ok {
 		logger.Warn("duplicated server, name: %s", sopt.Name)
@@ -202,13 +213,14 @@ func New(sopt *ServerOption) *HostServer {
 	}
 	server = &HostServer{
 		options:             sopt,
-		name:                sopt.Name,
-		apps:                make(map[string]App),
-		httpErrHandlers:     make(map[int][]ErrorHandler),
 		hooks:               make([]*Hook, 0),
 		beforeHooks:         make([]*Hook, 0),
 		afterHooks:          make([]*Hook, 0),
+		apps:                make(map[string]App),
+		httpErrHandlers:     make(map[int][]ErrorHandler),
 		authParamValidators: make(map[string]*regexp.Regexp),
+		serverExitSignal:    make(chan struct{}, 1),
+		serverStartDone:     make(chan struct{}, 1),
 	}
 	servers[sopt.Name] = server
 	return server
@@ -423,10 +435,9 @@ func initial(s *HostServer) {
 	httpRouter.router = httpRouter.server.Group(s.options.Prefix)
 	s.router = httpRouter
 
-	if s.conf.Common.Server.ListenAddr != "" {
+	if s.conf.Common.Server.ListenAddr != "" && s.options.Addr == appDefaultAddr {
 		s.options.Addr = s.conf.Common.Server.ListenAddr
 	}
-
 	// permission manager initial
 	s.PermissionManager.Initial()
 }
@@ -496,6 +507,9 @@ func prepareHooks(s *HostServer) {
 	s.afterHookMaxIdx = len(s.afterHooks) - 1
 }
 
+// compile define a API, that Compile/Initial HostServer.
+// It's only run once and should be call on s.Serve(...) before
+// Gw framework s.Serve(...) will be automatic call this API.
 func (s *HostServer) compile() {
 	s.locker.Lock()
 	defer s.locker.Unlock()
@@ -519,11 +533,15 @@ func (s *HostServer) GetRouters() []RouterInfo {
 
 // PrintRouterInfo ...
 func (s *HostServer) PrintRouterInfo() {
-	logger.Info("%s ", s.conf.Service.Settings.GwFramework.PrintRouterInfo.Title)
-	logger.Info("=======================")
-	var routers = s.GetRouters()
-	for _, r := range routers {
-		logger.Info("%s", r.String())
+	rts := s.conf.Service.Settings.GwFramework.PrintRouterInfo
+	if !rts.Disabled {
+		logger.NewLine(2)
+		logger.Info("%s ", rts.Title)
+		logger.Info("=======================")
+		var routers = s.GetRouters()
+		for _, r := range routers {
+			logger.Info("%s", r.String())
+		}
 	}
 }
 
@@ -540,10 +558,7 @@ func (s *HostServer) Serve() {
 		}
 	}
 
-	if !s.conf.Service.Settings.GwFramework.PrintRouterInfo.Disabled {
-		logger.NewLine(2)
-		s.PrintRouterInfo()
-	}
+	s.PrintRouterInfo()
 
 	logger.NewLine(2)
 	logger.Info("Service Information  ")
@@ -560,7 +575,11 @@ func (s *HostServer) Serve() {
 		err = s.router.server.Run(s.options.Addr)
 	}()
 	// TODO(Ocean): has no better solution that can be waiting for gin.Serve() completed with non-block state?
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 2)
+	if err != nil {
+		panic(fmt.Errorf("start server fail. err: %v", err))
+	}
+	s.serverStartDone <- struct{}{}
 	if err != nil {
 		panic(fmt.Errorf("call server.router.Run, %v", err))
 	}
@@ -573,5 +592,6 @@ func (s *HostServer) Serve() {
 			fmt.Printf("call app.ShutDownBeforeHandler, %v", err)
 		}
 	}
+	s.serverExitSignal <- struct{}{}
 	logger.Info("Shutdown server: %s, Addr: %s", s.options.Name, s.options.Addr)
 }
