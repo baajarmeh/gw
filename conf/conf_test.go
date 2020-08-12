@@ -67,11 +67,11 @@ localfs:
 `
 
 func TestLoadBootFromBytes_ShouldBe_OK(t *testing.T) {
-	bsc := LoadBootConfigFromBytes("yaml", []byte(bf))
+	bsc := NewBootConfigFromBytes("yaml", []byte(bf))
 	t.Logf("%v", bsc)
 }
 
 func TestLoadConfig_ShouldBe_OK(t *testing.T) {
-	bsc := LoadBootConfigFromBytes("yaml", []byte(bf))
+	bsc := NewBootConfigFromBytes("yaml", []byte(bf))
 	t.Logf("%v", bsc)
 }

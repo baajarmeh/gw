@@ -12,11 +12,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 )
 
-type ConfigProvider interface {
-	Name() string
-	Provide(bcs BootConfig, out *Config) error
+type ApplicationConfigProvider interface {
+	Provide(bcs BootConfig, out *ApplicationConfig) error
 }
 
 // ========================================================== //
@@ -27,27 +27,40 @@ type ConfigProvider interface {
 
 // BootConfig represents a Application boot strap configuration object. It's likes linux boot.cnf
 type BootConfig struct {
-	AppCnf struct {
-		Provider string `yaml:"provider" toml:"provider" json:"provider"`
-		Section  string `yaml:"section" toml:"section" json:"section"`
-	} `yaml:"appconf" toml:"appconf" json:"appconf"`
-	GWConf struct {
-		Addr     string            `yaml:"addr" toml:"addr" json:"addr"`
-		AppID    string            `yaml:"appid" toml:"appid" json:"appid"`
-		Secret   string            `yaml:"secret" toml:"secret" json:"secret"`
-		Provider string            `yaml:"provider" toml:"provider" json:"provider"`
-		Args     map[string]string `yaml:"args" toml:"args" json:"args"`
-	} `yaml:"gwconf" toml:"gwconf" json:"gwconf"`
-	LocalFS struct {
-		Path      string `yaml:"path" toml:"path" json:"path"`
-		Type      string `yaml:"type" toml:"type" json:"type"`
-		Formatter string `yaml:"formatter" toml:"formatter" json:"formatter"`
-	} `yaml:"localfs" toml:"localfs" json:"localfs"`
-	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
+	Version                 string      `yaml:"version" toml:"version" json:"version"`
+	ConfigProvider          string      `yaml:"configProvider" toml:"configProvider" json:"configProvider"`
+	Configuration           interface{} `yaml:"configuration" toml:"configuration" json:"configuration"`
+	configurationJsonString string
+	locker                  sync.Mutex
 }
 
-func (bsc BootConfig) String() string {
-	b, _ := json.MarshalIndent(bsc, "", "  ")
+func (bc *BootConfig) ParserTo(out interface{}) error {
+	bc.locker.Lock()
+	defer bc.locker.Unlock()
+	if bc.configurationJsonString == "" {
+		b, err := json.Marshal(bc.Configuration)
+		if err != nil {
+			return err
+		}
+		bc.configurationJsonString = string(b)
+	}
+	return json.Unmarshal([]byte(bc.configurationJsonString), out)
+}
+
+type GwConfigInfra struct {
+	Addr     string            `yaml:"addr" toml:"addr" json:"addr"`
+	AppID    string            `yaml:"appid" toml:"appid" json:"appid"`
+	Secret   string            `yaml:"secret" toml:"secret" json:"secret"`
+	Provider string            `yaml:"provider" toml:"provider" json:"provider"`
+	Args     map[string]string `yaml:"args" toml:"args" json:"args"`
+}
+
+type LocalFile struct {
+	Path string `yaml:"path" toml:"path" json:"path"`
+}
+
+func (bc BootConfig) String() string {
+	b, _ := json.MarshalIndent(bc, "", "  ")
 	return string(b)
 }
 
@@ -57,7 +70,7 @@ func (bsc BootConfig) String() string {
 //                                                         //
 // ======================================================= //
 
-type Config struct {
+type ApplicationConfig struct {
 	Common struct {
 		Server struct {
 			ListenAddr string `yaml:"listenAddr" toml:"listenAddr" json:"listenAddr"`
@@ -208,7 +221,7 @@ type Cache struct {
 	Args             map[string]interface{} `yaml:"args" toml:"args" json:"args"`
 }
 
-func (cnf Config) String() string {
+func (cnf ApplicationConfig) String() string {
 	b, _ := json.MarshalIndent(cnf, "", "  ")
 	return string(b)
 }
@@ -224,32 +237,31 @@ type AllowUrlPattern struct {
 	regMatchPattern *regexp.Regexp
 }
 
-var defaultBSCLocalFileData = `
-appconf:
-  provider: localfs
-  section: localfs
-localfs:
-  path: "config/app.yaml"
-  type: plaintext
-  formatter: yaml
-`
 var (
 	defaultBootConfigFileName = "config/boot.yaml"
-	formatterDecoders         map[string]func(b []byte, out interface{}) error
-	configProviders           map[string]ConfigProvider
-	TemplateParser            func(prepare interface{}, out *Config) error
+	configProviders           map[string]ApplicationConfigProvider
+	suffixParsers             map[string]func(b []byte, out interface{}) error
+	TemplateParser            func(prepare interface{}, out *ApplicationConfig) error
 )
 
 func init() {
-	configProviders = make(map[string]ConfigProvider)
-	formatterDecoders = make(map[string]func(b []byte, out interface{}) error)
-	initialFormatterDecoders()
+
+	configProviders = make(map[string]ApplicationConfigProvider)
+	initialSuffixParsers()
 
 	// config provider initialization
-	RegisterProvider(newLocalFileConfigProvider())
-	RegisterProvider(newGWHttpConfSvrConfigProvider())
+	localFileProvider := newLocalFileConfigProvider()
+	RegisterProvider("lf", localFileProvider)
+	RegisterProvider("local", localFileProvider)
+	RegisterProvider("localfs", localFileProvider)
+	RegisterProvider("localfile", localFileProvider)
 
-	TemplateParser = func(cnf interface{}, out *Config) error {
+	gwConfigProvider := newGWHttpConfSvrConfigProvider()
+	RegisterProvider("gw-conf", gwConfigProvider)
+	RegisterProvider("gw-infra", gwConfigProvider)
+	RegisterProvider("gw-infra-conf", gwConfigProvider)
+
+	TemplateParser = func(cnf interface{}, out *ApplicationConfig) error {
 		b, e := json.Marshal(cnf)
 		if e != nil {
 			panic(fmt.Errorf("conf.TemplateParser(...) fail on json.Marshal(). err: %v", e))
@@ -268,45 +280,53 @@ func init() {
 	}
 }
 
-func initialFormatterDecoders() {
-	formatterDecoders[".yaml"] = func(b []byte, out interface{}) error {
+func initialSuffixParsers() {
+	// initial
+	suffixParsers = make(map[string]func(b []byte, out interface{}) error)
+	// yaml
+	suffixParsers[".yaml"] = func(b []byte, out interface{}) error {
 		err := yaml.Unmarshal(b, out)
 		return err
 	}
-	formatterDecoders[".yml"] = formatterDecoders[".yaml"]
-	formatterDecoders[".toml"] = func(b []byte, out interface{}) error {
+	suffixParsers[".yml"] = suffixParsers[".yaml"]
+
+	// toml
+	suffixParsers[".toml"] = func(b []byte, out interface{}) error {
 		err := toml.Unmarshal(b, out)
 		return err
 	}
-	formatterDecoders[".tml"] = formatterDecoders[".toml"]
-	formatterDecoders[".json"] = func(b []byte, out interface{}) error {
+
+	suffixParsers[".tml"] = suffixParsers[".toml"]
+
+	// json
+	suffixParsers[".json"] = func(b []byte, out interface{}) error {
 		err := json.Unmarshal(b, out)
 		return err
 	}
 }
 
-func RegisterProvider(provider ConfigProvider) {
-	configProviders[provider.Name()] = provider
+func RegisterProvider(name string, provider ApplicationConfigProvider) {
+	configProviders[name] = provider
 }
 
-func NewConfigByBootConfig(bcs *BootConfig) *Config {
-	cp, ok := configProviders[bcs.AppCnf.Provider]
+func NewConfigWithBootConfig(bcs *BootConfig) *ApplicationConfig {
+	cp, ok := configProviders[bcs.ConfigProvider]
 	if !ok {
-		panic(fmt.Sprintf("provider: %s are not support. you can added by conf.RegisterProvider(...).", bcs.AppCnf.Provider))
+		panic(fmt.Sprintf("provider: %s are not support. you can added by gw.RegisterConfigProvider(...).", bcs.ConfigProvider))
 	}
-	cnf := &Config{}
+	cnf := &ApplicationConfig{}
 	err := cp.Provide(*bcs, cnf)
 	if err != nil {
-		panic(fmt.Sprintf("config provider: %s call Provide(...) fail. err: %v", bcs.AppCnf.Provider, err))
+		panic(fmt.Sprintf("config provider: %s call Provide(...) fail. err: %v", bcs.ConfigProvider, err))
 	}
 	return cnf
 }
 
-func LoadBootConfigFromBytes(formatter string, bytes []byte) *BootConfig {
+func NewBootConfigFromBytes(formatter string, bytes []byte) *BootConfig {
 	logger.Debug("exec LoadBootConfigFromBytes(...), formatter: %s", formatter)
 	formatter = strings.TrimLeft(formatter, ".")
 	ext := fmt.Sprintf(".%s", formatter)
-	p, o := formatterDecoders[ext]
+	p, o := suffixParsers[ext]
 	if !o {
 		panic(fmt.Sprintf("not supports bootstrap config suffix: %s.", ext))
 	}
@@ -318,17 +338,17 @@ func LoadBootConfigFromBytes(formatter string, bytes []byte) *BootConfig {
 	return out
 }
 
-func LoadBootConfigFromFile(filename string) *BootConfig {
+func NewBootConfigFromFile(filename string) *BootConfig {
 	logger.Debug("exec LoadBootConfigFromFile(...) path: %s", filename)
 	ext := filepath.Ext(filename)
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("read boostrap conf file: %s, err: %v", filename, err))
 	}
-	return LoadBootConfigFromBytes(ext, b)
+	return NewBootConfigFromBytes(ext, b)
 }
 
 // DefaultBootConfig returns a bcs from local file config/boot.yaml
 func DefaultBootConfig() *BootConfig {
-	return LoadBootConfigFromFile(defaultBootConfigFileName)
+	return NewBootConfigFromFile(defaultBootConfigFileName)
 }

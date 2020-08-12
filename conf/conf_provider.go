@@ -3,8 +3,7 @@ package conf
 import (
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
-	"strings"
+	"path"
 )
 
 type GWHttpConfSvrConfigProvider struct {
@@ -14,7 +13,7 @@ func (c GWHttpConfSvrConfigProvider) Name() string {
 	return "gwconf"
 }
 
-func (c GWHttpConfSvrConfigProvider) Provide(bcs BootConfig, out *Config) error {
+func (c GWHttpConfSvrConfigProvider) Provide(bcs BootConfig, out *ApplicationConfig) error {
 	panic("implement me")
 }
 
@@ -25,22 +24,21 @@ func newGWHttpConfSvrConfigProvider() GWHttpConfSvrConfigProvider {
 type LocalFileConfigProvider struct {
 }
 
-func (c LocalFileConfigProvider) Name() string {
-	return "localfs"
-}
-
-func (c LocalFileConfigProvider) Provide(bcs BootConfig, out *Config) error {
-	formatter := bcs.LocalFS.Formatter
-	if formatter == "" {
-		formatter = filepath.Ext(bcs.LocalFS.Path)
+func (c LocalFileConfigProvider) Provide(bcs BootConfig, out *ApplicationConfig) error {
+	var lf LocalFile
+	err := bcs.ParserTo(&lf)
+	if err != nil {
+		panic(fmt.Sprintf("local file provider fail, err: %v", err))
 	}
-	formatter = strings.TrimLeft(formatter, ".")
-	providerName := fmt.Sprintf(".%s", formatter)
-	provider, o := formatterDecoders[providerName]
+	if lf.Path == "" {
+		panic(fmt.Sprintf("BootConfig missing configuration.Path section"))
+	}
+	suffix := path.Ext(lf.Path)
+	provider, o := suffixParsers[suffix]
 	if !o {
-		return fmt.Errorf("not supports app config provider, suffix: %s", providerName)
+		return fmt.Errorf("not supports app config provider, suffix: %s", suffix)
 	}
-	b, err := ioutil.ReadFile(bcs.LocalFS.Path)
+	b, err := ioutil.ReadFile(lf.Path)
 	var outPrepare interface{}
 	err = provider(b, &outPrepare)
 	if err != nil {
