@@ -2,6 +2,7 @@ package gw
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 )
@@ -12,6 +13,7 @@ var (
 	ErrUnauthorized        = fmt.Errorf("has no credentitals")
 	ErrInternalServerError = fmt.Errorf("server internal error")
 	ErrBadRequest          = fmt.Errorf("bad request")
+	ErrNotFoundRequest     = fmt.Errorf("not found")
 	ErrPermissionDenied    = fmt.Errorf("permission denied")
 )
 
@@ -145,12 +147,12 @@ func NewPermissionDecorator(perms ...Permission) Decorator {
 	msg := fmt.Sprintf("Permission Deined, need:(%s)", strings.Join(names, "|"))
 	return Decorator{
 		MetaData: perms,
-		Before: func(c *Context) (friendlyMsg string, err error) {
+		Before: func(c *Context) (status int, err error, payload interface{}) {
 			s := GetHostServer(c)
 			if s.PermissionManager.Has(c.User, perms...) {
-				return "", nil
+				return 0, nil, nil
 			}
-			return msg, ErrPermissionDenied
+			return http.StatusForbidden, ErrPermissionDenied, msg
 		},
 		After: nil,
 	}

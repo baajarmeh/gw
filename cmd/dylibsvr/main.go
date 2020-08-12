@@ -6,13 +6,12 @@ import (
 )
 
 func main() {
-	bcs := conf2.LoadBootConfigFromFile("config/boot.yaml")
-	conf := gw.NewServerOption(bcs)
-	conf.Name = "confsvr"
-	conf.Addr = ":8090"
-	conf.Mode = "debug"
+	bcs := conf2.NewBootConfigFromFile("config/boot.yaml")
+	opts := gw.NewServerOption(bcs)
+	opts.Name = "confsvr"
+	opts.Addr = ":8090"
 
-	server := gw.New(conf)
+	server := gw.NewServerWithOption(opts)
 	registerApps(server)
 	server.Serve()
 }

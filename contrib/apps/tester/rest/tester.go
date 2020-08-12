@@ -24,13 +24,23 @@ func (MyTesterRestAPI) Get(c *gw.Context) {
 }
 
 // http Get before handler
-func (MyTesterRestAPI) OnGetBefore(c *gw.Context) {
-	logger.Info("Exec func (MyTesterRestAPI) OnGetBefore(c *gw.Context)")
+func (MyTesterRestAPI) OnGetBefore() gw.DecoratorHandler {
+	return func(ctx *gw.Context) (status int, err error, payload interface{}) {
+		logger.Info("Exec func (MyTesterRestAPI) OnGetBefore")
+		return gw.DecoratorHandler500.Result()
+		// ``return 200, fmt.Errorf("tester before action quit"), gin.H{
+		// 	"A": "a",
+		// 	"B": "b",
+		// }``
+	}
 }
 
 // http Get after handler
-func (MyTesterRestAPI) OnGetAfter(c *gw.Context) {
-	logger.Info("Exec func (MyTesterRestAPI) OnGetAfter(c *gw.Context)")
+func (MyTesterRestAPI) OnGetAfter() gw.DecoratorHandler {
+	return func(ctx *gw.Context) (status int, err error, payload interface{}) {
+		logger.Info("Exec func (MyTesterRestAPI) OnGetAfter")
+		return gw.DecoratorHandler500.Result()
+	}
 }
 
 // http Get pager Query.

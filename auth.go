@@ -142,11 +142,11 @@ type DefaultSessionStateManagerImpl struct {
 	storeName          string
 	storePrefix        string
 	expirationDuration time.Duration
-	cnf                conf.Config
+	cnf                conf.ApplicationConfig
 	redisTimeout       time.Duration
 }
 
-func DefaultSessionStateManager(cnf conf.Config) *DefaultSessionStateManagerImpl {
+func DefaultSessionStateManager(cnf conf.ApplicationConfig) *DefaultSessionStateManagerImpl {
 	defaultSs.cnf = cnf
 	timeout := cnf.Service.Settings.TimeoutControl.Redis
 	defaultSs.storeName = cnf.Service.Security.Auth.Session.DefaultStore.Name
@@ -261,12 +261,12 @@ func init() {
 type DefaultPermissionManagerImpl struct {
 	state  int
 	store  Store
-	conf   conf.Config
+	conf   conf.ApplicationConfig
 	locker sync.Mutex
 	perms  map[string]map[string]Permission
 }
 
-func DefaultPermissionManager(conf conf.Config, store Store) *DefaultPermissionManagerImpl {
+func DefaultPermissionManager(conf conf.ApplicationConfig, store Store) *DefaultPermissionManagerImpl {
 	if defaultPm == nil {
 		defaultPm = &DefaultPermissionManagerImpl{
 			conf:  conf,
@@ -656,8 +656,8 @@ type User struct {
 	Permissions     []Permission
 }
 
-func (user *User) MarshalBinary() (data []byte, err error) {
-	return json.Marshal(user)
+func (user User) MarshalBinary() (data []byte, err error) {
+	return json.Marshal(&user)
 }
 
 func (user User) IsAuth() bool {

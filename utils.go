@@ -14,8 +14,10 @@ func Run(servers ...*HostServer) {
 		go func(s *HostServer) {
 			go s.Serve()
 			<-s.serverStartDone
+			close(s.serverStartDone)
 			started.Done()
 			<-s.serverExitSignal
+			close(s.serverExitSignal)
 			logger.Info("Server: %s, Addr: %s exiting", s.options.Name, s.options.Addr)
 			shutdown.Done()
 		}(servers[i])

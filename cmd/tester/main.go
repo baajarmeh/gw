@@ -15,7 +15,7 @@ func main() {
 	bcs := conf.DefaultBootConfig()
 	opts := gw.NewServerOption(bcs)
 	opts.Name = "my-tester-api"
-	server := gw.New(opts)
+	server := gw.NewServerWithOption(opts)
 
 	server.AddHook(gw.NewHook("my-tester-before", func(c *gin.Context) {
 		c.Set("my-tester-id", 1000)

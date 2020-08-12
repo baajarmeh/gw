@@ -8,11 +8,11 @@ import (
 
 func main() {
 	bsc := conf.DefaultBootConfig()
-	conf := gw.NewServerOption(bsc)
-	conf.Name = "confsvr"
-	conf.Addr = ":8090"
+	opts := gw.NewServerOption(bsc)
+	opts.Name = "confsvr"
+	opts.Addr = ":8090"
 
-	server := gw.New(conf)
+	server := gw.NewServerWithOption(opts)
 	registerApps(server)
 	server.Serve()
 }

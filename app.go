@@ -66,16 +66,16 @@ type ServerOption struct {
 	PluginSymbolSuffix       string
 	StartBeforeHandler       func(s *HostServer) error
 	ShutDownBeforeHandler    func(s *HostServer) error
-	BackendStoreHandler      func(cnf conf.Config) Store
-	AppConfigHandler         func(cnf conf.BootConfig) *conf.Config
-	Crypto                   func(conf conf.Config) ICrypto
+	BackendStoreHandler      func(cnf conf.ApplicationConfig) Store
+	AppConfigHandler         func(cnf conf.BootConfig) *conf.ApplicationConfig
+	Crypto                   func(conf conf.ApplicationConfig) ICrypto
 	AuthManager              IAuthManager
 	PermissionManagerHandler PermissionManagerHandler
 	StoreDbSetupHandler      StoreDbSetupHandler
 	SessionStateManager      SessionStateHandler
 	StoreCacheSetupHandler   StoreCacheSetupHandler
 	RespBodyBuildFunc        RespBodyCreationHandler
-	cnf                      *conf.Config
+	cnf                      *conf.ApplicationConfig
 	bcs                      *conf.BootConfig
 }
 
@@ -94,7 +94,7 @@ type HostServer struct {
 	options                *ServerOption
 	router                 *Router
 	apps                   map[string]App
-	conf                   *conf.Config
+	conf                   *conf.ApplicationConfig
 	httpErrHandlers        map[int][]ErrorHandler
 	hooks                  []*Hook
 	beforeHooks            []*Hook
@@ -117,11 +117,11 @@ var (
 	appDefaultPluginSymbolSuffix    = ".so"
 	appDefaultStartBeforeHandler    = func(server *HostServer) error { return nil }
 	appDefaultShutdownBeforeHandler = func(server *HostServer) error { return nil }
-	appDefaultBackendHandler        = func(cnf conf.Config) Store {
+	appDefaultBackendHandler        = func(cnf conf.ApplicationConfig) Store {
 		return DefaultBackend(cnf)
 	}
-	appDefaultAppConfigHandler = func(cnf conf.BootConfig) *conf.Config {
-		return conf.NewConfigByBootConfig(&cnf)
+	appDefaultAppConfigHandler = func(cnf conf.BootConfig) *conf.ApplicationConfig {
+		return conf.NewConfigWithBootConfig(&cnf)
 	}
 	appDefaultStoreDbSetupHandler = func(c Context, db *gorm.DB) *gorm.DB {
 		return db
@@ -157,13 +157,13 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
 		AuthManager:            defaultAm,
-		PermissionManagerHandler: func(conf conf.Config, store Store) IPermissionManager {
+		PermissionManagerHandler: func(conf conf.ApplicationConfig, store Store) IPermissionManager {
 			return DefaultPermissionManager(conf, store)
 		},
-		SessionStateManager: func(conf conf.Config) ISessionStateManager {
+		SessionStateManager: func(conf conf.ApplicationConfig) ISessionStateManager {
 			return DefaultSessionStateManager(conf)
 		},
-		Crypto: func(conf conf.Config) ICrypto {
+		Crypto: func(conf conf.ApplicationConfig) ICrypto {
 			c := conf.Service.Security.Crypto
 			return DefaultCrypto(c.Protect.Secret, c.Hash.Salt)
 		},
@@ -462,7 +462,7 @@ func registerAuthParamValidators(s *HostServer) {
 	s.authParamValidators[p.ParamKey.VerifyCode] = verifyCodeRegex
 }
 
-func registerAuthRouter(cnf *conf.Config, router *gin.Engine) {
+func registerAuthRouter(cnf *conf.ApplicationConfig, router *gin.Engine) {
 	authServer := cnf.Service.Security.Auth.Server
 	if authServer.AuthServe {
 		for _, m := range authServer.LogIn.Methods {
@@ -561,7 +561,7 @@ func (s *HostServer) Serve() {
 	s.PrintRouterInfo()
 
 	logger.NewLine(2)
-	logger.Info("Service Information  ")
+	logger.Info("Service Information")
 	logger.Info("=======================")
 	logger.Info(" Name: %s", s.conf.Service.Name)
 	logger.Info(" Version: %s", s.conf.Service.Version)

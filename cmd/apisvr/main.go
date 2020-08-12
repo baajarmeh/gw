@@ -11,7 +11,7 @@ func main() {
 	bcs := conf.DefaultBootConfig()
 	opts := gw.NewServerOption(bcs)
 	opts.Name = "my api"
-	server := gw.New(opts)
+	server := gw.NewServerWithOption(opts)
 	registerApps(server)
 	server.Serve()
 }

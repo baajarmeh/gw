@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/conf"
+	"github.com/oceanho/gw/logger"
 	"net/http"
 	"path"
 	"reflect"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 )
 
 const (
-	apiNameKey = "gw-api-name"
+	gwRouterInfoKey = "gw-router"
 )
 
 // Handler defines a http handler for gw framework.
@@ -52,11 +52,13 @@ type RouterGroup struct {
 // RouterInfo represents a gw Router Info.
 type RouterInfo struct {
 	Method            string
-	Router            string
+	UrlPath           string
 	Handler           Handler
 	Decorators        []Decorator
 	Permissions       []Permission
 	handlerActionName string
+	beforeDecorators  []Decorator
+	afterDecorators   []Decorator
 }
 
 func (r *RouterInfo) String() string {
@@ -64,16 +66,16 @@ func (r *RouterInfo) String() string {
 	// Padding left.
 	before, after := splitDecorators(r.Decorators...)
 	return fmt.Sprintf("%-8s%s -> %s "+
-		"[decorator info (%d before, %d after)]", r.Method, r.Router, r.handlerActionName, len(before), len(after))
+		"[decorators(%d before, %d after)]", r.Method, r.UrlPath, r.handlerActionName, len(before), len(after))
 }
 
-func createRouterInfo(method, router string, handlerActionName string, handler Handler, decorators ...Decorator) RouterInfo {
+func (router *Router) createRouter(method, relativePath string, handler Handler, handlerActionName string, decorators ...Decorator) {
+	urlPath := path.Join(router.currentRouter.BasePath(), relativePath)
 	routerInfo := RouterInfo{
-		Method:     method,
-		Router:     router,
-		Handler:    handler,
-		Decorators: decorators,
+		Method: method, UrlPath: urlPath,
+		Handler: handler, Decorators: decorators,
 	}
+	beforeDecorators, afterDecorators := splitDecorators(decorators...)
 	pds := FilterDecorator(func(d Decorator) bool {
 		return d.Catalog == permissionDecoratorCatalog
 	}, decorators...)
@@ -83,12 +85,36 @@ func createRouterInfo(method, router string, handlerActionName string, handler H
 			perms = append(routerInfo.Permissions, pd...)
 		}
 	}
-	routerInfo.Permissions = perms
 	if handlerActionName == "" {
 		handlerActionName = getHandlerFullName(handler)
 	}
+	routerInfo.Permissions = perms
+	routerInfo.afterDecorators = afterDecorators
+	routerInfo.beforeDecorators = beforeDecorators
 	routerInfo.handlerActionName = handlerActionName
-	return routerInfo
+	if method == "any" {
+		router.currentRouter.Any(relativePath, func(c *gin.Context) {
+			c.Set(gwRouterInfoKey, routerInfo)
+			handle(c)
+		})
+		return
+	}
+	if method == "group" {
+		router.currentRouter.Group(relativePath, func(c *gin.Context) {
+			c.Set(gwRouterInfoKey, routerInfo)
+			handle(c)
+		})
+		return
+	}
+	// gin router
+	router.currentRouter.Handle(method, relativePath, func(c *gin.Context) {
+		c.Set(gwRouterInfoKey, routerInfo)
+		handle(c)
+	})
+
+	router.locker.Lock()
+	defer router.locker.Unlock()
+	router.routerInfos = append(router.routerInfos, routerInfo)
 }
 
 func getHandlerFullName(handler Handler) string {
@@ -123,94 +149,54 @@ func (c Context) StartTime() *time.Time {
 	return &c.startTime
 }
 
-func (router *Router) storeRouterStateWithHandlerName(method string,
-	relativePath, handlerName string, handler Handler, decorators ...Decorator) {
-	router.locker.Lock()
-	defer router.locker.Unlock()
-	str := path.Join(router.currentRouter.BasePath(), relativePath)
-	router.routerInfos = append(router.routerInfos, createRouterInfo(method, str, handlerName, handler, decorators...))
-}
-
-func (router *Router) storeRouterState(method string, relativePath string, handler Handler, decorators ...Decorator) {
-	handlerName := getHandlerFullName(handler)
-	// Rest API, not register router info.
-	// It's routers save by RegisterRestApis(...)
-	if strings.Count(handlerName, "github.com/oceanho/gw.init") > 0 {
-		return
-	}
-	router.storeRouterStateWithHandlerName(method, relativePath, handlerName, handler, decorators...)
-}
-
 // GET register a http Get router of handler.
 func (router *Router) GET(relativePath string, handler Handler, decorators ...Decorator) {
-	before, after := splitDecorators(decorators...)
-	router.storeRouterState("GET", relativePath, handler, decorators...)
-	router.currentRouter.GET(relativePath, func(c *gin.Context) {
-		handle(c, handler, before, after)
-	})
+	router.createRouter(http.MethodGet, relativePath, handler, "", decorators...)
 }
 
 // POST register a http POST router of handler.
 func (router *Router) POST(relativePath string, handler Handler, decorators ...Decorator) {
-	before, after := splitDecorators(decorators...)
-	router.storeRouterState("POST", relativePath, handler, decorators...)
-	router.currentRouter.POST(relativePath, func(c *gin.Context) {
-		handle(c, handler, before, after)
-	})
+	router.createRouter(http.MethodPost, relativePath, handler, "", decorators...)
 }
 
 // PUT register a http PUT router of handler.
 func (router *Router) PUT(relativePath string, handler Handler, decorators ...Decorator) {
-	before, after := splitDecorators(decorators...)
-	router.storeRouterState("PUT", relativePath, handler, decorators...)
-	router.currentRouter.PUT(relativePath, func(c *gin.Context) {
-		handle(c, handler, before, after)
-	})
+	router.createRouter(http.MethodPut, relativePath, handler, "", decorators...)
 }
 
 // HEAD register a http HEAD router of handler.
 func (router *Router) HEAD(relativePath string, handler Handler, decorators ...Decorator) {
-	before, after := splitDecorators(decorators...)
-	router.storeRouterState("HEAD", relativePath, handler, decorators...)
-	router.currentRouter.HEAD(relativePath, func(c *gin.Context) {
-		handle(c, handler, before, after)
-	})
+	router.createRouter(http.MethodHead, relativePath, handler, "", decorators...)
 }
 
 // DELETE register a http DELETE router of handler.
 func (router *Router) DELETE(relativePath string, handler Handler, decorators ...Decorator) {
-	before, after := splitDecorators(decorators...)
-	router.storeRouterState("DELETE", relativePath, handler, decorators...)
-	router.currentRouter.DELETE(relativePath, func(c *gin.Context) {
-		handle(c, handler, before, after)
-	})
+	router.createRouter(http.MethodDelete, relativePath, handler, "", decorators...)
 }
 
 // OPTIONS register a http OPTIONS router of handler.
 func (router *Router) OPTIONS(relativePath string, handler Handler, decorators ...Decorator) {
-	before, after := splitDecorators(decorators...)
-	router.storeRouterState("OPTIONS", relativePath, handler, decorators...)
-	router.currentRouter.OPTIONS(relativePath, func(c *gin.Context) {
-		handle(c, handler, before, after)
-	})
+	router.createRouter(http.MethodOptions, relativePath, handler, "", decorators...)
 }
 
 // PATCH register a http PATCH router of handler.
 func (router *Router) PATCH(relativePath string, handler Handler, decorators ...Decorator) {
-	before, after := splitDecorators(decorators...)
-	router.storeRouterState("PATCH", relativePath, handler, decorators...)
-	router.currentRouter.PATCH(relativePath, func(c *gin.Context) {
-		handle(c, handler, before, after)
-	})
+	router.createRouter(http.MethodPatch, relativePath, handler, "", decorators...)
 }
 
-// Any register a any HTTP method router of handler.
+// Any register a all HTTP methods router of handler.
 func (router *Router) Any(relativePath string, handler Handler, decorators ...Decorator) {
-	before, after := splitDecorators(decorators...)
-	router.storeRouterState("Any", relativePath, handler, decorators...)
-	router.currentRouter.Any(relativePath, func(c *gin.Context) {
-		handle(c, handler, before, after)
-	})
+	router.createRouter("any", relativePath, handler, "", decorators...)
+}
+
+// Any register a HTTP Connect router of handler.
+func (router *Router) Connect(relativePath string, handler Handler, decorators ...Decorator) {
+	router.createRouter(http.MethodConnect, relativePath, handler, "", decorators...)
+}
+
+// Trace register a HTTP Trace router of handler.
+func (router *Router) Trace(relativePath string, handler Handler, decorators ...Decorator) {
+	router.createRouter(http.MethodTrace, relativePath, handler, "", decorators...)
 }
 
 // Use register a gin Middleware of handler.
@@ -228,21 +214,17 @@ func (router *Router) Group(relativePath string, handler Handler, decorators ...
 	rg := &RouterGroup{
 		router,
 	}
-	if handler != nil {
-		before, after := splitDecorators(decorators...)
-		router.storeRouterState("Group", relativePath, handler, decorators...)
-		rg.currentRouter = rg.router.Group(relativePath, func(c *gin.Context) {
-			handle(c, handler, before, after)
-		})
-	} else {
+	if handler == nil {
 		rg.currentRouter = rg.router.Group(relativePath)
-		rg.prefix = path.Join(router.prefix, relativePath)
+	} else {
+		router.createRouter("group", relativePath, handler, "", decorators...)
 	}
+	rg.prefix = path.Join(router.prefix, relativePath)
 	return rg
 }
 
 // Config returns a snapshot of the current Context's conf.Config object.
-func (c *Context) Config() conf.Config {
+func (c *Context) Config() conf.ApplicationConfig {
 	return config(c.Context)
 }
 
@@ -268,52 +250,62 @@ func (c *Context) BindQuery(out interface{}) error {
 	return nil
 }
 
-func handle(c *gin.Context, handler Handler, beforeDecorators, afterDecorators []Decorator) {
-	s := hostServer(c)
-	requestID := getRequestID(s, c)
-	ctx := makeCtx(c, requestID)
-	// action before Decorators
-	var msg string
+func handle(c *gin.Context) {
+	var router, ok = c.MustGet(gwRouterInfoKey).(RouterInfo)
+	if !ok {
+		logger.Error("invalid handler, can not be got RouterInfo.")
+		return
+	}
+	var status int
 	var err error
-	for _, d := range beforeDecorators {
-		msg, err = d.Before(ctx)
-		if err != nil {
+	var shouldStop bool = false
+	var payload interface{}
+	// action before Decorators
+	var s = hostServer(c)
+	var requestID = getRequestID(s, c)
+	var ctx = makeCtx(c, requestID)
+	for _, d := range router.beforeDecorators {
+		status, err, payload = d.Before(ctx)
+		if err != nil || status != 0 {
+			shouldStop = true
 			break
 		}
 	}
-	if err != nil {
-		if msg == "" {
-			msg = "caller decorator fail."
+	if shouldStop {
+		if payload == "" {
+			payload = "caller decorator fail."
 		}
-		status, body := parseErrToRespBody(s, requestID, msg, err)
+		status, body := parseErrToRespBody(s, requestID, payload, err)
 		c.JSON(status, body)
 		return
 	}
 
 	// process Action handler.
-	handler(ctx)
+	router.Handler(ctx)
 
 	// action after Decorators
-	l := len(afterDecorators)
+	l := len(router.afterDecorators)
 	if l < 1 {
 		return
 	}
+	shouldStop = false
 	for i := l - 1; i >= 0; i-- {
-		msg, err = afterDecorators[i].After(ctx)
-		if err != nil {
+		status, err, payload = router.afterDecorators[i].After(ctx)
+		if err != nil || status != 0 {
+			shouldStop = true
 			break
 		}
 	}
-	if err != nil {
-		if msg == "" {
-			msg = "caller decorator fail."
+	if shouldStop {
+		if payload == "" {
+			payload = "caller decorator fail."
 		}
-		status, body := parseErrToRespBody(s, requestID, msg, err)
+		status, body := parseErrToRespBody(s, requestID, payload, err)
 		c.JSON(status, body)
 	}
 }
 
-func parseErrToRespBody(s HostServer, requestID string, msgBody string, err error) (int, interface{}) {
+func parseErrToRespBody(s HostServer, requestID string, msgBody interface{}, err error) (int, interface{}) {
 	var status = http.StatusBadRequest
 	if err == ErrPermissionDenied {
 		status = http.StatusForbidden

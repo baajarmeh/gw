@@ -26,10 +26,10 @@ type StoreDbSetupHandler func(ctx Context, db *gorm.DB) *gorm.DB
 type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *redis.Client
 
 // SessionStateHandler represents a Session state manager handler.
-type SessionStateHandler func(conf conf.Config) ISessionStateManager
+type SessionStateHandler func(conf conf.ApplicationConfig) ISessionStateManager
 
 // PermissionManagerHandler represents a Permission state manager handler.
-type PermissionManagerHandler func(conf conf.Config, store Store) IPermissionManager
+type PermissionManagerHandler func(conf conf.ApplicationConfig, store Store) IPermissionManager
 
 // RespBodyCreationHandler represents a response body build handler.
 type RespBodyCreationHandler func(status int, requestID string, err interface{}, msgBody interface{}) interface{}
@@ -113,7 +113,7 @@ func (d DefaultBackendImpl) GetCacheStoreByName(name string) *redis.Client {
 	return db
 }
 
-func DefaultBackend(cnf conf.Config) Store {
+func DefaultBackend(cnf conf.ApplicationConfig) Store {
 	storeBackend := DefaultBackendImpl{
 		dbs:    make(map[string]*gorm.DB),
 		caches: make(map[string]*redis.Client),

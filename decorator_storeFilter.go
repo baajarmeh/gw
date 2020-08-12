@@ -15,13 +15,13 @@ func NewStoreDbFilterDecorator(setupDbFilterHandler StoreDbSetupHandler) Decorat
 	var d = Decorator{
 		Catalog:  storeDbFilterDecoratorCatalog,
 		MetaData: nil,
-		Before: func(ctx *Context) (friendlyMsg string, err error) {
+		Before: func(ctx *Context) (status int, err error, payload interface{}) {
 			store, ok := ctx.Store.(*backendWrapper)
 			if ok {
 				store.storeDbSetupHandler = setupDbFilterHandler
 				ctx.Store = store
 			}
-			return "", nil
+			return 0, nil, nil
 		},
 	}
 	return d

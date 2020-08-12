@@ -3,7 +3,7 @@ package gw
 import (
 	"fmt"
 	"github.com/oceanho/gw/logger"
-	"path"
+	"net/http"
 	"reflect"
 	"strings"
 )
@@ -18,98 +18,126 @@ func init() {
 	restApiRegister = make(map[string]restHandler)
 	restApiRegister["get"] = restHandler{
 		"Get",
-		"",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
-			r.GET(relativePath, func(ctx *Context) {
+		"Get",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter("GET", relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
-
+	restApiRegister["detail"] = restHandler{
+		"Get",
+		"Detail",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			relativePath = strings.TrimRight(relativePath, "/")
+			relativePath = fmt.Sprintf("%s/detail/:id", relativePath)
+			r.createRouter("GET", relativePath, func(ctx *Context) {
+				handleDynamicApi(ctx, dynamicCaller)
+			}, handlerActionName, dynamicCaller.decorators...)
+		},
+	}
 	restApiRegister["query"] = restHandler{
 		"Get",
-		"query",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
+		"Query",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
 			relativePath = strings.TrimRight(relativePath, "/")
 			relativePath = fmt.Sprintf("%s/query", relativePath)
-			r.GET(relativePath, func(ctx *Context) {
+			r.createRouter(http.MethodGet, relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
-	restApiRegister["queryList"] = restHandler{
+	restApiRegister["querylist"] = restHandler{
 		"Get",
-		"queryList",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
+		"QueryList",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
 			relativePath = strings.TrimRight(relativePath, "/")
 			relativePath = fmt.Sprintf("%s/queryList", relativePath)
-			r.GET(relativePath, func(ctx *Context) {
+			r.createRouter(http.MethodGet, relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
 	restApiRegister["post"] = restHandler{
 		"Post",
-		"",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
-			r.POST(relativePath, func(ctx *Context) {
+		"Post",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter(http.MethodPost, relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
 	restApiRegister["put"] = restHandler{
 		"Put",
-		"",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
-			r.PUT(relativePath, func(ctx *Context) {
+		"Put",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter(http.MethodPut, relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
 	restApiRegister["delete"] = restHandler{
 		"Delete",
-		"",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
-			r.DELETE(relativePath, func(ctx *Context) {
+		"Delete",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter(http.MethodDelete, relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
 	restApiRegister["options"] = restHandler{
 		"Options",
-		"",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
-			r.OPTIONS(relativePath, func(ctx *Context) {
+		"Options",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter(http.MethodOptions, relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
-	restApiRegister["option"] = restApiRegister["options"]
 	restApiRegister["patch"] = restHandler{
 		"Patch",
-		"",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
-			r.PATCH(relativePath, func(ctx *Context) {
+		"Patch",
+		func(relativePath, actionPkgName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			var handlerActionName = fmt.Sprintf("%s.Patch", actionPkgName)
+			r.createRouter(http.MethodPatch, relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
 	restApiRegister["head"] = restHandler{
 		"Head",
-		"",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
-			r.HEAD(relativePath, func(ctx *Context) {
+		"Head",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter(http.MethodHead, relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
+		},
+	}
+	restApiRegister["connect"] = restHandler{
+		"Connect",
+		"Connect",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter(http.MethodConnect, relativePath, func(ctx *Context) {
+				handleDynamicApi(ctx, dynamicCaller)
+			}, handlerActionName, dynamicCaller.decorators...)
+		},
+	}
+	restApiRegister["trace"] = restHandler{
+		"Trace",
+		"Trace",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter(http.MethodTrace, relativePath, func(ctx *Context) {
+				handleDynamicApi(ctx, dynamicCaller)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
 	restApiRegister["any"] = restHandler{
 		"Any",
-		"",
-		func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller) {
-			r.Any(relativePath, func(ctx *Context) {
+		"Any",
+		func(relativePath, handlerActionName string, r *RouterGroup, dynamicCaller DynamicCaller) {
+			r.createRouter("any", relativePath, func(ctx *Context) {
 				handleDynamicApi(ctx, dynamicCaller)
-			}, dynamicCaller.decorators...)
+			}, handlerActionName, dynamicCaller.decorators...)
 		},
 	}
 	restApiRegister["all"] = restApiRegister["any"]
@@ -117,9 +145,9 @@ func init() {
 
 // restHandler
 type restHandler struct {
-	httpMethod  string
-	extraRouter string
-	register    func(relativePath string, r *RouterGroup, dynamicCaller DynamicCaller)
+	httpMethod     string
+	actionFuncName string
+	register       func(relativePath, actionPkgFunName string, r *RouterGroup, dynamicCaller DynamicCaller)
 }
 
 // DynamicCaller ...
@@ -139,16 +167,19 @@ type restArgsBinder struct {
 
 // RegisterRestAPIs register a collection HTTP routes by gw.IRestAPI.
 func (router *RouterGroup) RegisterRestAPIs(restAPIs ...IRestAPI) {
-	RegisterRestAPI(router, restAPIs...)
+	registerRestAPIImpl(router, restAPIs...)
 }
 
-func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
+func registerRestAPIImpl(router *RouterGroup, restAPIs ...IRestAPI) {
 	logger.Info("register router by API RegisterRestAPI(...)")
 	for i := 0; i < len(restAPIs); i++ {
 		rest := restAPIs[i]
 		var restPkgId string
 		typ := reflect.TypeOf(rest)
 		val := reflect.ValueOf(rest)
+		ctrlCallArgs := []reflect.Value{
+			reflect.ValueOf(rest),
+		}
 		if typ.Kind() != reflect.Ptr {
 			panic(fmt.Sprintf("%s should be are pointer.", rest.Name()))
 		}
@@ -182,8 +213,29 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 					bindFunc: ctxBinder,
 				}
 				var decorators []Decorator
+				// OnXBefore
+				name = fmt.Sprintf("On%sBefore", m.Name)
+				onBefore, ok := typ.MethodByName(name)
+				if ok {
+					onBeforeHandler := onBefore.Func.Call(ctrlCallArgs)[0].Interface().(DecoratorHandler)
+					decorators = append(decorators, Decorator{
+						Before: onBeforeHandler,
+					})
+				}
+
 				decorators = append(decorators, apiSpecifyDecorators...)
 				decorators = append(decorators, globalDecorators...)
+
+				// OnXAfter
+				name = fmt.Sprintf("On%sAfter", m.Name)
+				onAfter, ok := typ.MethodByName(name)
+				if ok {
+					onAfterHandler := onAfter.Func.Call(ctrlCallArgs)[0].Interface().(DecoratorHandler)
+					decorators = append(decorators, Decorator{
+						After: onAfterHandler,
+					})
+				}
+
 				bindingFuncPkgName := fmt.Sprintf("%s.%s", restPkgId, m.Name)
 				dynCaller := DynamicCaller{
 					argInNumber:        n,
@@ -192,11 +244,7 @@ func RegisterRestAPI(router *RouterGroup, restAPIs ...IRestAPI) {
 					handler:            val.MethodByName(m.Name),
 					argsOrderlyBinder:  dynBinders,
 				}
-				httpMethod := strings.ToUpper(dyApiRegister.httpMethod)
-				httpUrlPath := path.Join(relativePath, dyApiRegister.extraRouter)
-				// Save router info
-				router.storeRouterStateWithHandlerName(httpMethod, httpUrlPath, bindingFuncPkgName, nil, decorators...)
-				dyApiRegister.register(relativePath, router, dynCaller)
+				dyApiRegister.register(relativePath, bindingFuncPkgName, router, dynCaller)
 			}
 		}
 	}

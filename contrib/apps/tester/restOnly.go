@@ -24,7 +24,7 @@ func (a AppRestOnly) Router() string {
 }
 
 func (a AppRestOnly) Register(router *gw.RouterGroup) {
-	gw.RegisterRestAPI(router, &rest.MyTesterRestAPI{})
+	router.RegisterRestAPIs(&rest.MyTesterRestAPI{})
 }
 
 func (a AppRestOnly) Migrate(ctx gw.MigrationContext) {

@@ -249,7 +249,7 @@ func hostServer(c *gin.Context) HostServer {
 	return *servers[serverName]
 }
 
-func config(c *gin.Context) conf.Config {
+func config(c *gin.Context) conf.ApplicationConfig {
 	return *hostServer(c).conf
 }
 
