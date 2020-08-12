@@ -6,6 +6,11 @@ import (
 	"path"
 )
 
+type RemoteConfigProvider struct {
+	Proto string
+	Addr  string
+}
+
 type GWHttpConfSvrConfigProvider struct {
 }
 
@@ -26,9 +31,8 @@ type LocalFileConfigProvider struct {
 
 func (c LocalFileConfigProvider) Provide(bcs BootConfig, out *ApplicationConfig) error {
 	var lf LocalFile
-	err := bcs.ParserTo(&lf)
-	if err != nil {
-		panic(fmt.Sprintf("local file provider fail, err: %v", err))
+	if err := bcs.ParserTo(&lf); err != nil {
+		panic(fmt.Sprintf("parser local file fail, err: %v", err))
 	}
 	if lf.Path == "" {
 		panic(fmt.Sprintf("BootConfig missing configuration.Path section"))
