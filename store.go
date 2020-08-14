@@ -118,8 +118,8 @@ func DefaultBackend(cnf conf.ApplicationConfig) Store {
 		dbs:    make(map[string]*gorm.DB),
 		caches: make(map[string]*redis.Client),
 	}
-	dbs := cnf.Common.Backend.Db
-	caches := cnf.Common.Backend.Cache
+	dbs := cnf.Backend.Db
+	caches := cnf.Backend.Cache
 	for _, v := range dbs {
 		storeBackend.dbs[v.Name] = createDb(v)
 	}

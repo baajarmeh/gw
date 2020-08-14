@@ -148,10 +148,10 @@ type DefaultSessionStateManagerImpl struct {
 
 func DefaultSessionStateManager(cnf conf.ApplicationConfig) *DefaultSessionStateManagerImpl {
 	defaultSs.cnf = cnf
-	timeout := cnf.Service.Settings.TimeoutControl.Redis
-	defaultSs.storeName = cnf.Service.Security.Auth.Session.DefaultStore.Name
-	defaultSs.storePrefix = cnf.Service.Security.Auth.Session.DefaultStore.Prefix
-	defaultSs.expirationDuration = time.Duration(cnf.Service.Security.Auth.Cookie.MaxAge) * time.Second
+	timeout := cnf.Settings.TimeoutControl.Redis
+	defaultSs.storeName = cnf.Security.Auth.Session.DefaultStore.Name
+	defaultSs.storePrefix = cnf.Security.Auth.Session.DefaultStore.Prefix
+	defaultSs.expirationDuration = time.Duration(cnf.Security.Auth.Cookie.MaxAge) * time.Second
 	defaultSs.redisTimeout = time.Duration(timeout) * time.Millisecond
 	return defaultSs
 }
@@ -278,7 +278,7 @@ func DefaultPermissionManager(conf conf.ApplicationConfig, store Store) *Default
 }
 
 func (p *DefaultPermissionManagerImpl) getStore() *gorm.DB {
-	return p.store.GetDbStoreByName(p.conf.Service.Security.Auth.Permission.DefaultStore.Name)
+	return p.store.GetDbStoreByName(p.conf.Security.Auth.Permission.DefaultStore.Name)
 }
 
 func (p *DefaultPermissionManagerImpl) Initial() {
@@ -446,7 +446,7 @@ func (p *DefaultPermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...Pe
 func gwLogin(c *gin.Context) {
 	s := hostServer(c)
 	reqId := getRequestID(s, c)
-	pKey := s.conf.Service.Security.Auth.ParamKey
+	pKey := s.conf.Security.Auth.ParamKey
 	// supports
 	// 1. User/Password
 	// 2. X-Access-Key/X-Access-Secret
@@ -499,7 +499,7 @@ func gwLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	cks := s.conf.Service.Security.Auth.Cookie
+	cks := s.conf.Security.Auth.Cookie
 	domain := cks.Domain
 	// if domain == ":host" || domain == "" {
 	// 	domain = ""
@@ -521,7 +521,7 @@ func gwLogout(c *gin.Context) {
 	s := hostServer(c)
 	reqId := getRequestID(s, c)
 	user := getUser(c)
-	cks := s.conf.Service.Security.Auth.Cookie
+	cks := s.conf.Security.Auth.Cookie
 	ok := s.AuthManager.Logout(s.Store, user)
 	if !ok {
 		s.RespBodyBuildFunc(500, reqId, "auth logout fail", nil)
@@ -555,7 +555,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 		// UnAuthorized
 		//
 		if (user.IsEmpty() || !user.IsAuth()) && !allowUrls[path] {
-			auth := hostServer(c).conf.Service.Security.Auth.Server
+			auth := hostServer(c).conf.Security.AuthServer
 			// Check url are allow dict.
 			payload := gin.H{
 				"Auth": gin.H{
@@ -585,7 +585,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, verifyCode string, credType string, result bool) {
 	//
 	// Auth Param configuration.
-	param := s.conf.Service.Security.Auth.ParamKey
+	param := s.conf.Security.Auth.ParamKey
 	//
 	// supports
 	// 1. User/Password

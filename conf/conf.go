@@ -64,136 +64,48 @@ func (bc BootConfig) String() string {
 	return string(b)
 }
 
+//
 // ======================================================= //
 //                                                         //
 //    Define all of configuration Items for Application    //
 //                                                         //
 // ======================================================= //
-
+//
 type ApplicationConfig struct {
-	Common struct {
-		Server struct {
-			ListenAddr string `yaml:"listenAddr" toml:"listenAddr" json:"listenAddr"`
-		} `yaml:"server" toml:"server" json:"server"`
-		Backend Backend `yaml:"backend" toml:"backend" json:"backend"`
-	} `yaml:"common" toml:"common" json:"common"`
-	Service struct {
-		Name             string `yaml:"name" toml:"name" json:"name"`
-		Prefix           string `yaml:"prefix" toml:"prefix" json:"prefix"`
-		Version          string `yaml:"version" toml:"version" json:"version"`
-		Remarks          string `yaml:"remarks" toml:"remarks" json:"remarks"`
-		ServiceDiscovery struct {
-			Disabled       bool `yaml:"disabled" toml:"disabled" json:"disabled"`
-			RegistryCenter struct {
-				Addr string `yaml:"addr" toml:"addr" json:"addr"`
-			} `yaml:"registryCenter" toml:"registryCenter" json:"registryCenter"`
-		} `yaml:"serviceDiscovery" toml:"serviceDiscovery" json:"serviceDiscovery"`
-		Security struct {
-			Crypto struct {
-				Hash struct {
-					Salt      string `yaml:"salt" toml:"salt" json:"salt"`
-					Algorithm string `yaml:"alg" toml:"alg" json:"alg"`
-				} `yaml:"hash" toml:"hash" json:"hash"`
-				Protect struct {
-					Secret    string `yaml:"secret" toml:"secret" json:"secret"`
-					Algorithm string `yaml:"alg" toml:"alg" json:"alg"`
-				} `yaml:"protect" toml:"protect" json:"protect"`
-				Certificate struct {
-					PrivateKey string `yaml:"privateKey" toml:"privateKey" json:"privateKey"`
-					PublicKey  string `yaml:"publicKey" toml:"publicKey" json:"publicKey"`
-					IsFile     bool   `yaml:"isFile" toml:"isFile" json:"isFile"`
-				} `yaml:"cert" toml:"cert" json:"cert"`
-			} `yaml:"crypto" toml:"crypto" json:"crypto"`
-			Auth struct {
-				TrustSidKey string `yaml:"trustSidKey" toml:"trustSidKey" json:"trustSidKey"`
-				ParamKey    struct {
-					Passport   string                 `yaml:"passport" toml:"passport" json:"passport"`
-					Secret     string                 `yaml:"secret" toml:"secret" json:"secret"`
-					VerifyCode string                 `yaml:"verifyCode" toml:"verifyCode" json:"verifyCode"`
-					Custom     map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
-				} `yaml:"paramKey" toml:"paramKey" json:"paramKey"`
-				ParamPattern struct {
-					Passport   string `yaml:"passport" toml:"passport" json:"passport"`
-					Secret     string `yaml:"secret" toml:"secret" json:"secret"`
-					VerifyCode string `yaml:"verifyCode" toml:"verifyCode" json:"verifyCode"`
-				} `yaml:"paramPattern" toml:"paramPattern" json:"paramPattern"`
-				Session struct {
-					DefaultStore struct {
-						Name   string `yaml:"name" toml:"name" json:"name"`
-						Prefix string `yaml:"prefix" toml:"prefix" json:"prefix"`
-					} `yaml:"defaultStore" toml:"defaultStore" json:"defaultStore"`
-				} `yaml:"session" toml:"session" json:"session"`
-				Permission struct {
-					DefaultStore struct {
-						Name string `yaml:"name" toml:"name" json:"name"`
-						Type string `yaml:"type" toml:"type" json:"type"`
-					} `yaml:"defaultStore" toml:"defaultStore" json:"defaultStore"`
-				} `yaml:"permission" toml:"permission" json:"permission"`
-				Cookie struct {
-					Key      string `yaml:"key" toml:"key" json:"key"`
-					Path     string `yaml:"path" toml:"path" json:"path"`
-					HttpOnly bool   `yaml:"httpOnly" toml:"httpOnly" json:"httpOnly"`
-					MaxAge   int    `yaml:"maxAge" toml:"maxAge" json:"maxAge,string"`
-					Secure   bool   `yaml:"secure" toml:"secure" json:"secure"`
-					Domain   string `yaml:"domain" toml:"domain" json:"domain"`
-				} `yaml:"cookie" toml:"cookie" json:"cookie"`
-				Server struct {
-					AuthServe bool   `yaml:"authServe" toml:"authServe" json:"authServe"`
-					Addr      string `yaml:"addr" toml:"addr" json:"addr"`
-					LogIn     struct {
-						Url       string   `yaml:"url" toml:"url" json:"url"`
-						Methods   []string `yaml:"methods" toml:"methods" json:"methods"`
-						AuthTypes []string `yaml:"authTypes" toml:"authTypes" json:"authTypes"`
-					} `yaml:"login" toml:"login" json:"login"`
-					LogOut struct {
-						Url     string   `yaml:"url" toml:"url" json:"url"`
-						Methods []string `yaml:"methods" toml:"methods" json:"methods"`
-					} `yaml:"logout" toml:"logout" json:"logout"`
-				} `yaml:"server" toml:"server" json:"server"`
-				AllowUrls []AllowUrl `yaml:"allowUrls" toml:"allowUrls" json:"allowUrls"`
-			} `yaml:"auth" toml:"auth" json:"auth"`
-			Limit struct {
-				Pagination struct {
-					MinPageSize int `yaml:"minPageSize" toml:"minPageSize" json:"minPageSize,string"`
-					MaxPageSize int `yaml:"maxPageSize" toml:"maxPageSize" json:"maxPageSize,string"`
-				} `yaml:"pagination" toml:"pagination" json:"pagination"`
-			} `yaml:"limit" toml:"limit" json:"limit"`
-		} `yaml:"security" toml:"security" json:"security"`
-		Settings struct {
-			GwFramework struct {
-				PrintRouterInfo struct {
-					Disabled bool   `yaml:"disabled" toml:"disabled" json:"disabled"`
-					Title    string `yaml:"title" toml:"title" json:"title"`
-				} `yaml:"printRouterInfo" toml:"printRouterInfo" json:"printRouterInfo"`
-			} `yaml:"gw" toml:"gw" json:"gw"`
-			HeaderKey struct {
-				RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
-			} `yaml:"headerKey" toml:"headerKey" json:"headerKey"`
-			TimeoutControl struct {
-				HTTP     int `yaml:"http" toml:"http" json:"http,string"`
-				Redis    int `yaml:"redis" toml:"redis" json:"redis,string"`
-				MongoDB  int `yaml:"mongo" toml:"mongo" json:"mongo,string"`
-				Database int `yaml:"database" toml:"database" json:"database,string"`
-			} `yaml:"timeoutControl" toml:"timeoutControl" json:"timeoutControl"`
-			ExpirationTimeControl struct {
-				Session int `yaml:"session" toml:"session" json:"session,string"`
-			} `yaml:"expirationTimeControl" toml:"expirationTimeControl" json:"expirationTimeControl"`
-		} `yaml:"settings" toml:"settings" json:"settings"`
-	} `yaml:"service" toml:"service" json:"service"`
-	Custom map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
+	Server   Server      `yaml:"server" toml:"server" json:"-"`
+	Backend  Backend     `yaml:"backend" toml:"backend" json:"backend"`
+	Security Security    `yaml:"security" toml:"security" json:"security"`
+	Service  Service     `yaml:"service" toml:"service" json:"service"`
+	Settings Settings    `yaml:"settings" toml:"settings" json:"settings"`
+	Custom   interface{} `yaml:"custom" toml:"custom" json:"custom"`
+	// private
+	locker        sync.Mutex
+	customStrJson string
 }
 
+// allow urls
 type AllowUrl struct {
 	Name string   `yaml:"name" toml:"name" json:"name"`
 	Urls []string `yaml:"urls" toml:"urls" json:"urls"`
 	IPs  []string `yaml:"ips" toml:"ips" json:"ips"`
 }
 
+//
+// Server
+//
+type Server struct {
+	ListenAddr string `yaml:"listenAddr" toml:"listenAddr" json:"listenAddr"`
+}
+
+//
+// Backend Store Configuration
+//
 type Backend struct {
 	Db    []Db    `yaml:"db" toml:"db" json:"db"`
 	Cache []Cache `yaml:"cache" toml:"cache" json:"cache"`
 }
 
+// Backend of db
 type Db struct {
 	Driver   string                 `yaml:"driver" toml:"driver" json:"driver"`
 	Name     string                 `yaml:"name" toml:"name" json:"name"`
@@ -207,6 +119,7 @@ type Db struct {
 	Args     map[string]interface{} `yaml:"args" toml:"args" json:"args"`
 }
 
+// Backend of cache
 type Cache struct {
 	Driver           string                 `yaml:"driver" toml:"driver" json:"driver"`
 	Name             string                 `yaml:"name" toml:"name" json:"name"`
@@ -221,9 +134,137 @@ type Cache struct {
 	Args             map[string]interface{} `yaml:"args" toml:"args" json:"args"`
 }
 
+//
+// Security
+//
+type Security struct {
+	Crypto struct {
+		Hash struct {
+			Salt      string `yaml:"salt" toml:"salt" json:"salt"`
+			Algorithm string `yaml:"alg" toml:"alg" json:"alg"`
+		} `yaml:"hash" toml:"hash" json:"hash"`
+		Protect struct {
+			Secret    string `yaml:"secret" toml:"secret" json:"secret"`
+			Algorithm string `yaml:"alg" toml:"alg" json:"alg"`
+		} `yaml:"protect" toml:"protect" json:"protect"`
+		Certificate struct {
+			PrivateKey string `yaml:"privateKey" toml:"privateKey" json:"privateKey"`
+			PublicKey  string `yaml:"publicKey" toml:"publicKey" json:"publicKey"`
+			IsFile     bool   `yaml:"isFile" toml:"isFile" json:"isFile"`
+		} `yaml:"cert" toml:"cert" json:"cert"`
+	} `yaml:"crypto" toml:"crypto" json:"crypto"`
+	Auth struct {
+		TrustSidKey string `yaml:"trustSidKey" toml:"trustSidKey" json:"trustSidKey"`
+		ParamKey    struct {
+			Passport   string                 `yaml:"passport" toml:"passport" json:"passport"`
+			Secret     string                 `yaml:"secret" toml:"secret" json:"secret"`
+			VerifyCode string                 `yaml:"verifyCode" toml:"verifyCode" json:"verifyCode"`
+			Custom     map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`
+		} `yaml:"paramKey" toml:"paramKey" json:"paramKey"`
+		ParamPattern struct {
+			Passport   string `yaml:"passport" toml:"passport" json:"passport"`
+			Secret     string `yaml:"secret" toml:"secret" json:"secret"`
+			VerifyCode string `yaml:"verifyCode" toml:"verifyCode" json:"verifyCode"`
+		} `yaml:"paramPattern" toml:"paramPattern" json:"paramPattern"`
+		Session struct {
+			DefaultStore struct {
+				Name   string `yaml:"name" toml:"name" json:"name"`
+				Prefix string `yaml:"prefix" toml:"prefix" json:"prefix"`
+			} `yaml:"defaultStore" toml:"defaultStore" json:"defaultStore"`
+		} `yaml:"session" toml:"session" json:"session"`
+		Permission struct {
+			DefaultStore struct {
+				Name string `yaml:"name" toml:"name" json:"name"`
+				Type string `yaml:"type" toml:"type" json:"type"`
+			} `yaml:"defaultStore" toml:"defaultStore" json:"defaultStore"`
+		} `yaml:"permission" toml:"permission" json:"permission"`
+		Cookie struct {
+			Key      string `yaml:"key" toml:"key" json:"key"`
+			Path     string `yaml:"path" toml:"path" json:"path"`
+			HttpOnly bool   `yaml:"httpOnly" toml:"httpOnly" json:"httpOnly"`
+			MaxAge   int    `yaml:"maxAge" toml:"maxAge" json:"maxAge,string"`
+			Secure   bool   `yaml:"secure" toml:"secure" json:"secure"`
+			Domain   string `yaml:"domain" toml:"domain" json:"domain"`
+		} `yaml:"cookie" toml:"cookie" json:"cookie"`
+		AllowUrls []AllowUrl `yaml:"allowUrls" toml:"allowUrls" json:"allowUrls"`
+	} `yaml:"auth" toml:"auth" json:"auth"`
+	AuthServer struct {
+		EnableAuthServe bool   `yaml:"enableAuthServe" toml:"enableAuthServe" json:"enableAuthServe"`
+		Addr            string `yaml:"addr" toml:"addr" json:"addr"`
+		LogIn           struct {
+			Url       string   `yaml:"url" toml:"url" json:"url"`
+			Methods   []string `yaml:"methods" toml:"methods" json:"methods"`
+			AuthTypes []string `yaml:"authTypes" toml:"authTypes" json:"authTypes"`
+		} `yaml:"login" toml:"login" json:"login"`
+		LogOut struct {
+			Url     string   `yaml:"url" toml:"url" json:"url"`
+			Methods []string `yaml:"methods" toml:"methods" json:"methods"`
+		} `yaml:"logout" toml:"logout" json:"logout"`
+	} `yaml:"authServer" toml:"authServer" json:"authServer"`
+	Limit struct {
+		Pagination struct {
+			MinPageSize int `yaml:"minPageSize" toml:"minPageSize" json:"minPageSize,string"`
+			MaxPageSize int `yaml:"maxPageSize" toml:"maxPageSize" json:"maxPageSize,string"`
+		} `yaml:"pagination" toml:"pagination" json:"pagination"`
+	} `yaml:"limit" toml:"limit" json:"limit"`
+}
+
+//
+// Service
+//
+type Service struct {
+	Name             string `yaml:"name" toml:"name" json:"name"`
+	Prefix           string `yaml:"prefix" toml:"prefix" json:"prefix"`
+	Version          string `yaml:"version" toml:"version" json:"version"`
+	Remarks          string `yaml:"remarks" toml:"remarks" json:"remarks"`
+	ServiceDiscovery struct {
+		Disabled       bool `yaml:"disabled" toml:"disabled" json:"disabled"`
+		RegistryCenter struct {
+			Addr string `yaml:"addr" toml:"addr" json:"addr"`
+		} `yaml:"registryCenter" toml:"registryCenter" json:"registryCenter"`
+	} `yaml:"serviceDiscovery" toml:"serviceDiscovery" json:"serviceDiscovery"`
+}
+
+//
+// Settings
+//
+type Settings struct {
+	GwFramework struct {
+		PrintRouterInfo struct {
+			Disabled bool   `yaml:"disabled" toml:"disabled" json:"disabled"`
+			Title    string `yaml:"title" toml:"title" json:"title"`
+		} `yaml:"printRouterInfo" toml:"printRouterInfo" json:"printRouterInfo"`
+	} `yaml:"gw" toml:"gw" json:"gw"`
+	HeaderKey struct {
+		RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
+	} `yaml:"headerKey" toml:"headerKey" json:"headerKey"`
+	TimeoutControl struct {
+		HTTP     int `yaml:"http" toml:"http" json:"http,string"`
+		Redis    int `yaml:"redis" toml:"redis" json:"redis,string"`
+		MongoDB  int `yaml:"mongo" toml:"mongo" json:"mongo,string"`
+		Database int `yaml:"database" toml:"database" json:"database,string"`
+	} `yaml:"timeoutControl" toml:"timeoutControl" json:"timeoutControl"`
+	ExpirationTimeControl struct {
+		Session int `yaml:"session" toml:"session" json:"session,string"`
+	} `yaml:"expirationTimeControl" toml:"expirationTimeControl" json:"expirationTimeControl"`
+}
+
 func (cnf ApplicationConfig) String() string {
 	b, _ := json.MarshalIndent(cnf, "", "  ")
 	return string(b)
+}
+
+func (cnf *ApplicationConfig) ParseCustomTo(out interface{}) error {
+	cnf.locker.Lock()
+	defer cnf.locker.Unlock()
+	if cnf.customStrJson == "" {
+		b, err := json.Marshal(cnf.Custom)
+		if err != nil {
+			return err
+		}
+		cnf.customStrJson = string(b)
+	}
+	return json.Unmarshal([]byte(cnf.customStrJson), out)
 }
 
 // ============ End of configuration items ============= //

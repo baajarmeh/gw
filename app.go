@@ -164,7 +164,7 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 			return DefaultSessionStateManager(conf)
 		},
 		Crypto: func(conf conf.ApplicationConfig) ICrypto {
-			c := conf.Service.Security.Crypto
+			c := conf.Security.Crypto
 			return DefaultCrypto(c.Protect.Secret, c.Hash.Salt)
 		},
 		RespBodyBuildFunc: defaultRespBodyBuildFunc,
@@ -400,7 +400,7 @@ func initial(s *HostServer) {
 	registerAuthRouter(cnf, g)
 
 	// global Auth middleware.
-	g.Use(gwAuthChecker(s.options.cnf.Service.Security.Auth.AllowUrls))
+	g.Use(gwAuthChecker(s.options.cnf.Security.Auth.AllowUrls))
 
 	if gin.IsDebugging() {
 		g.Use(gin.Logger())
@@ -435,15 +435,15 @@ func initial(s *HostServer) {
 	httpRouter.router = httpRouter.server.Group(s.options.Prefix)
 	s.router = httpRouter
 
-	if s.conf.Common.Server.ListenAddr != "" && s.options.Addr == appDefaultAddr {
-		s.options.Addr = s.conf.Common.Server.ListenAddr
+	if s.conf.Server.ListenAddr != "" && s.options.Addr == appDefaultAddr {
+		s.options.Addr = s.conf.Server.ListenAddr
 	}
 	// permission manager initial
 	s.PermissionManager.Initial()
 }
 
 func registerAuthParamValidators(s *HostServer) {
-	p := s.conf.Service.Security.Auth
+	p := s.conf.Security.Auth
 	passportRegex, err := regexp.Compile(p.ParamPattern.Passport)
 	if err != nil {
 		panic(fmt.Sprintf("invalid regex pattern: %s for passport", p.ParamPattern.Passport))
@@ -463,8 +463,8 @@ func registerAuthParamValidators(s *HostServer) {
 }
 
 func registerAuthRouter(cnf *conf.ApplicationConfig, router *gin.Engine) {
-	authServer := cnf.Service.Security.Auth.Server
-	if authServer.AuthServe {
+	authServer := cnf.Security.AuthServer
+	if authServer.EnableAuthServe {
 		for _, m := range authServer.LogIn.Methods {
 			router.Handle(strings.ToUpper(m), authServer.LogIn.Url, gwLogin)
 		}
@@ -533,7 +533,7 @@ func (s *HostServer) GetRouters() []RouterInfo {
 
 // PrintRouterInfo ...
 func (s *HostServer) PrintRouterInfo() {
-	rts := s.conf.Service.Settings.GwFramework.PrintRouterInfo
+	rts := s.conf.Settings.GwFramework.PrintRouterInfo
 	if !rts.Disabled {
 		logger.NewLine(2)
 		logger.Info("%s ", rts.Title)

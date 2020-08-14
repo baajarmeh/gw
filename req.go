@@ -10,7 +10,7 @@ var requestIdStateKey = "gwState-X-Request-Id"
 
 func getRequestID(s HostServer, c *gin.Context) string {
 	shouldSave := true
-	requestID := c.GetHeader(s.conf.Service.Settings.HeaderKey.RequestIDKey)
+	requestID := c.GetHeader(s.conf.Settings.HeaderKey.RequestIDKey)
 	if requestID == "" {
 		requestID = c.GetString(requestIdStateKey)
 		if requestID == "" {
