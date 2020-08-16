@@ -1,7 +1,5 @@
 package dbModel
 
-import "fmt"
-
 type Catalog struct {
 }
 
@@ -10,5 +8,5 @@ func (Catalog) tableName() string {
 }
 
 func (t Catalog) TableName() string {
-	return fmt.Sprintf("%s%s", tableNamePrefix, t.tableName())
+	return GetGwContribAdminTableName(t.tableName())
 }

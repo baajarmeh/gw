@@ -3,6 +3,7 @@ package confsvr
 import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/contrib/apps/confsvr/api"
+	"gorm.io/gorm"
 )
 
 type App struct {
@@ -47,4 +48,7 @@ func (a App) Migrate(ctx gw.MigrationContext) {
 }
 
 func (a App) Use(opt *gw.ServerOption) {
+	opt.StoreDbSetupHandler = func(ctx gw.Context, db *gorm.DB) *gorm.DB {
+		return db
+	}
 }
