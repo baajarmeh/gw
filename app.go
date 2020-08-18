@@ -84,6 +84,7 @@ type HostServer struct {
 	Store                  Store
 	Hash                   ICryptoHash
 	Protect                ICryptoProtect
+	PasswordSigner         IPasswordSigner
 	AuthManager            IAuthManager
 	SessionStateManager    ISessionStateManager
 	PermissionManager      IPermissionManager
@@ -113,6 +114,7 @@ type ServerInitializationContext struct {
 	Store               Store
 	Hash                ICryptoHash
 	Protect             ICryptoProtect
+	PasswordSigner      IPasswordSigner
 	AuthManager         IAuthManager
 	SessionStateManager ISessionStateManager
 	PermissionManager   IPermissionManager
@@ -397,6 +399,8 @@ func initial(s *HostServer) {
 	s.conf = cnf
 	s.Hash = crypto.Hash()
 	s.Protect = crypto.Protect()
+	s.PasswordSigner = crypto.Password()
+
 	s.Store = s.options.BackendStoreHandler(*cnf)
 
 	if s.RespBodyBuildFunc == nil {
@@ -407,6 +411,7 @@ func initial(s *HostServer) {
 		Store:             s.Store,
 		Hash:              s.Hash,
 		Protect:           s.Protect,
+		PasswordSigner:    s.PasswordSigner,
 		RespBodyBuildFunc: s.RespBodyBuildFunc,
 		AppConfig:         *s.conf,
 		ServerOption:      *s.options,

@@ -383,14 +383,22 @@ func (p *DefaultPermissionManagerImpl) Query(tenantId uint64, category string, e
 
 func (p *DefaultPermissionManagerImpl) QueryByUser(tenantId, userId uint64, expr PagerExpr) (
 	total int64, result []Permission, error error) {
-	//var sql = "select a.name,a."
-	//store := p.getStore()
-	//tx := store.Begin()
-	//tx.Raw()
-	//error = p.getStore().Model(PermissionMapping{}).Where("tenant_id = ? and user_id = ?",
-	//	tenantId, userId).Count(&total).Offset(expr.PageOffset()).Limit(expr.PageSize).Scan(result).Error
-	//return
-	return 0, nil, nil
+	var perm Permission
+	var objPerm ObjectPermission
+	var perms []Permission
+	var sql = fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id "+
+		" where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d", perm.TableName(), objPerm.TableName(), tenantId, userId, UserPermission)
+	var countSql = fmt.Sprintf("select count(t1.Id) as total %s", sql)
+	var dataSql = fmt.Sprintf("select t1.* %s limit %d offset %d", sql, expr.PageSize, expr.PageOffset())
+	db := p.getStore().Begin()
+	err := db.Raw(countSql).Scan(&total).Error
+	if err != nil {
+		db.Rollback()
+		return total, nil, err
+	}
+	err = db.Raw(dataSql).Scan(&perms).Error
+	db.Commit()
+	return total, perms, err
 }
 
 func (p *DefaultPermissionManagerImpl) GrantToUser(uid uint64, perms ...Permission) error {
@@ -534,25 +542,17 @@ func gwLogin(c *gin.Context) {
 
 	cks := s.conf.Security.Auth.Cookie
 	expiredAt := time.Duration(cks.MaxAge) * time.Second
-	var mainRole = gin.H{
+	var userRoles = gin.H{
 		"Id":   user.MainRoleId,
 		"name": "",
 		"desc": "",
 	}
-	var extraRoles = []gin.H{
-		{
-			"id":   "",
-			"name": "",
-			"desc": "",
-		},
-	}
 	body := gin.H{
-		"Authorization": gin.H{
+		"Credentials": gin.H{
 			"Token":     sid,
 			"ExpiredAt": time.Now().Add(expiredAt).Unix(),
 		},
-		"Role":        mainRole,
-		"ExtraRoles":  extraRoles,
+		"Roles":       userRoles,
 		"Permissions": userPerms,
 	}
 	payload := s.RespBodyBuildFunc(0, reqId, nil, body)

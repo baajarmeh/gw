@@ -2,6 +2,7 @@ package gw
 
 import (
 	"crypto/cipher"
+	"fmt"
 	"github.com/oceanho/gw/utils/secure"
 	"sync"
 )
@@ -9,6 +10,7 @@ import (
 type ICrypto interface {
 	Hash() ICryptoHash
 	Protect() ICryptoProtect
+	Password() IPasswordSigner
 }
 
 type ICryptoHash interface {
@@ -18,6 +20,10 @@ type ICryptoHash interface {
 type ICryptoProtect interface {
 	Encrypt(dst, src []byte) error
 	Decrypt(dst, src []byte) error
+}
+
+type IPasswordSigner interface {
+	Sign(plainPassword string) string
 }
 
 var (
@@ -48,6 +54,10 @@ func (d DefaultCryptoImpl) Protect() ICryptoProtect {
 	return DefaultCryptoProtectAES(d.secret)
 }
 
+func (d DefaultCryptoImpl) Password() IPasswordSigner {
+	return DefaultPasswordSignerMd5(d.salt)
+}
+
 type DefaultCryptoProtectAESImpl struct {
 	key       string
 	encrypter cipher.Stream
@@ -55,10 +65,12 @@ type DefaultCryptoProtectAESImpl struct {
 }
 
 var (
-	onceAES                     sync.Once
-	onceSha256                  sync.Once
-	defaultCryptoProtectAES     *DefaultCryptoProtectAESImpl
-	defaultCryptoHashSha256Impl *DefaultCryptoHashSha256Impl
+	onceAES                       sync.Once
+	onceSha256                    sync.Once
+	onceMd5                       sync.Once
+	defaultCryptoProtectAES       *DefaultCryptoProtectAESImpl
+	defaultCryptoHashSha256Impl   *DefaultCryptoHashSha256Impl
+	defaultPasswordProtectMd5Impl *DefaultPasswordSignerMd5Impl
 )
 
 func DefaultCryptoProtectAES(key string) *DefaultCryptoProtectAESImpl {
@@ -71,6 +83,15 @@ func DefaultCryptoProtectAES(key string) *DefaultCryptoProtectAESImpl {
 		}
 	})
 	return defaultCryptoProtectAES
+}
+
+func DefaultPasswordSignerMd5(salt string) *DefaultPasswordSignerMd5Impl {
+	onceMd5.Do(func() {
+		defaultPasswordProtectMd5Impl = &DefaultPasswordSignerMd5Impl{
+			salt: salt,
+		}
+	})
+	return defaultPasswordProtectMd5Impl
 }
 
 func (d *DefaultCryptoProtectAESImpl) Encrypt(dst, src []byte) error {
@@ -106,4 +127,16 @@ func DefaultCryptoHashSha256(salt string) *DefaultCryptoHashSha256Impl {
 func (d *DefaultCryptoHashSha256Impl) Hash(dst, src []byte) error {
 	dst = []byte(secure.Sha256(src))
 	return nil
+}
+
+type DefaultPasswordSignerMd5Impl struct {
+	salt string
+}
+
+func (d DefaultPasswordSignerMd5Impl) str(ori string) string {
+	return fmt.Sprintf("%s,./;@#$%s,(*)(^$#%s,./;@#$%s,(", d.salt, ori, ori, d.salt)
+}
+
+func (d DefaultPasswordSignerMd5Impl) Sign(plainPassword string) string {
+	return secure.Md5Str(d.str(plainPassword))
 }
