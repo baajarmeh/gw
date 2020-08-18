@@ -82,22 +82,6 @@ security:
         maxAge: "{{ .service.settings.expirationTimeControl.session }}"
         httpOnly: False
         secure: False
-      server:
-        addr: https://auth.gw-framework.com
-        authServe: True # Enable(True)/Disable(False) Auth features.
-        login:
-          url: "{{ .service.prefix }}/gw/auth/login"
-          authTypes:
-            - basicAuth
-            - credentials
-            - accessKeySecret
-          methods:
-            - "Get"
-            - "Post"
-        logout:
-          url: "{{ .service.prefix }}/gw/auth/logout"
-          methods:
-            - "Get"
       allowUrls:
       - name: auth
         urls:
@@ -106,6 +90,22 @@ security:
         ips:
         - 127.0.0.1/32
         - 192.168.0.0/24
+    authServer:
+      addr: https://auth.gw-framework.com
+      enableAuthServe: True # Enable(True)/Disable(False) Auth features.
+      login:
+        url: "{{ .service.prefix }}/gw/auth/login"
+        authTypes:
+          - basicAuth
+          - credentials
+          - accessKeySecret
+        methods:
+          - "Get"
+          - "Post"
+      logout:
+        url: "{{ .service.prefix }}/gw/auth/logout"
+        methods:
+          - "Get"
     limit:
       pagination:
         minPageSize: "20"

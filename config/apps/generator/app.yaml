@@ -21,7 +21,7 @@ service:
   name: "My App"
   prefix: "/api/v1"
   version: "Version 1.0"
-  remarks: "User Account Platform  Services."
+  remarks: "Gw Generator Services."
   serviceDiscovery:
     disabled: True
     registryCenter:

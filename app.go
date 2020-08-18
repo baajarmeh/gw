@@ -35,7 +35,7 @@ type App interface {
 	// Migrate define a API that for create your app's database migrations and permission initialization inside.
 	Migrate(ctx MigrationContext)
 
-	// Use define a API that for RestAPI Server Options for your Application.
+	// Use define a API that for modify Server Options capability AT your Application.
 	Use(option *ServerOption)
 }
 
@@ -45,8 +45,8 @@ type MigrationContext struct {
 	PermissionManager IPermissionManager
 }
 
-// IRestAPI represents a Rest Style API instance.
-type IRestAPI interface {
+// IDynamicRestAPI represents a Dynamic Rest Style API interface.
+type IDynamicRestAPI interface {
 	// Name define a API that returns Your RestAPI name(such as resource name)
 	// It's will be used as router prefix.
 	Name() string
@@ -79,7 +79,7 @@ type ServerOption struct {
 	bcs                      *conf.BootConfig
 }
 
-// HostServer represents a  Host Server.
+// HostServer represents a Host Server.
 type HostServer struct {
 	Store               Store
 	Hash                ICryptoHash
@@ -531,8 +531,8 @@ func (s *HostServer) GetRouters() []RouterInfo {
 	return routerInfos
 }
 
-// PrintRouterInfo ...
-func (s *HostServer) PrintRouterInfo() {
+// DisplayRouterInfo ...
+func (s *HostServer) DisplayRouterInfo() {
 	rts := s.conf.Settings.GwFramework.PrintRouterInfo
 	if !rts.Disabled {
 		logger.NewLine(2)
@@ -558,7 +558,7 @@ func (s *HostServer) Serve() {
 		}
 	}
 
-	s.PrintRouterInfo()
+	s.DisplayRouterInfo()
 
 	logger.NewLine(2)
 	logger.Info("Service Information")

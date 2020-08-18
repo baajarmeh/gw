@@ -165,12 +165,12 @@ type restArgsBinder struct {
 	bindFunc func(p reflect.Type, c *Context) reflect.Value
 }
 
-// RegisterRestAPIs register a collection HTTP routes by gw.IRestAPI.
-func (router *RouterGroup) RegisterRestAPIs(restAPIs ...IRestAPI) {
+// RegisterRestAPIs register a collection HTTP routes by gw.IDynamicRestAPI.
+func (router *RouterGroup) RegisterRestAPIs(restAPIs ...IDynamicRestAPI) {
 	registerRestAPIImpl(router, restAPIs...)
 }
 
-func registerRestAPIImpl(router *RouterGroup, restAPIs ...IRestAPI) {
+func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 	logger.Info("register router by API RegisterRestAPI(...)")
 	for i := 0; i < len(restAPIs); i++ {
 		rest := restAPIs[i]
