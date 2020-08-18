@@ -13,7 +13,7 @@ func (a App) Name() string {
 }
 
 func (a App) Router() string {
-	return "/gw/"+a.Name()
+	return "/gw/" + a.Name()
 }
 
 func (a App) Register(router *gw.RouterGroup) {

@@ -69,7 +69,7 @@ type ServerOption struct {
 	BackendStoreHandler      func(cnf conf.ApplicationConfig) Store
 	AppConfigHandler         func(cnf conf.BootConfig) *conf.ApplicationConfig
 	Crypto                   func(conf conf.ApplicationConfig) ICrypto
-	AuthManager              IAuthManager
+	AuthManager              AuthManagerHandler
 	PermissionManagerHandler PermissionManagerHandler
 	StoreDbSetupHandler      StoreDbSetupHandler
 	SessionStateManager      SessionStateHandler
@@ -81,14 +81,13 @@ type ServerOption struct {
 
 // HostServer represents a Host Server.
 type HostServer struct {
-	Store               Store
-	Hash                ICryptoHash
-	Protect             ICryptoProtect
-	AuthManager         IAuthManager
-	SessionStateManager ISessionStateManager
-	PermissionManager   IPermissionManager
-	RespBodyBuildFunc   RespBodyCreationHandler
-	// private
+	Store                  Store
+	Hash                   ICryptoHash
+	Protect                ICryptoProtect
+	AuthManager            IAuthManager
+	SessionStateManager    ISessionStateManager
+	PermissionManager      IPermissionManager
+	RespBodyBuildFunc      RespBodyCreationHandler
 	state                  int
 	locker                 sync.Mutex
 	options                *ServerOption
@@ -106,6 +105,20 @@ type HostServer struct {
 	migrateContext         MigrationContext
 	serverExitSignal       chan struct{}
 	serverStartDone        chan struct{}
+	initializationContext  ServerInitializationContext
+}
+
+// ServerInitializationContext represents a Server initialization context object.
+type ServerInitializationContext struct {
+	Store               Store
+	Hash                ICryptoHash
+	Protect             ICryptoProtect
+	AuthManager         IAuthManager
+	SessionStateManager ISessionStateManager
+	PermissionManager   IPermissionManager
+	RespBodyBuildFunc   RespBodyCreationHandler
+	ServerOption        ServerOption
+	AppConfig           conf.ApplicationConfig
 }
 
 var (
@@ -156,12 +169,14 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		BackendStoreHandler:    appDefaultBackendHandler,
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
-		AuthManager:            defaultAm,
-		PermissionManagerHandler: func(conf conf.ApplicationConfig, store Store) IPermissionManager {
-			return DefaultPermissionManager(conf, store)
+		AuthManager: func(initCtx ServerInitializationContext) IAuthManager {
+			return DefaultAuthManager(initCtx)
 		},
-		SessionStateManager: func(conf conf.ApplicationConfig) ISessionStateManager {
-			return DefaultSessionStateManager(conf)
+		PermissionManagerHandler: func(initCtx ServerInitializationContext) IPermissionManager {
+			return DefaultPermissionManager(initCtx)
+		},
+		SessionStateManager: func(initialCtx ServerInitializationContext) ISessionStateManager {
+			return DefaultSessionStateManager(initialCtx)
 		},
 		Crypto: func(conf conf.ApplicationConfig) ICrypto {
 			c := conf.Security.Crypto
@@ -382,12 +397,31 @@ func initial(s *HostServer) {
 	s.conf = cnf
 	s.Hash = crypto.Hash()
 	s.Protect = crypto.Protect()
-
 	s.Store = s.options.BackendStoreHandler(*cnf)
-	s.SessionStateManager = s.options.SessionStateManager(*cnf)
 
-	s.AuthManager = s.options.AuthManager
-	s.PermissionManager = s.options.PermissionManagerHandler(*cnf, s.Store)
+	if s.RespBodyBuildFunc == nil {
+		s.RespBodyBuildFunc = s.options.RespBodyBuildFunc
+	}
+
+	ctx := ServerInitializationContext{
+		Store:             s.Store,
+		Hash:              s.Hash,
+		Protect:           s.Protect,
+		RespBodyBuildFunc: s.RespBodyBuildFunc,
+		AppConfig:         *s.conf,
+		ServerOption:      *s.options,
+	}
+
+	s.PermissionManager = s.options.PermissionManagerHandler(ctx)
+	ctx.PermissionManager = s.PermissionManager
+
+	s.AuthManager = s.options.AuthManager(ctx)
+	ctx.AuthManager = s.AuthManager
+
+	s.SessionStateManager = s.options.SessionStateManager(ctx)
+	ctx.SessionStateManager = s.SessionStateManager
+
+	s.initializationContext = ctx
 
 	registerAuthParamValidators(s)
 
@@ -427,9 +461,6 @@ func initial(s *HostServer) {
 	}
 	if s.storeCacheSetupHandler == nil {
 		s.storeCacheSetupHandler = s.options.StoreCacheSetupHandler
-	}
-	if s.RespBodyBuildFunc == nil {
-		s.RespBodyBuildFunc = s.options.RespBodyBuildFunc
 	}
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(s.options.Prefix)

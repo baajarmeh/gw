@@ -35,6 +35,14 @@ type PagerExpr struct {
 	PageNumber int `json:"pn" binding:"required" query:"pn" params:"pn" form:"pn"`
 }
 
+// DefaultPagerExpr returns a new PagerExpr
+func DefaultPagerExpr(pageSize, pageNumber int) PagerExpr {
+	return PagerExpr{
+		PageSize:   pageSize,
+		PageNumber: pageNumber,
+	}
+}
+
 // SearcherExpr represents a general searcher query request model for gw framework.
 type SearcherExpr struct {
 	Field      string `json:"f" query:"f" params:"f" form:"f"`

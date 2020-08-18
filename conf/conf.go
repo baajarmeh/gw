@@ -72,7 +72,7 @@ func (bc BootConfig) String() string {
 // ======================================================= //
 //
 type ApplicationConfig struct {
-	Server   Server      `yaml:"server" toml:"server" json:"-"`
+	Server   Server      `yaml:"server" toml:"server" json:"server"`
 	Backend  Backend     `yaml:"backend" toml:"backend" json:"backend"`
 	Security Security    `yaml:"security" toml:"security" json:"security"`
 	Service  Service     `yaml:"service" toml:"service" json:"service"`

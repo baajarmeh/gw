@@ -7,7 +7,7 @@ type Model struct {
 }
 
 type HasTenantState struct {
-	TenantId uint64 `gorm:"default:0;not null;index"`
+	TenantId uint64 `gorm:"default:0;not null;index:idx_tenant_expr"`
 }
 
 type HasCreationState struct {

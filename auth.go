@@ -2,7 +2,6 @@ package gw
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -27,7 +26,7 @@ type Permission struct {
 }
 
 func (Permission) TableName() string {
-	return "gw_fw_permissions"
+	return "gw_fw_perm"
 }
 
 func (p Permission) String() string {
@@ -35,27 +34,25 @@ func (p Permission) String() string {
 	return string(b)
 }
 
-type PermissionMapping struct {
-	gwdb.Model
-	gwdb.HasTenantState
-	gwdb.HasCreationState
-	gwdb.HasModificationState
-	Type         sql.NullInt32 `gorm:"not null"` // 1. User Permission, 2. Role/Group Permission
-	ObjectID     uint64        `gorm:"not null"`
-	PermissionID uint64        `gorm:"not null"`
-}
+type PermissionType uint8
 
-var (
-	userPermissionType = sql.NullInt32{
-		Int32: 1,
-	}
-	rolePermissionType = sql.NullInt32{
-		Int32: 1,
-	}
+const (
+	UserPermission PermissionType = 1
+	RolePermission                = 2
 )
 
-func (PermissionMapping) TableName() string {
-	return "gw_fw_permission_mappings"
+type ObjectPermission struct {
+	gwdb.Model
+	gwdb.HasTenantState
+	Type         PermissionType `gorm:"not null"` // 1. User Permission, 2. Role/Group Permission
+	ObjectID     uint64         `gorm:"index:idx_tenant_expr; not null"`
+	PermissionID uint64         `gorm:"not null"`
+	gwdb.HasCreationState
+	gwdb.HasModificationState
+}
+
+func (ObjectPermission) TableName() string {
+	return "gw_fw_object_perms"
 }
 
 func NewPerm(key, name, descriptor string) Permission {
@@ -106,14 +103,14 @@ func NewPermSameKeyName(kn, descriptor string) Permission {
 }
 
 type IAuthManager interface {
-	Login(store Store, passport, secret, credType, verifyCode string) (User, error)
-	Logout(store Store, user User) bool
+	Login(passport, secret, credType, verifyCode string) (User, error)
+	Logout(user User) bool
 }
 
 type ISessionStateManager interface {
-	Save(store Store, sid string, user User) error
-	Query(store Store, sid string) (User, error)
-	Remove(store Store, sid string) error
+	Save(sid string, user User) error
+	Query(sid string) (User, error)
+	Remove(sid string) error
 }
 
 type IPermissionManager interface {
@@ -123,6 +120,7 @@ type IPermissionManager interface {
 	Modify(perms ...Permission) error
 	Drop(perms ...Permission) error
 	Query(tenantId uint64, category string, expr PagerExpr) (total int64, result []Permission, error error)
+	QueryByUser(tenantId, userId uint64, expr PagerExpr) (total int64, result []Permission, error error)
 	GrantToUser(uid uint64, perms ...Permission) error
 	GrantToRole(roleId uint64, perms ...Permission) error
 	RevokeFromUser(uid uint64, perms ...Permission) error
@@ -130,6 +128,8 @@ type IPermissionManager interface {
 }
 
 type DefaultAuthManagerImpl struct {
+	store Store
+	cnf   conf.ApplicationConfig
 	users map[string]*defaultUser
 }
 
@@ -139,6 +139,7 @@ type defaultUser struct {
 }
 
 type DefaultSessionStateManagerImpl struct {
+	store              Store
 	storeName          string
 	storePrefix        string
 	expirationDuration time.Duration
@@ -146,13 +147,13 @@ type DefaultSessionStateManagerImpl struct {
 	redisTimeout       time.Duration
 }
 
-func DefaultSessionStateManager(cnf conf.ApplicationConfig) *DefaultSessionStateManagerImpl {
-	defaultSs.cnf = cnf
-	timeout := cnf.Settings.TimeoutControl.Redis
-	defaultSs.storeName = cnf.Security.Auth.Session.DefaultStore.Name
-	defaultSs.storePrefix = cnf.Security.Auth.Session.DefaultStore.Prefix
-	defaultSs.expirationDuration = time.Duration(cnf.Security.Auth.Cookie.MaxAge) * time.Second
-	defaultSs.redisTimeout = time.Duration(timeout) * time.Millisecond
+func DefaultSessionStateManager(ctx ServerInitializationContext) *DefaultSessionStateManagerImpl {
+	defaultSs.cnf = ctx.AppConfig
+	defaultSs.store = ctx.Store
+	defaultSs.storeName = ctx.AppConfig.Security.Auth.Session.DefaultStore.Name
+	defaultSs.storePrefix = ctx.AppConfig.Security.Auth.Session.DefaultStore.Prefix
+	defaultSs.expirationDuration = time.Duration(ctx.AppConfig.Security.Auth.Cookie.MaxAge) * time.Second
+	defaultSs.redisTimeout = time.Duration(ctx.AppConfig.Settings.TimeoutControl.Redis) * time.Millisecond
 	return defaultSs
 }
 
@@ -165,29 +166,29 @@ func (d *DefaultSessionStateManagerImpl) storeKey(sid string) string {
 	return fmt.Sprintf("%s.%s", d.storePrefix, sid)
 }
 
-func (d *DefaultSessionStateManagerImpl) Remove(store Store, sid string) error {
+func (d *DefaultSessionStateManagerImpl) Remove(sid string) error {
 	//FIXME(ocean): deadline executed error ?
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
-	redis := store.GetCacheStoreByName(d.storeName)
+	redis := d.store.GetCacheStoreByName(d.cnf.Security.Auth.Session.DefaultStore.Name)
 	return redis.Del(ctx, d.storeKey(sid)).Err()
 }
 
-func (d *DefaultSessionStateManagerImpl) Save(store Store, sid string, user User) error {
+func (d *DefaultSessionStateManagerImpl) Save(sid string, user User) error {
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
-	redis := store.GetCacheStoreByName(d.storeName)
+	redis := d.store.GetCacheStoreByName(d.storeName)
 	return redis.Set(ctx, d.storeKey(sid), user, d.expirationDuration).Err()
 }
 
-func (d *DefaultSessionStateManagerImpl) Query(store Store, sid string) (User, error) {
+func (d *DefaultSessionStateManagerImpl) Query(sid string) (User, error) {
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
 	user := User{}
-	redis := store.GetCacheStoreByName(d.storeName)
+	redis := d.store.GetCacheStoreByName(d.storeName)
 	bytes, err := redis.Get(ctx, d.storeKey(sid)).Bytes()
 	if err != nil {
 		return EmptyUser, err
@@ -202,9 +203,12 @@ func (d *DefaultSessionStateManagerImpl) Query(store Store, sid string) (User, e
 var (
 	EmptyUser       = User{Id: 0}
 	ErrorEmptyInput = fmt.Errorf("empty input")
+	defaultAm       *DefaultAuthManagerImpl
+	defaultSs       *DefaultSessionStateManagerImpl
+	defaultPm       *DefaultPermissionManagerImpl
 )
 
-func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, credType, verifyCode string) (User, error) {
+func (d *DefaultAuthManagerImpl) Login(passport, secret, credType, verifyCode string) (User, error) {
 	user, ok := d.users[passport]
 	if ok && user.secret == secret {
 		return user.User, nil
@@ -212,16 +216,16 @@ func (d *DefaultAuthManagerImpl) Login(store Store, passport, secret, credType, 
 	return EmptyUser, fmt.Errorf("user:%s not found or serect not match", passport)
 }
 
-func (d *DefaultAuthManagerImpl) Logout(store Store, user User) bool {
+func (d *DefaultAuthManagerImpl) Logout(user User) bool {
 	// Nothing to do.
 	return true
 }
 
-var (
-	defaultAm *DefaultAuthManagerImpl
-	defaultSs *DefaultSessionStateManagerImpl
-	defaultPm *DefaultPermissionManagerImpl
-)
+func DefaultAuthManager(initCtx ServerInitializationContext) *DefaultAuthManagerImpl {
+	defaultAm.cnf = initCtx.AppConfig
+	defaultAm.store = initCtx.Store
+	return defaultAm
+}
 
 func init() {
 	defaultAm = &DefaultAuthManagerImpl{
@@ -266,11 +270,11 @@ type DefaultPermissionManagerImpl struct {
 	perms  map[string]map[string]Permission
 }
 
-func DefaultPermissionManager(conf conf.ApplicationConfig, store Store) *DefaultPermissionManagerImpl {
+func DefaultPermissionManager(initCtx ServerInitializationContext) *DefaultPermissionManagerImpl {
 	if defaultPm == nil {
 		defaultPm = &DefaultPermissionManagerImpl{
-			conf:  conf,
-			store: store,
+			conf:  initCtx.AppConfig,
+			store: initCtx.Store,
 			perms: make(map[string]map[string]Permission),
 		}
 	}
@@ -290,7 +294,7 @@ func (p *DefaultPermissionManagerImpl) Initial() {
 	store := p.getStore()
 	var tables []interface{}
 	tables = append(tables, &Permission{})
-	tables = append(tables, &PermissionMapping{})
+	tables = append(tables, &ObjectPermission{})
 	err := store.AutoMigrate(tables...)
 	if err != nil {
 		panic(err)
@@ -377,6 +381,18 @@ func (p *DefaultPermissionManagerImpl) Query(tenantId uint64, category string, e
 	return
 }
 
+func (p *DefaultPermissionManagerImpl) QueryByUser(tenantId, userId uint64, expr PagerExpr) (
+	total int64, result []Permission, error error) {
+	//var sql = "select a.name,a."
+	//store := p.getStore()
+	//tx := store.Begin()
+	//tx.Raw()
+	//error = p.getStore().Model(PermissionMapping{}).Where("tenant_id = ? and user_id = ?",
+	//	tenantId, userId).Count(&total).Offset(expr.PageOffset()).Limit(expr.PageSize).Scan(result).Error
+	//return
+	return 0, nil, nil
+}
+
 func (p *DefaultPermissionManagerImpl) GrantToUser(uid uint64, perms ...Permission) error {
 	if len(perms) < 1 {
 		return nil
@@ -385,10 +401,10 @@ func (p *DefaultPermissionManagerImpl) GrantToUser(uid uint64, perms ...Permissi
 	defer p.locker.Unlock()
 	tx := p.getStore().Begin()
 	for _, p := range perms {
-		var pm PermissionMapping
+		var pm ObjectPermission
 		pm.PermissionID = p.ID
 		pm.TenantId = p.TenantId
-		pm.Type = userPermissionType
+		pm.Type = UserPermission
 		pm.ObjectID = uid
 		tx.Create(&pm)
 	}
@@ -403,10 +419,10 @@ func (p *DefaultPermissionManagerImpl) GrantToRole(roleId uint64, perms ...Permi
 	defer p.locker.Unlock()
 	tx := p.getStore().Begin()
 	for _, p := range perms {
-		var pm PermissionMapping
+		var pm ObjectPermission
 		pm.PermissionID = p.ID
 		pm.TenantId = p.TenantId
-		pm.Type = rolePermissionType
+		pm.Type = RolePermission
 		pm.ObjectID = roleId
 		tx.Create(&pm)
 	}
@@ -421,8 +437,8 @@ func (p *DefaultPermissionManagerImpl) RevokeFromUser(uid uint64, perms ...Permi
 	defer p.locker.Unlock()
 	tx := p.getStore().Begin()
 	for _, p := range perms {
-		tx.Delete(PermissionMapping{},
-			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", uid, p.TenantId, p.ID, userPermissionType)
+		tx.Delete(ObjectPermission{},
+			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", uid, p.TenantId, p.ID, UserPermission)
 	}
 	return tx.Commit().Error
 }
@@ -435,11 +451,13 @@ func (p *DefaultPermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...Pe
 	defer p.locker.Unlock()
 	tx := p.getStore().Begin()
 	for _, p := range perms {
-		tx.Delete(PermissionMapping{},
-			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", roleId, p.TenantId, p.ID, rolePermissionType)
+		tx.Delete(ObjectPermission{},
+			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", roleId, p.TenantId, p.ID, RolePermission)
 	}
 	return tx.Commit().Error
 }
+
+var defaultPageExpr = DefaultPagerExpr(1024, 1)
 
 //
 // GW framework login API.
@@ -482,9 +500,9 @@ func gwLogin(c *gin.Context) {
 	}
 
 	// Login
-	user, err := s.AuthManager.Login(s.Store, passport, secret, credType, verifyCode)
-	if err != nil || user.Id == EmptyUser.Id {
-		c.JSON(http.StatusOK, s.RespBodyBuildFunc(400, reqId, err.Error(), nil))
+	user, err := s.AuthManager.Login(passport, secret, credType, verifyCode)
+	if err != nil || user.IsEmpty() {
+		c.JSON(http.StatusNotFound, s.RespBodyBuildFunc(404, reqId, err.Error(), nil))
 		c.Abort()
 		return
 	}
@@ -494,25 +512,54 @@ func gwLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	if err := s.SessionStateManager.Save(s.Store, user.Passport, user); err != nil {
+	if err := s.SessionStateManager.Save(user.Passport, user); err != nil {
 		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(-1, reqId, "Save session fail.", err.Error()))
 		c.Abort()
 		return
 	}
-	cks := s.conf.Security.Auth.Cookie
-	domain := cks.Domain
-	// if domain == ":host" || domain == "" {
-	// 	domain = ""
-	// }
-	expiredAt := time.Duration(cks.MaxAge) * time.Second
-	token := gin.H{
-		"Token":     sid,
-		"ExpiredAt": time.Now().Add(expiredAt).Unix(),
+	_, perms, err := s.PermissionManager.QueryByUser(user.TenantId, user.Id, defaultPageExpr)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(-1, reqId, "Query user's permission.", err.Error()))
+		c.Abort()
+		return
 	}
-	payload := s.RespBodyBuildFunc(0, reqId, nil, token)
+	var userPerms []gin.H
+	for _, p := range perms {
+		userPerms = append(userPerms, gin.H{
+			"Key":  p.Key,
+			"Name": p.Name,
+			"Desc": p.Descriptor,
+		})
+	}
+
+	cks := s.conf.Security.Auth.Cookie
+	expiredAt := time.Duration(cks.MaxAge) * time.Second
+	var mainRole = gin.H{
+		"Id":   user.MainRoleId,
+		"name": "",
+		"desc": "",
+	}
+	var extraRoles = []gin.H{
+		{
+			"id":   "",
+			"name": "",
+			"desc": "",
+		},
+	}
+	body := gin.H{
+		"Authorization": gin.H{
+			"Token":     sid,
+			"ExpiredAt": time.Now().Add(expiredAt).Unix(),
+		},
+		"Role":        mainRole,
+		"ExtraRoles":  extraRoles,
+		"Permissions": userPerms,
+	}
+	payload := s.RespBodyBuildFunc(0, reqId, nil, body)
 	// token, header, X-Auth-Token
 	c.Header("X-Auth-Token", sid)
-	c.SetCookie(cks.Key, sid, cks.MaxAge, cks.Path, domain, cks.Secure, cks.HttpOnly)
+	c.Header("Authorization", sid)
+	c.SetCookie(cks.Key, sid, cks.MaxAge, cks.Path, cks.Domain, cks.Secure, cks.HttpOnly)
 	c.JSON(http.StatusOK, payload)
 }
 
@@ -522,7 +569,7 @@ func gwLogout(c *gin.Context) {
 	reqId := getRequestID(s, c)
 	user := getUser(c)
 	cks := s.conf.Security.Auth.Cookie
-	ok := s.AuthManager.Logout(s.Store, user)
+	ok := s.AuthManager.Logout(user)
 	if !ok {
 		s.RespBodyBuildFunc(500, reqId, "auth logout fail", nil)
 		return
@@ -532,7 +579,7 @@ func gwLogout(c *gin.Context) {
 		s.RespBodyBuildFunc(500, reqId, "session store logout fail", nil)
 		return
 	}
-	_ = s.SessionStateManager.Remove(s.Store, sid)
+	_ = s.SessionStateManager.Remove(sid)
 	c.SetCookie(cks.Key, "", -1, cks.Path, cks.Domain, cks.Secure, cks.HttpOnly)
 }
 

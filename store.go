@@ -26,10 +26,13 @@ type StoreDbSetupHandler func(ctx Context, db *gorm.DB) *gorm.DB
 type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *redis.Client
 
 // SessionStateHandler represents a Session state manager handler.
-type SessionStateHandler func(conf conf.ApplicationConfig) ISessionStateManager
+type SessionStateHandler func(initCtx ServerInitializationContext) ISessionStateManager
+
+// AuthManagerHandler represents a Permission state manager handler.
+type AuthManagerHandler func(initCtx ServerInitializationContext) IAuthManager
 
 // PermissionManagerHandler represents a Permission state manager handler.
-type PermissionManagerHandler func(conf conf.ApplicationConfig, store Store) IPermissionManager
+type PermissionManagerHandler func(initCtx ServerInitializationContext) IPermissionManager
 
 // RespBodyCreationHandler represents a response body build handler.
 type RespBodyCreationHandler func(status int, requestID string, err interface{}, msgBody interface{}) interface{}
