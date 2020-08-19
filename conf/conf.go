@@ -2,9 +2,9 @@ package conf
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/BurntSushi/toml"
+	json "github.com/json-iterator/go"
 	"github.com/oceanho/gw/logger"
 	"gopkg.in/yaml.v3"
 	"html/template"
@@ -72,15 +72,16 @@ func (bc BootConfig) String() string {
 // ======================================================= //
 //
 type ApplicationConfig struct {
-	Server   Server      `yaml:"server" toml:"server" json:"server"`
-	Backend  Backend     `yaml:"backend" toml:"backend" json:"backend"`
-	Security Security    `yaml:"security" toml:"security" json:"security"`
-	Service  Service     `yaml:"service" toml:"service" json:"service"`
-	Settings Settings    `yaml:"settings" toml:"settings" json:"settings"`
-	Custom   interface{} `yaml:"custom" toml:"custom" json:"custom"`
-	// private
-	locker        sync.Mutex
-	customStrJson string
+	Server            Server      `yaml:"server" toml:"server" json:"server"`
+	Backend           Backend     `yaml:"backend" toml:"backend" json:"backend"`
+	Security          Security    `yaml:"security" toml:"security" json:"security"`
+	Service           Service     `yaml:"service" toml:"service" json:"service"`
+	Settings          Settings    `yaml:"settings" toml:"settings" json:"settings"`
+	Custom            interface{} `yaml:"custom" toml:"custom" json:"custom"`
+	locker            sync.Mutex
+	customJson        string
+	customMapState    int
+	customJsonStrMaps map[string]string
 }
 
 // allow urls
@@ -254,17 +255,60 @@ func (cnf ApplicationConfig) String() string {
 	return string(b)
 }
 
+func genCustomMaps(prefix string, mapStore map[string]string, custom interface{}) {
+	mps, ok := custom.(map[interface{}]interface{})
+	if ok {
+		for k, v := range mps {
+			k1, o := k.(string)
+			if o {
+				if prefix != "" {
+					k1 = prefix + "." + k1
+				}
+				val := v.(interface{})
+				b, e := json.Marshal(val)
+				if e != nil {
+					panic(fmt.Sprintf("genCustomMaps, err: %v", e))
+				}
+				mapStore[k1] = string(b)
+				genCustomMaps(k1, mapStore, v)
+			}
+		}
+	}
+}
+
+var (
+	ErrNoPathSection = fmt.Errorf("no path section")
+)
+
+// ParseCustomPathTo parse the specifies path as out interface object.
+// examples:
+// path: grpro.user, my.aa.com
+func (cnf *ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
+	cnf.locker.Lock()
+	defer cnf.locker.Unlock()
+	if cnf.customMapState == 0 {
+		cnf.customJsonStrMaps = make(map[string]string)
+		genCustomMaps("", cnf.customJsonStrMaps, cnf.Custom)
+		cnf.customMapState++
+	}
+	str, ok := cnf.customJsonStrMaps[path]
+	if !ok {
+		return ErrNoPathSection
+	}
+	return json.Unmarshal([]byte(str), out)
+}
+
 func (cnf *ApplicationConfig) ParseCustomTo(out interface{}) error {
 	cnf.locker.Lock()
 	defer cnf.locker.Unlock()
-	if cnf.customStrJson == "" {
+	if cnf.customJson == "" {
 		b, err := json.Marshal(cnf.Custom)
 		if err != nil {
 			return err
 		}
-		cnf.customStrJson = string(b)
+		cnf.customJson = string(b)
 	}
-	return json.Unmarshal([]byte(cnf.customStrJson), out)
+	return json.Unmarshal([]byte(cnf.customJson), out)
 }
 
 // ============ End of configuration items ============= //

@@ -1,7 +1,7 @@
 package param
 
 import (
-	"encoding/json"
+	json "github.com/json-iterator/go"
 	"strings"
 )
 

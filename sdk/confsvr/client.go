@@ -2,8 +2,8 @@ package confsvr
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
+	json "github.com/json-iterator/go"
 	"github.com/oceanho/gw/sdk/confsvr/param"
 	"io"
 	"io/ioutil"
