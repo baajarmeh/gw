@@ -256,23 +256,34 @@ func (cnf ApplicationConfig) String() string {
 }
 
 func genCustomMaps(prefix string, mapStore map[string]string, custom interface{}) {
-	mps, ok := custom.(map[interface{}]interface{})
+	var mps, ok = custom.(map[interface{}]interface{})
 	if ok {
 		for k, v := range mps {
-			k1, o := k.(string)
-			if o {
-				if prefix != "" {
-					k1 = prefix + "." + k1
-				}
-				val := v.(interface{})
-				b, e := json.Marshal(val)
-				if e != nil {
-					panic(fmt.Sprintf("genCustomMaps, err: %v", e))
-				}
-				mapStore[k1] = string(b)
-				genCustomMaps(k1, mapStore, v)
+			processMaps(prefix,mapStore,k,v)
+		}
+	}else{
+		var mps, ok = custom.(map[string]interface{})
+		if ok {
+			for k, v := range mps {
+				processMaps(prefix, mapStore, k, v)
 			}
 		}
+	}
+}
+
+func processMaps(prefix string, mapStore map[string]string,k interface{}, v interface{})  {
+	k1, o := k.(string)
+	if o {
+		if prefix != "" {
+			k1 = prefix + "." + k1
+		}
+		val := v.(interface{})
+		b, e := json.Marshal(val)
+		if e != nil {
+			panic(fmt.Sprintf("genCustomMaps, err: %v", e))
+		}
+		mapStore[k1] = string(b)
+		genCustomMaps(k1, mapStore, v)
 	}
 }
 
