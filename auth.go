@@ -74,6 +74,14 @@ func NewPermSameKeyName(kn, descriptor string) Permission {
 	return NewPerm(kn, kn, descriptor)
 }
 
+type IUserManager interface {
+	Create(user *User) error
+	Modify(user User) error
+	Delete(tenantId, userId uint64) error
+	Query(tenantId, userId uint64) (User, error)
+	QueryList(tenantId uint64, expr PagerExpr, total int64, out []User) error
+}
+
 type IAuthManager interface {
 	Login(passport, secret, credType, verifyCode string) (User, error)
 	Logout(user User) bool
@@ -299,6 +307,38 @@ func (p *EmptyPermissionManagerImpl) RevokeFromUser(uid uint64, perms ...Permiss
 }
 
 func (p *EmptyPermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...Permission) error {
+	return nil
+}
+
+func DefaultUserManager(state ServerState) IUserManager {
+	return EmptyUserManagerImpl{
+		state: state,
+	}
+}
+
+// EmptyUserManagerImpl ...
+type EmptyUserManagerImpl struct {
+	state ServerState
+}
+
+func (d EmptyUserManagerImpl) Create(user *User) error {
+	pm := d.state.PermissionManager()
+	return pm.GrantToUser(user.Id, user.Permissions...)
+}
+
+func (d EmptyUserManagerImpl) Modify(user User) error {
+	return nil
+}
+
+func (d EmptyUserManagerImpl) Delete(tenantId, userId uint64) error {
+	return nil
+}
+
+func (d EmptyUserManagerImpl) Query(tenantId, userId uint64) (User, error) {
+	return EmptyUser, nil
+}
+
+func (d EmptyUserManagerImpl) QueryList(tenantId uint64, expr PagerExpr, total int64, out []User) error {
 	return nil
 }
 

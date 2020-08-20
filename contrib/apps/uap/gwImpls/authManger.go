@@ -15,7 +15,7 @@ type AuthManager struct {
 	backendStoreName string
 	expiration       time.Duration
 	permPagerExpr    gw.PagerExpr
-	state              gw.ServerState
+	state            gw.ServerState
 }
 
 func (a AuthManager) getUserCacheKey(passport string) string {
@@ -61,7 +61,7 @@ func (a AuthManager) Logout(user gw.User) bool {
 
 func DefaultAuthManager(state gw.ServerState) AuthManager {
 	return AuthManager{
-		state:              state,
+		state:            state,
 		cacheStoreName:   "primary",
 		backendStoreName: "primary",
 		expiration:       time.Hour * 168, // One week.

@@ -267,7 +267,7 @@ func NewServerWithNameAddr(name, addr string) *HostServer {
 }
 
 // NewServerWithName returns a specifies addr, other use default HostServer(the server instance's bcs,svr are default config items.)
-func NewServerWithAddr(addr string) *HostServer {
+func at(addr string) *HostServer {
 	bcs := conf.DefaultBootConfig()
 	opts := NewServerOption(bcs)
 	opts.Addr = addr

@@ -14,12 +14,12 @@ type PermissionManagerImpl struct {
 	store  gw.Store
 	conf   conf.ApplicationConfig
 	locker sync.Mutex
-	state    gw.ServerState
+	state  gw.ServerState
 }
 
 func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
 	return &PermissionManagerImpl{
-		state:   state,
+		state: state,
 		conf:  state.ApplicationConfig(),
 		store: state.State.Store()(),
 	}
