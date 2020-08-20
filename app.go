@@ -20,6 +20,15 @@ import (
 )
 
 // App represents a application.
+//
+// The APIs called by gw framework order as
+//
+// 1. Use()
+//
+// 2. Register()
+//
+// 3. Migrate()
+//
 type App interface {
 
 	// Name define a API that return as your app name.
