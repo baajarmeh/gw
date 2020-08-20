@@ -369,8 +369,6 @@ func (s *HostServer) Register(apps ...App) {
 				instance:    app,
 				isPatchOnly: false,
 			}
-			// ServerOptions used AT first.
-			app.Use(s.options)
 		}
 	}
 }
