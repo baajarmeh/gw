@@ -292,8 +292,30 @@ var (
 )
 
 // ParseCustomPathTo parse the specifies path as out interface object.
+//
 // examples:
-// path: grpro.user, my.aa.com
+// Your custom section of app.yaml likes:
+//
+// comstom:
+//   gwpro:
+//     backend:
+//       db: primary
+//       cache: primary
+//
+// Now, your can use this API parse gwpro section to your custom go struct.
+// It's looks as:
+//
+// type GwPro struct {
+//   Backend struct {
+//     Db string  `"json":"db" "toml":"db" "yaml":"db"`
+//     Cache string  `"json":"cache" "toml":"cache" "yaml":"cache"`
+//   } `"json":"backend" "toml":"backend" "yaml":"backend"`
+// }
+//
+// var gwPro GwPro
+//
+// <Your ApplicationConfig>.ParseCustomPathTo("gwpro", &gwPro)
+//
 func (cnf *ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
 	cnf.locker.Lock()
 	defer cnf.locker.Unlock()
