@@ -68,9 +68,18 @@ func (a App) Register(router *gw.RouterGroup) {
 }
 
 func (a App) Migrate(ctx gw.MigrationContext) {
-	db := ctx.Store.GetDbStore()
+	db := ctx.Store().GetDbStore()
 	db.AutoMigrate(&dto.MyTester{})
 }
 
 func (a App) Use(opt *gw.ServerOption) {
+
+}
+
+func (a App) OnStart(state gw.ServerState) {
+
+}
+
+func (a App) OnShutDown(state gw.ServerState) {
+
 }

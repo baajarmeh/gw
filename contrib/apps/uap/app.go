@@ -56,7 +56,9 @@ func initial(state gw.ServerState) {
 // initial system administrator
 func initSystemAdministrator(state gw.ServerState) {
 	var cnfUsers []conf.User
-	err := state.ApplicationConfig().ParseCustomPathTo("gwcontrib.uap.initialUsers", &cnfUsers)
+	var cnf = state.ApplicationConfig()
+	err := cnf.ParseCustomPathTo("gwcontrib.uap.initialUsers", &cnfUsers)
+	_ = cnf.ParseCustomPathTo("gwcontrib.uap.initialUsers", &cnfUsers)
 	if err != nil {
 		logger.Error("read gwcontrib.uap.initialUsers fail, err: %v", err)
 		return

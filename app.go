@@ -177,8 +177,8 @@ func (ss ServerState) ServerOptions() ServerOption {
 	return *ss.s.options
 }
 
-func (ss ServerState) ApplicationConfig() conf.ApplicationConfig {
-	return *ss.s.conf
+func (ss ServerState) ApplicationConfig() *conf.ApplicationConfig {
+	return ss.s.conf
 }
 
 func (ss ServerState) RespBodyCreationBuildFunc() RespBodyCreationBuildFunc {

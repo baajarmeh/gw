@@ -25,3 +25,11 @@ func (a App) Migrate(ctx gw.MigrationContext) {
 
 func (a App) Use(option *gw.ServerOption) {
 }
+
+func (a App) OnStart(state gw.ServerState) {
+
+}
+
+func (a App) OnShutDown(state gw.ServerState) {
+
+}

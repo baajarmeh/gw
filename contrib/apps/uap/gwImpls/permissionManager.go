@@ -20,7 +20,7 @@ type PermissionManagerImpl struct {
 func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
 	return &PermissionManagerImpl{
 		state: state,
-		conf:  state.ApplicationConfig(),
+		conf:  *state.ApplicationConfig(),
 		store: state.Store(),
 	}
 }
