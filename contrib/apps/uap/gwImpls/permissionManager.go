@@ -25,7 +25,7 @@ func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
 	}
 }
 
-func (p *PermissionManagerImpl) getStore() *gorm.DB {
+func (p *PermissionManagerImpl) Store() *gorm.DB {
 	return p.store.GetDbStoreByName(p.conf.Security.Auth.Permission.DefaultStore.Name)
 }
 
@@ -35,7 +35,7 @@ func (p *PermissionManagerImpl) Initial() {
 	if p._state > 0 {
 		return
 	}
-	store := p.getStore()
+	store := p.Store()
 	var tables []interface{}
 	tables = append(tables, &dbModel.Permission{})
 	tables = append(tables, &dbModel.PermissionMapping{})
@@ -67,7 +67,7 @@ func (p *PermissionManagerImpl) Create(category string, perms ...gw.Permission) 
 	}
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	db := p.getStore()
+	db := p.Store()
 	tx := db.Begin()
 	var registered = make(map[string]bool)
 	for i := 0; i < len(perms); i++ {
@@ -98,7 +98,7 @@ func (p *PermissionManagerImpl) Modify(perms ...gw.Permission) error {
 	}
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
+	tx := p.Store().Begin()
 	for _, p := range perms {
 		tx.Updates(p)
 	}
@@ -109,7 +109,7 @@ func (p *PermissionManagerImpl) Drop(perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
-	tx := p.getStore().Begin()
+	tx := p.Store().Begin()
 	for _, p := range perms {
 		tx.Delete(p)
 	}
@@ -118,7 +118,7 @@ func (p *PermissionManagerImpl) Drop(perms ...gw.Permission) error {
 
 func (p *PermissionManagerImpl) Query(tenantId uint64, category string, expr gw.PagerExpr) (
 	total int64, result []gw.Permission, error error) {
-	error = p.getStore().Where("tenant_id = ? and category = ?",
+	error = p.Store().Where("tenant_id = ? and category = ?",
 		tenantId, category).Count(&total).Offset(expr.PageOffset()).Limit(expr.PageSize).Scan(result).Error
 	return
 }
@@ -132,14 +132,18 @@ func (p *PermissionManagerImpl) QueryByUser(tenantId, userId uint64, expr gw.Pag
 		perm.TableName(), objPerm.TableName(), tenantId, userId, dbModel.UserPermission)
 	var countSql = fmt.Sprintf("select count(t1.Id) as total %s", sql)
 	var dataSql = fmt.Sprintf("select t1.* %s limit %d offset %d", sql, expr.PageSize, expr.PageOffset())
-	db := p.getStore().Begin()
-	err := db.Raw(countSql).Scan(&total).Error
+	tx := p.Store().Begin()
+	err := tx.Raw(countSql).Scan(&total).Error
 	if err != nil {
-		db.Rollback()
+		tx.Rollback()
 		return total, nil, err
 	}
-	err = db.Raw(dataSql).Scan(&result).Error
-	db.Commit()
+	err = tx.Raw(dataSql).Scan(&result).Error
+	if err != nil {
+		tx.Rollback()
+		return 0, nil, err
+	}
+	err = tx.Commit().Error
 	return total, result, err
 }
 
@@ -149,7 +153,7 @@ func (p *PermissionManagerImpl) GrantToUser(uid uint64, perms ...gw.Permission) 
 	}
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
+	tx := p.Store().Begin()
 	for _, p := range perms {
 		var pm dbModel.PermissionMapping
 		pm.PermissionID = p.ID
@@ -167,7 +171,7 @@ func (p *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...gw.Permissio
 	}
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
+	tx := p.Store().Begin()
 	for _, p := range perms {
 		var pm dbModel.PermissionMapping
 		pm.PermissionID = p.ID
@@ -185,7 +189,7 @@ func (p *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...gw.Permissio
 	}
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
+	tx := p.Store().Begin()
 	for _, p := range perms {
 		tx.Delete(dbModel.PermissionMapping{},
 			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", uid, p.TenantId, p.ID, dbModel.UserPermission)
@@ -199,7 +203,7 @@ func (p *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...gw.Permis
 	}
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
+	tx := p.Store().Begin()
 	for _, p := range perms {
 		tx.Delete(dbModel.PermissionMapping{},
 			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", roleId, p.TenantId, p.ID, dbModel.RolePermission)
