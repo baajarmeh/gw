@@ -384,8 +384,7 @@ func (s *HostServer) Register(apps ...App) {
 //
 // 1. UAP(your app one), It's implementation User/Permission features
 //
-// 2. DevOps(your app two), It's implementation DevOps features
-//    It's dependencies on UAP, but the UAP's router not necessary on DevOps service.
+// 2. DevOps(your app two), It's implementation DevOps features, It's dependencies on UAP, but the UAP's router not necessary on DevOps service.
 //
 // Now, We can separate deployment of UAP and DevOps
 //
