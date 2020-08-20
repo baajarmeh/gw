@@ -25,7 +25,7 @@ func (a App) Router() string {
 func (a App) Register(router *gw.RouterGroup) {
 }
 
-func (a App) Migrate(ctx gw.MigrationContext) {
+func (a App) Migrate(state gw.ServerState) {
 }
 
 func (a App) Use(opt *gw.ServerOption) {

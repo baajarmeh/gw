@@ -16,11 +16,11 @@ func (a App) Router() string {
 func (a App) Register(router *gw.RouterGroup) {
 }
 
-func (a App) Migrate(ctx gw.MigrationContext) {
-	// Nothing to do.
+func (a App) Use(opt *gw.ServerOption) {
 }
 
-func (a App) Use(opt *gw.ServerOption) {
+func (a App) Migrate(state gw.ServerState) {
+	// Nothing to do.
 }
 
 func (a App) OnStart(state gw.ServerState) {

@@ -32,8 +32,8 @@ func (a App) Register(router *gw.RouterGroup) {
 	restAPIs.Register(router)
 }
 
-func (a App) Migrate(ctx gw.MigrationContext) {
-	dbModel.Migrate(ctx)
+func (a App) Migrate(state gw.ServerState) {
+	dbModel.Migrate(state)
 }
 
 func (a App) OnStart(state gw.ServerState) {
