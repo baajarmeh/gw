@@ -93,7 +93,7 @@ type ServerOption struct {
 	PluginSymbolSuffix       string
 	StartBeforeHandler       func(s *HostServer) error
 	ShutDownBeforeHandler    func(s *HostServer) error
-	BackendStoreHandler      func(cnf conf.ApplicationConfig) Store
+	BackendStoreHandler      func(cnf conf.ApplicationConfig) IStore
 	AppConfigHandler         func(cnf conf.BootConfig) *conf.ApplicationConfig
 	Crypto                   func(conf conf.ApplicationConfig) ICrypto
 	UserManagerHandler       func(state ServerState) IUserManager
@@ -109,7 +109,8 @@ type ServerOption struct {
 
 // HostServer represents a Host Server.
 type HostServer struct {
-	Store                  Store
+	Name                   string
+	Store                  IStore
 	Hash                   ICryptoHash
 	Protect                ICryptoProtect
 	PasswordSigner         IPasswordSigner
@@ -141,7 +142,7 @@ type ServerState struct {
 	s *HostServer
 }
 
-func (ss ServerState) Store() Store {
+func (ss ServerState) Store() IStore {
 	return ss.s.Store
 }
 
@@ -194,7 +195,7 @@ var (
 	appDefaultPluginSymbolSuffix    = ".so"
 	appDefaultStartBeforeHandler    = func(server *HostServer) error { return nil }
 	appDefaultShutdownBeforeHandler = func(server *HostServer) error { return nil }
-	appDefaultBackendHandler        = func(cnf conf.ApplicationConfig) Store {
+	appDefaultBackendHandler        = func(cnf conf.ApplicationConfig) IStore {
 		return DefaultBackend(cnf)
 	}
 	appDefaultAppConfigHandler = func(cnf conf.BootConfig) *conf.ApplicationConfig {
@@ -210,11 +211,20 @@ var (
 )
 
 var (
-	servers map[string]*HostServer
+	servers map[string]*hostServerState
 )
 
+type hostServerState struct {
+	State  *ServerState
+	Server *HostServer
+}
+
+func (hss *hostServerState) setState(state ServerState) {
+	hss.State = &state
+}
+
 func init() {
-	servers = make(map[string]*HostServer)
+	servers = make(map[string]*hostServerState)
 	logger.SetLogFormatter(internLogFormatter)
 }
 
@@ -291,9 +301,9 @@ func NewServerWithOption(sopt *ServerOption) *HostServer {
 	server, ok := servers[sopt.Name]
 	if ok {
 		logger.Warn("duplicated server, name: %s", sopt.Name)
-		return server
+		return server.Server
 	}
-	server = &HostServer{
+	serverInstance := &HostServer{
 		options:             sopt,
 		hooks:               make([]*Hook, 0),
 		beforeHooks:         make([]*Hook, 0),
@@ -304,8 +314,11 @@ func NewServerWithOption(sopt *ServerOption) *HostServer {
 		serverExitSignal:    make(chan struct{}, 1),
 		serverStartDone:     make(chan struct{}, 1),
 	}
-	servers[sopt.Name] = server
-	return server
+	servers[sopt.Name] = &hostServerState{
+		State:  nil,
+		Server: serverInstance,
+	}
+	return serverInstance
 }
 
 // AddHook register a global http handler API into the server.
@@ -468,6 +481,7 @@ func initialConfig(s *HostServer) {
 func initialServer(s *HostServer) ServerState {
 	crypto := s.options.Crypto(*s.conf)
 	s.Hash = crypto.Hash()
+	s.Name = s.options.Name
 	s.Protect = crypto.Protect()
 	s.PasswordSigner = crypto.Password()
 	s.Store = s.options.BackendStoreHandler(*s.conf)
@@ -622,6 +636,7 @@ func (s *HostServer) compile() {
 	registerApps(s, state)
 	prepareHooks(s)
 	onStarts(s, state)
+	servers[s.options.Name].setState(state)
 	s.state++
 }
 

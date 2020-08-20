@@ -108,7 +108,7 @@ type IPermissionManager interface {
 }
 
 type DefaultAuthManagerImpl struct {
-	store Store
+	store IStore
 	cnf   conf.ApplicationConfig
 	users map[string]*defaultUser
 }
@@ -119,7 +119,7 @@ type defaultUser struct {
 }
 
 type DefaultSessionStateManagerImpl struct {
-	store              Store
+	store              IStore
 	storeName          string
 	storePrefix        string
 	expirationDuration time.Duration
@@ -244,7 +244,7 @@ func init() {
 
 type EmptyPermissionManagerImpl struct {
 	state  int
-	store  Store
+	store  IStore
 	conf   conf.ApplicationConfig
 	locker sync.Mutex
 	perms  map[string]map[string]Permission

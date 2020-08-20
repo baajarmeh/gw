@@ -20,7 +20,7 @@ func GetTenant(c *gw.Context) {
 		return
 	}
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user are %v", c.RequestID, c.User),
+		"payload": fmt.Sprintf("request id is: %s, user are %v", c.RequestID, c.User()),
 	})
 }
 

@@ -17,10 +17,11 @@ func (u User) Name() string {
 // APIs
 //
 func (u User) Get(ctx *gw.Context) {
-	store := ctx.State.Store()
+	store := ctx.State().Store()
 	db := store.GetDbStore()
 	var user dbModel.User
-	err := db.First(&user)
+	// var userDto dto.UserDto
+	err := db.Find(&user).Error
 	ctx.JSON(err, user)
 }
 

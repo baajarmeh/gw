@@ -2,6 +2,7 @@ package gw
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/oceanho/gw/logger"
 	"net/http"
 )
 
@@ -117,10 +118,16 @@ func (c *Context) JSON500Payload(status int, payload interface{}) {
 // JSON response a response JSON by status.
 // response 200,payload if status=0, other response 400, errMsg
 func (c *Context) JSON(errMsg interface{}, payload interface{}) {
-	if errMsg == nil {
+	switch ty := errMsg.(type) {
+	case nil:
 		c.JSON200(payload)
-	} else {
+		break
+	case error, *error, string:
 		c.StatusJSON(http.StatusBadRequest, -1, errMsg, payload)
+		break
+	default:
+		logger.Error("invalid errMsg types. %v", ty)
+		break
 	}
 }
 

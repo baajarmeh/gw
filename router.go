@@ -24,14 +24,22 @@ type Handler func(ctx *Context)
 type Context struct {
 	*gin.Context
 	RequestID  string
-	User       User
+	user       User
 	startTime  time.Time
 	logger     Logger
 	server     HostServer
-	State      ServerState
+	state      ServerState
 	queries    map[string][]string
 	params     map[string]interface{}
 	bindModels map[string]interface{}
+}
+
+func (c Context) User() User {
+	return c.User()
+}
+
+func (c Context) State() ServerState {
+	return c.state
 }
 
 // Router represents a gw's Router info.
@@ -323,11 +331,11 @@ func makeCtx(c *gin.Context, requestID string) *Context {
 	ctx := &Context{
 		server:     *s,
 		Context:    c,
-		User:       user,
+		user:       user,
 		RequestID:  requestID,
 		startTime:  time.Now(),
 		logger:     getLogger(c),
-		State:      ServerState{s: s},
+		state:      ServerState{s: s},
 		queries:    make(map[string][]string),
 		params:     make(map[string]interface{}),
 		bindModels: make(map[string]interface{}),

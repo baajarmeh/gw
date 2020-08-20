@@ -11,7 +11,7 @@ import (
 
 type PermissionManagerImpl struct {
 	_state int
-	store  gw.Store
+	store  gw.IStore
 	conf   conf.ApplicationConfig
 	locker sync.Mutex
 	state  gw.ServerState
