@@ -548,9 +548,7 @@ func registerAuthRouter(cnf *conf.ApplicationConfig, router *gin.Engine) {
 
 func useApps(s *HostServer) {
 	for _, app := range s.apps {
-		if app.isPatch {
-			app.app.Use(s.options)
-		}
+		app.app.Use(s.options)
 	}
 }
 
