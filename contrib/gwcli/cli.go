@@ -30,6 +30,15 @@ func App() *cli.App {
 				},
 			},
 			{
+				Name:      "gen-password",
+				HelpName:  appName + " gen-password ",
+				Usage:     "Generate a Password Hash string",
+				ArgsUsage: "<Plain Password>",
+				Action: func(context *cli.Context) error {
+					return nil
+				},
+			},
+			{
 				Name:      "createapp",
 				HelpName:  appName + " createapp ",
 				Usage:     "create a gw module app scaffold",

@@ -217,10 +217,16 @@ func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 				name = fmt.Sprintf("On%sBefore", m.Name)
 				onBefore, ok := typ.MethodByName(name)
 				if ok {
-					onBeforeHandler := onBefore.Func.Call(ctrlCallArgs)[0].Interface().(DecoratorHandler)
-					decorators = append(decorators, Decorator{
-						Before: onBeforeHandler,
-					})
+					onBeforeHandler := onBefore.Func.Call(ctrlCallArgs)[0].Interface()
+					if handler, ok := onBeforeHandler.(DecoratorHandler); ok {
+						decorators = append(decorators, Decorator{
+							Before: handler,
+						})
+					} else if decorator, ok := onBeforeHandler.(Decorator); ok {
+						decorators = append(decorators, decorator)
+					} else if decorator, ok := onBeforeHandler.([]Decorator); ok {
+						decorators = append(decorators, decorator...)
+					}
 				}
 
 				decorators = append(decorators, apiSpecifyDecorators...)
@@ -230,12 +236,17 @@ func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 				name = fmt.Sprintf("On%sAfter", m.Name)
 				onAfter, ok := typ.MethodByName(name)
 				if ok {
-					onAfterHandler := onAfter.Func.Call(ctrlCallArgs)[0].Interface().(DecoratorHandler)
-					decorators = append(decorators, Decorator{
-						After: onAfterHandler,
-					})
+					onAfterHandler := onAfter.Func.Call(ctrlCallArgs)[0].Interface()
+					if handler, ok := onAfterHandler.(DecoratorHandler); ok {
+						decorators = append(decorators, Decorator{
+							After: handler,
+						})
+					} else if decorator, ok := onAfterHandler.(Decorator); ok {
+						decorators = append(decorators, decorator)
+					} else if decorator, ok := onAfterHandler.([]Decorator); ok {
+						decorators = append(decorators, decorator...)
+					}
 				}
-
 				bindingFuncPkgName := fmt.Sprintf("%s.%s", restPkgId, m.Name)
 				dynCaller := DynamicCaller{
 					argInNumber:        n,

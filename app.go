@@ -29,6 +29,10 @@ import (
 //
 // 3. Migrate()
 //
+// 4. OnStart()
+//
+// 5. OnShutDown
+//
 type App interface {
 
 	// Name define a API that return as your app name.
@@ -46,6 +50,16 @@ type App interface {
 
 	// Use define a API that for modify Server Options capability AT your Application.
 	Use(option *ServerOption)
+
+	// Use define a API that notify your Application when server starting before.
+	OnStart(state ServerState)
+
+	// Use define a API that notify your Application when server shutdown before.
+	OnShutDown(state ServerState)
+
+	// Fixme(OceanHo): need?
+	// Use define a API that tells gw framework, Your application Depend On apps.
+	//DependOn(registeredApps map[string]App) []string
 }
 
 type internalApp struct {
@@ -55,8 +69,7 @@ type internalApp struct {
 
 // MigrationContext represents a Migration Context Object.
 type MigrationContext struct {
-	Store             Store
-	PermissionManager IPermissionManager
+	ServerState
 }
 
 // IDynamicRestAPI represents a Dynamic Rest Style API interface.
@@ -119,7 +132,6 @@ type HostServer struct {
 	authParamValidators    map[string]*regexp.Regexp
 	storeDbSetupHandler    StoreDbSetupHandler
 	storeCacheSetupHandler StoreCacheSetupHandler
-	migrateContext         MigrationContext
 	serverExitSignal       chan struct{}
 	serverStartDone        chan struct{}
 }
@@ -558,11 +570,16 @@ func useApps(s *HostServer) {
 	}
 }
 
-func registerApps(s *HostServer) {
-	ctx := MigrationContext{
-		Store:             s.Store,
-		PermissionManager: s.PermissionManager,
+func onStarts(s *HostServer) {
+	state := ServerState{s: s}
+	for _, app := range s.apps {
+		app.instance.OnStart(state)
 	}
+}
+
+func registerApps(s *HostServer) {
+	ctx := MigrationContext{}
+	ctx.ServerState = ServerState{s: s}
 	for _, app := range s.apps {
 		if !app.isPatchOnly {
 			logger.Info("register app: %s", app.instance.Name())
@@ -606,6 +623,7 @@ func (s *HostServer) compile() {
 	initialServer(s)
 	registerApps(s)
 	prepareHooks(s)
+	onStarts(s)
 	s.state++
 }
 
@@ -677,6 +695,11 @@ func (s *HostServer) Serve() {
 		if err != nil {
 			fmt.Printf("call app.ShutDownBeforeHandler, %v", err)
 		}
+	}
+	state := ServerState{s: s}
+	for _, app := range s.apps {
+		app := app.instance
+		app.OnShutDown(state)
 	}
 	s.serverExitSignal <- struct{}{}
 	logger.Info("Shutdown server: %s, Addr: %s", s.options.Name, s.options.Addr)

@@ -212,28 +212,28 @@ func init() {
 		users: map[string]*defaultUser{
 			"admin": {
 				User: User{
-					Id:         10000,
-					Passport:   "admin",
-					TenantId:   0,
-					MainRoleId: 1,
+					Id:       10000,
+					Passport: "admin",
+					TenantId: 0,
+					RoleId:   1,
 				},
 				secret: "123@456",
 			},
 			"gw-tenant-admin": {
 				User: User{
-					Id:         10001,
-					Passport:   "gw-tenant-admin",
-					TenantId:   0,
-					MainRoleId: 2,
+					Id:       10001,
+					Passport: "gw-tenant-admin",
+					TenantId: 0,
+					RoleId:   2,
 				},
 				secret: "123@456",
 			},
 			"gw-user1": {
 				User: User{
-					Id:         100000,
-					Passport:   "gw-user1",
-					TenantId:   10001,
-					MainRoleId: 100000,
+					Id:       100000,
+					Passport: "gw-user1",
+					TenantId: 10001,
+					RoleId:   100000,
 				},
 				secret: "123@456",
 			},
@@ -420,7 +420,7 @@ func gwLogin(c *gin.Context) {
 	cks := s.conf.Security.Auth.Cookie
 	expiredAt := time.Duration(cks.MaxAge) * time.Second
 	var userRoles = gin.H{
-		"Id":   user.MainRoleId,
+		"Id":   user.RoleId,
 		"name": "",
 		"desc": "",
 	}
@@ -575,7 +575,8 @@ type User struct {
 	Id              uint64
 	TenantId        uint64
 	Passport        string
-	MainRoleId      int // Platform Admin:1, Tenant Admin:2, roleId >= 10000 are custom role.
+	SecretHash      string
+	RoleId          int // Platform Admin:1, Tenant Admin:2, roleId >= 10000 are custom role.
 	ExtraRoleIdList []string
 	Permissions     []Permission
 }
@@ -593,11 +594,11 @@ func (user User) IsEmpty() bool {
 }
 
 func (user User) IsAdmin() bool {
-	return user.IsAuth() && user.MainRoleId == 1
+	return user.IsAuth() && user.RoleId == 1
 }
 
 func (user User) IsTenantAdmin() bool {
-	return user.IsAuth() && user.MainRoleId == 2
+	return user.IsAuth() && user.RoleId == 2
 }
 
 func getUser(c *gin.Context) User {

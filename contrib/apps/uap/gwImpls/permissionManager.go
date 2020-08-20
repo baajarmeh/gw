@@ -10,7 +10,7 @@ import (
 )
 
 type PermissionManagerImpl struct {
-	state  int
+	_state int
 	store  gw.Store
 	conf   conf.ApplicationConfig
 	locker sync.Mutex
@@ -21,7 +21,7 @@ func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
 	return &PermissionManagerImpl{
 		state: state,
 		conf:  state.ApplicationConfig(),
-		store: state.State.Store()(),
+		store: state.Store(),
 	}
 }
 
@@ -32,7 +32,7 @@ func (p *PermissionManagerImpl) getStore() *gorm.DB {
 func (p *PermissionManagerImpl) Initial() {
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	if p.state > 0 {
+	if p._state > 0 {
 		return
 	}
 	store := p.getStore()

@@ -14,11 +14,12 @@ func getTableName(name string) string {
 
 type User struct {
 	gwdb.Model
-	gwdb.HasTenantState
-	Passport  string `gorm:"type:varchar(32);unique_index;not null"`
+	TenantId  uint64 `gorm:"default:0;not null;UNIQUEINDEX:idx_tenant_id_passport"`
+	Passport  string `gorm:"type:varchar(32);UNIQUEINDEX:idx_tenant_id_passport;not null"`
 	Secret    string `gorm:"type:varchar(128);not null"`
-	IsTenancy bool   `gorm:"default:0;not null"`
+	IsUser    bool   `gorm:"default:0;not null"`
 	IsAdmin   bool   `gorm:"default:0;not null"`
+	IsTenancy bool   `gorm:"default:0;not null"`
 	gwdb.HasLockState
 	gwdb.HasCreationState
 	gwdb.HasModificationState
@@ -48,4 +49,18 @@ type UserProfile struct {
 
 func (UserProfile) TableName() string {
 	return getTableName("user_profile")
+}
+
+type UserAccessKeySecret struct {
+	gwdb.Model
+	gwdb.HasTenantState
+	Key    string
+	Secret string
+	gwdb.HasCreationState
+	gwdb.HasActivationState
+	gwdb.HasModificationState
+}
+
+func (UserAccessKeySecret) TableName() string {
+	return getTableName("user_aks")
 }

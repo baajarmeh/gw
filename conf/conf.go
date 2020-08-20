@@ -317,12 +317,12 @@ var (
 //
 // <Your ApplicationConfig>.ParseCustomPathTo("gwpro", &gwPro)
 //
-func (cnf *ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
+func (cnf ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
 	cnf.locker.Lock()
 	defer cnf.locker.Unlock()
 	if cnf.customMapState == 0 {
 		cnf.customJsonStrMaps = make(map[string]string)
-		genCustomMaps("", cnf.customJsonStrMaps, cnf.Custom)
+		genCustomMaps("", (&cnf).customJsonStrMaps, cnf.Custom)
 		cnf.customMapState++
 	}
 	str, ok := cnf.customJsonStrMaps[path]
@@ -332,7 +332,7 @@ func (cnf *ApplicationConfig) ParseCustomPathTo(path string, out interface{}) er
 	return json.Unmarshal([]byte(str), out)
 }
 
-func (cnf *ApplicationConfig) ParseCustomTo(out interface{}) error {
+func (cnf ApplicationConfig) ParseCustomTo(out interface{}) error {
 	cnf.locker.Lock()
 	defer cnf.locker.Unlock()
 	if cnf.customJson == "" {
@@ -340,7 +340,7 @@ func (cnf *ApplicationConfig) ParseCustomTo(out interface{}) error {
 		if err != nil {
 			return err
 		}
-		cnf.customJson = string(b)
+		(&cnf).customJson = string(b)
 	}
 	return json.Unmarshal([]byte(cnf.customJson), out)
 }

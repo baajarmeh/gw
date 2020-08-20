@@ -1,6 +1,10 @@
 package restAPIs
 
-import "github.com/oceanho/gw"
+import (
+	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/uap/dbModel"
+	"gorm.io/gorm"
+)
 
 type User struct {
 }
@@ -9,15 +13,21 @@ func (u User) Name() string {
 	return "user"
 }
 
-func UserDynamicRestAPI() gw.IDynamicRestAPI {
-	return &User{}
-}
-
 //
 // APIs
 //
 func (u User) Get(ctx *gw.Context) {
-	ctx.State.Store()
+	store := ctx.State.Store()
+	db := store.GetDbStore()
+	var user dbModel.User
+	err := db.First(&user)
+	ctx.JSON(err, user)
+}
+
+func (u User) OnGetBefore() gw.Decorator {
+	return gw.NewStoreDbSetupDecorator(func(ctx gw.Context, db *gorm.DB) *gorm.DB {
+		return db
+	})
 }
 
 func (u User) Post(ctx *gw.Context) {

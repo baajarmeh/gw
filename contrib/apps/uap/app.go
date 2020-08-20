@@ -1,10 +1,13 @@
 package uap
 
 import (
+	"fmt"
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/uap/conf"
 	"github.com/oceanho/gw/contrib/apps/uap/dbModel"
 	"github.com/oceanho/gw/contrib/apps/uap/gwImpls"
 	"github.com/oceanho/gw/contrib/apps/uap/restAPIs"
+	"github.com/oceanho/gw/logger"
 )
 
 func init() {
@@ -26,19 +29,50 @@ func (a App) Router() string {
 }
 
 func (a App) Register(router *gw.RouterGroup) {
-	router.RegisterRestAPIs(restAPIs.DynamicAPIs()...)
+	restAPIs.Register(router)
 }
 
 func (a App) Migrate(ctx gw.MigrationContext) {
-	db := ctx.Store.GetDbStore()
-	_ = db.AutoMigrate(&dbModel.User{}, &dbModel.Role{}, &dbModel.UserProfile{}, &dbModel.UserRoleMapping{})
+	dbModel.Migrate(ctx)
+}
+
+func (a App) OnStart(state gw.ServerState) {
+	initial(state)
+}
+
+func (a App) OnShutDown(state gw.ServerState) {
+
 }
 
 func (a App) Use(opt *gw.ServerOption) {
-	opt.AuthManagerHandler = func(state gw.ServerState) gw.IAuthManager {
-		return gwImpls.DefaultAuthManager(state)
+	gwImpls.Use(opt)
+}
+
+// helpers
+func initial(state gw.ServerState) {
+	initSystemAdministrator(state)
+}
+
+// initial system administrator
+func initSystemAdministrator(state gw.ServerState) {
+	var cnfUsers []conf.User
+	err := state.ApplicationConfig().ParseCustomPathTo("gwcontrib.uap.initialUsers", &cnfUsers)
+	if err != nil {
+		logger.Error("read gwcontrib.uap.initialUsers fail, err: %v", err)
+		return
 	}
-	opt.PermissionManagerHandler = func(state gw.ServerState) gw.IPermissionManager {
-		return gwImpls.DefaultPermissionManager(state)
+	var userManager = state.UserManager()
+	var passwordSigner = state.PasswordSigner()
+	for _, u := range cnfUsers {
+		usr := u
+		var user gw.User
+		user.TenantId = usr.TenantId
+		user.Passport = usr.Passport
+		user.SecretHash = passwordSigner.Sign(usr.Secret)
+		user.RoleId = usr.Role
+		err := userManager.Create(&user)
+		if err != nil && err != gwImpls.ErrUserHasExists {
+			panic(fmt.Sprintf("uap -> initSystemAdministrator fail, err: %v", err))
+		}
 	}
 }
