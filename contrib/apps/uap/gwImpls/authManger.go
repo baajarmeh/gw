@@ -22,7 +22,7 @@ func (u UserManager) Create(user *gw.User) error {
 	store := u.state.Store()
 	db := store.GetDbStore()
 	var model dbModel.User
-	err := db.First(&model, "tenant_id=? and passport=? and is_user=1", user.TenantId, user.Passport).Error
+	err := db.First(&model, "tenant_id=? and passport=?", user.TenantId, user.Passport).Error
 	if err != nil && err.Error() != "record not found" {
 		return err
 	}
