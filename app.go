@@ -48,9 +48,9 @@ type App interface {
 	Use(option *ServerOption)
 }
 
-type registerApp struct {
-	app     App
-	isPatch bool
+type internalApp struct {
+	instance    App
+	isPatchOnly bool
 }
 
 // MigrationContext represents a Migration Context Object.
@@ -109,7 +109,7 @@ type HostServer struct {
 	locker                 sync.Mutex
 	options                *ServerOption
 	router                 *Router
-	apps                   map[string]registerApp
+	apps                   map[string]internalApp
 	conf                   *conf.ApplicationConfig
 	httpErrHandlers        map[int][]ErrorHandler
 	hooks                  []*Hook
@@ -286,7 +286,7 @@ func NewServerWithOption(sopt *ServerOption) *HostServer {
 		hooks:               make([]*Hook, 0),
 		beforeHooks:         make([]*Hook, 0),
 		afterHooks:          make([]*Hook, 0),
-		apps:                make(map[string]registerApp),
+		apps:                make(map[string]internalApp),
 		httpErrHandlers:     make(map[int][]ErrorHandler),
 		authParamValidators: make(map[string]*regexp.Regexp),
 		serverExitSignal:    make(chan struct{}, 1),
@@ -365,9 +365,9 @@ func (s *HostServer) Register(apps ...App) {
 	for _, app := range apps {
 		appName := app.Name()
 		if _, ok := s.apps[appName]; !ok {
-			s.apps[appName] = registerApp{
-				app:     app,
-				isPatch: false,
+			s.apps[appName] = internalApp{
+				instance:    app,
+				isPatchOnly: false,
 			}
 			// ServerOptions used AT first.
 			app.Use(s.options)
@@ -400,9 +400,9 @@ func (s *HostServer) Patch(apps ...App) {
 		app := app
 		appName := app.Name()
 		if _, ok := s.apps[appName]; !ok {
-			s.apps[appName] = registerApp{
-				app:     app,
-				isPatch: true,
+			s.apps[appName] = internalApp{
+				instance:    app,
+				isPatchOnly: true,
 			}
 		}
 	}
@@ -557,7 +557,7 @@ func registerAuthRouter(cnf *conf.ApplicationConfig, router *gin.Engine) {
 
 func useApps(s *HostServer) {
 	for _, app := range s.apps {
-		app.app.Use(s.options)
+		app.instance.Use(s.options)
 	}
 }
 
@@ -567,15 +567,15 @@ func registerApps(s *HostServer) {
 		PermissionManager: s.PermissionManager,
 	}
 	for _, app := range s.apps {
-		if !app.isPatch {
-			logger.Info("register app: %s", app.app.Name())
-			rg := s.router.Group(app.app.Router(), nil)
-			app.app.Register(rg)
+		if !app.isPatchOnly {
+			logger.Info("register app: %s", app.instance.Name())
+			rg := s.router.Group(app.instance.Router(), nil)
+			app.instance.Register(rg)
 
 		}
 		// migrate
-		logger.Info("migrate app: %s", app.app.Name())
-		app.app.Migrate(ctx)
+		logger.Info("migrate app: %s", app.instance.Name())
+		app.instance.Migrate(ctx)
 	}
 }
 
