@@ -12,7 +12,7 @@ func CreateMyTester(c *gw.Context) {
 	if c.Bind(obj) != nil {
 		return
 	}
-	err := biz.CreateMyTester(c.Store.GetDbStore(), obj)
+	err := biz.CreateMyTester(c.State.Store().GetDbStore(), obj)
 	c.JSON(err, obj.ID)
 }
 
@@ -22,7 +22,7 @@ func QueryMyTester(c *gw.Context) {
 		return
 	}
 	objs := make([]dto.MyTester, 0)
-	err := biz.QueryMyTester(c.Store.GetDbStore(), &objs)
+	err := biz.QueryMyTester(c.State.Store().GetDbStore(), &objs)
 	c.JSON(err, objs)
 }
 

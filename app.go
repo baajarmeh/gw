@@ -83,7 +83,7 @@ type ServerOption struct {
 	BackendStoreHandler      func(cnf conf.ApplicationConfig) Store
 	AppConfigHandler         func(cnf conf.BootConfig) *conf.ApplicationConfig
 	Crypto                   func(conf conf.ApplicationConfig) ICrypto
-	UserManagerHandler       func(ssc ServerStateContext) IUserManager
+	UserManagerHandler       func(state ServerState) IUserManager
 	AuthManagerHandler       AuthManagerHandler
 	PermissionManagerHandler PermissionManagerHandler
 	StoreDbSetupHandler      StoreDbSetupHandler
@@ -124,53 +124,53 @@ type HostServer struct {
 	serverStartDone        chan struct{}
 }
 
-// ServerStateContext represents a Server state context object.
-type ServerStateContext struct {
+// ServerState represents a Server state context object.
+type ServerState struct {
 	s *HostServer
 }
 
-func (sic ServerStateContext) Store() Store {
-	return sic.s.Store
+func (ss ServerState) Store() Store {
+	return ss.s.Store
 }
 
-func (sic ServerStateContext) CryptoHash() ICryptoHash {
-	return sic.s.Hash
+func (ss ServerState) CryptoHash() ICryptoHash {
+	return ss.s.Hash
 }
 
-func (sic ServerStateContext) CryptoProtect() ICryptoProtect {
-	return sic.s.Protect
+func (ss ServerState) CryptoProtect() ICryptoProtect {
+	return ss.s.Protect
 }
 
-func (sic ServerStateContext) PasswordSigner() IPasswordSigner {
-	return sic.s.PasswordSigner
+func (ss ServerState) PasswordSigner() IPasswordSigner {
+	return ss.s.PasswordSigner
 }
 
-func (sic ServerStateContext) AuthManager() IAuthManager {
-	return sic.s.AuthManager
+func (ss ServerState) AuthManager() IAuthManager {
+	return ss.s.AuthManager
 }
 
-func (sic ServerStateContext) SessionStateManager() ISessionStateManager {
-	return sic.s.SessionStateManager
+func (ss ServerState) SessionStateManager() ISessionStateManager {
+	return ss.s.SessionStateManager
 }
 
-func (sic ServerStateContext) PermissionManager() IPermissionManager {
-	return sic.s.PermissionManager
+func (ss ServerState) PermissionManager() IPermissionManager {
+	return ss.s.PermissionManager
 }
 
-func (sic ServerStateContext) UserManager() IUserManager {
-	return sic.s.UserManager
+func (ss ServerState) UserManager() IUserManager {
+	return ss.s.UserManager
 }
 
-func (sic ServerStateContext) ServerOptions() ServerOption {
-	return *sic.s.options
+func (ss ServerState) ServerOptions() ServerOption {
+	return *ss.s.options
 }
 
-func (sic ServerStateContext) ApplicationConfig() conf.ApplicationConfig {
-	return *sic.s.conf
+func (ss ServerState) ApplicationConfig() conf.ApplicationConfig {
+	return *ss.s.conf
 }
 
-func (sic ServerStateContext) RespBodyCreationBuildFunc() RespBodyCreationBuildFunc {
-	return sic.s.RespBodyBuildFunc
+func (ss ServerState) RespBodyCreationBuildFunc() RespBodyCreationBuildFunc {
+	return ss.s.RespBodyBuildFunc
 }
 
 var (
@@ -221,17 +221,17 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		BackendStoreHandler:    appDefaultBackendHandler,
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
-		UserManagerHandler: func(ssc ServerStateContext) IUserManager {
-			return DefaultUserManager(ssc)
+		UserManagerHandler: func(state ServerState) IUserManager {
+			return DefaultUserManager(state)
 		},
-		AuthManagerHandler: func(ssc ServerStateContext) IAuthManager {
-			return DefaultAuthManager(ssc)
+		AuthManagerHandler: func(state ServerState) IAuthManager {
+			return DefaultAuthManager(state)
 		},
-		PermissionManagerHandler: func(ssc ServerStateContext) IPermissionManager {
-			return DefaultPermissionManager(ssc)
+		PermissionManagerHandler: func(state ServerState) IPermissionManager {
+			return DefaultPermissionManager(state)
 		},
-		SessionStateManager: func(ssc ServerStateContext) ISessionStateManager {
-			return DefaultSessionStateManager(ssc)
+		SessionStateManager: func(state ServerState) ISessionStateManager {
+			return DefaultSessionStateManager(state)
 		},
 		Crypto: func(conf conf.ApplicationConfig) ICrypto {
 			c := conf.Security.Crypto
@@ -463,7 +463,7 @@ func initialServer(s *HostServer) {
 		s.RespBodyBuildFunc = s.options.RespBodyBuildFunc
 	}
 
-	ctx := ServerStateContext{s: s}
+	ctx := ServerState{s: s}
 
 	s.UserManager = s.options.UserManagerHandler(ctx)
 	s.AuthManager = s.options.AuthManagerHandler(ctx)

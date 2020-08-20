@@ -7,7 +7,8 @@ import (
 
 func main() {
 	server := gw.DefaultServer()
-	server.Patch(uap.New())
+	//server.Patch(uap.New())
+	server.Register(uap.New())
 	//gw.Run(server)
 	server.Serve()
 }

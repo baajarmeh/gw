@@ -14,14 +14,14 @@ type PermissionManagerImpl struct {
 	store  gw.Store
 	conf   conf.ApplicationConfig
 	locker sync.Mutex
-	ssc    gw.ServerStateContext
+	state    gw.ServerState
 }
 
-func DefaultPermissionManager(ssc gw.ServerStateContext) gw.IPermissionManager {
+func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
 	return &PermissionManagerImpl{
-		ssc:   ssc,
-		conf:  ssc.ApplicationConfig(),
-		store: ssc.Store(),
+		state:   state,
+		conf:  state.ApplicationConfig(),
+		store: state.State.Store()(),
 	}
 }
 
@@ -109,8 +109,6 @@ func (p *PermissionManagerImpl) Drop(perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
 	tx := p.getStore().Begin()
 	for _, p := range perms {
 		tx.Delete(p)

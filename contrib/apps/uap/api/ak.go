@@ -7,7 +7,7 @@ import (
 )
 
 func GetAK(c *gw.Context) {
-	db := c.Store.GetDbStore()
+	db := c.State.Store().GetDbStore()
 	row := db.Raw("select 1 from DUAL").Row()
 	var result uint64 = 0
 	err := row.Scan(&result)

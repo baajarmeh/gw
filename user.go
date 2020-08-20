@@ -8,19 +8,19 @@ type IUserManager interface {
 	QueryList(tenantId uint64, expr PagerExpr, total int64, out []User) error
 }
 
-func DefaultUserManager(ssc ServerStateContext) IUserManager {
+func DefaultUserManager(state ServerState) IUserManager {
 	return DefaultUserManagerImpl{
-		ssc: ssc,
+		state: state,
 	}
 }
 
 // DefaultUserManagerImpl ...
 type DefaultUserManagerImpl struct {
-	ssc ServerStateContext
+	state ServerState
 }
 
 func (d DefaultUserManagerImpl) Create(user *User) error {
-	pm := d.ssc.PermissionManager()
+	pm := d.state.PermissionManager()
 	return pm.GrantToUser(user.Id, user.Permissions...)
 }
 

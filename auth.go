@@ -47,7 +47,7 @@ var DefaultPermNames = []string{
 //  ReadAllUserPermission, CreationUserPermission,
 //  ModificationUserPermission, DeletionUserPermission, DisableUserPermission, ReadDetailUserPermission etc.
 //
-func NewPermAll(resource string) []*Permission {
+func NewPermAll(resource string) []Permission {
 	return NewPermByNames(resource, DefaultPermNames...)
 }
 
@@ -56,12 +56,12 @@ func NewPermAll(resource string) []*Permission {
 // resource like: User, Role, Order etc.
 // permNames like: ReadAll, Creation, Modification,Deletion, Disable, ReadDetail etc.
 //
-func NewPermByNames(resource string, permNames ...string) []*Permission {
-	var perms []*Permission
+func NewPermByNames(resource string, permNames ...string) []Permission {
+	var perms []Permission
 	for _, p := range permNames {
 		kn := fmt.Sprintf("%s%sPermission", p, resource)
 		desc := fmt.Sprintf("Define A %s %s permission", p, resource)
-		perms = append(perms, &Permission{
+		perms = append(perms, Permission{
 			Key:        kn,
 			Name:       kn,
 			Descriptor: desc,
@@ -119,9 +119,9 @@ type DefaultSessionStateManagerImpl struct {
 	redisTimeout       time.Duration
 }
 
-func DefaultSessionStateManager(ssc ServerStateContext) *DefaultSessionStateManagerImpl {
-	defaultSs.store = ssc.Store()
-	defaultSs.cnf = ssc.ApplicationConfig()
+func DefaultSessionStateManager(state ServerState) *DefaultSessionStateManagerImpl {
+	defaultSs.store = state.Store()
+	defaultSs.cnf = state.ApplicationConfig()
 	defaultSs.storeName = defaultSs.cnf.Security.Auth.Session.DefaultStore.Name
 	defaultSs.storePrefix = defaultSs.cnf.Security.Auth.Session.DefaultStore.Prefix
 	defaultSs.expirationDuration = time.Duration(defaultSs.cnf.Security.Auth.Cookie.MaxAge) * time.Second
@@ -193,9 +193,9 @@ func (d *DefaultAuthManagerImpl) Logout(user User) bool {
 	return true
 }
 
-func DefaultAuthManager(ssc ServerStateContext) *DefaultAuthManagerImpl {
-	defaultAm.cnf = ssc.ApplicationConfig()
-	defaultAm.store = ssc.Store()
+func DefaultAuthManager(state ServerState) *DefaultAuthManagerImpl {
+	defaultAm.cnf = state.ApplicationConfig()
+	defaultAm.store = state.Store()
 	return defaultAm
 }
 
@@ -242,11 +242,11 @@ type EmptyPermissionManagerImpl struct {
 	perms  map[string]map[string]Permission
 }
 
-func DefaultPermissionManager(ssc ServerStateContext) *EmptyPermissionManagerImpl {
+func DefaultPermissionManager(state ServerState) *EmptyPermissionManagerImpl {
 	if defaultPm == nil {
 		defaultPm = &EmptyPermissionManagerImpl{
-			conf:  ssc.ApplicationConfig(),
-			store: ssc.Store(),
+			conf:  state.ApplicationConfig(),
+			store: state.Store(),
 			perms: make(map[string]map[string]Permission),
 		}
 	}
@@ -307,7 +307,7 @@ var defaultPageExpr = DefaultPagerExpr(1024, 1)
 //
 // GW framework login API.
 func gwLogin(c *gin.Context) {
-	s := hostServer(c)
+	s := *hostServer(c)
 	reqId := getRequestID(s, c)
 	pKey := s.conf.Security.Auth.ParamKey
 	// supports
@@ -402,7 +402,7 @@ func gwLogin(c *gin.Context) {
 
 // GW framework logout API.
 func gwLogout(c *gin.Context) {
-	s := hostServer(c)
+	s := *hostServer(c)
 	reqId := getRequestID(s, c)
 	user := getUser(c)
 	cks := s.conf.Security.Auth.Cookie
@@ -430,7 +430,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 		}
 	}
 	return func(c *gin.Context) {
-		s := hostServer(c)
+		s := *hostServer(c)
 		user := getUser(c)
 		path := fmt.Sprintf("%s:%s", c.Request.Method, c.Request.URL.Path)
 		requestId := getRequestID(s, c)

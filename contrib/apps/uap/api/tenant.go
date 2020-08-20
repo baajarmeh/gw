@@ -8,7 +8,7 @@ import (
 )
 
 func GetTenant(c *gw.Context) {
-	db := c.Store.GetDbStore()
+	db := c.State.Store().GetDbStore()
 	sqlDb, err := db.DB()
 	if err != nil {
 		logger.Error("get sql.Db fail.")

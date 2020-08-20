@@ -40,7 +40,7 @@ func gwState(serverName string) gin.HandlerFunc {
 		// 2. process request, try got User from the http requests.
 		//
 		c.Set(gwAppKey, serverName)
-		s := hostServer(c)
+		s := *hostServer(c)
 		requestId := getRequestID(s, c)
 		defer func() {
 			var stacks []byte
@@ -244,9 +244,9 @@ func getSid(s HostServer, c *gin.Context) (string, bool) {
 	return decryptSid(s, _sid, client)
 }
 
-func hostServer(c *gin.Context) HostServer {
+func hostServer(c *gin.Context) *HostServer {
 	serverName := c.MustGet(gwAppKey).(string)
-	return *servers[serverName]
+	return servers[serverName]
 }
 
 func config(c *gin.Context) conf.ApplicationConfig {
@@ -254,7 +254,7 @@ func config(c *gin.Context) conf.ApplicationConfig {
 }
 
 func GetHostServer(c *Context) HostServer {
-	return hostServer(c.Context)
+	return *hostServer(c.Context)
 }
 
 //

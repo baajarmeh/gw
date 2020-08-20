@@ -15,7 +15,7 @@ type AuthManager struct {
 	backendStoreName string
 	expiration       time.Duration
 	permPagerExpr    gw.PagerExpr
-	ssc              gw.ServerStateContext
+	state              gw.ServerState
 }
 
 func (a AuthManager) getUserCacheKey(passport string) string {
@@ -24,8 +24,8 @@ func (a AuthManager) getUserCacheKey(passport string) string {
 
 func (a AuthManager) Login(passport, secret, credType, verifyCode string) (gw.User, error) {
 	var gwUser gw.User
-	var store = a.ssc.Store()
-	var password = a.ssc.PasswordSigner().Sign(secret)
+	var store = a.state.State.Store()()
+	var password = a.state.PasswordSigner().Sign(secret)
 	var cache = store.GetCacheStoreByName(a.cacheStoreName)
 	var userCacheKey = a.getUserCacheKey(passport)
 	var bytes, err = cache.Get(context.Background(), userCacheKey).Bytes()
@@ -40,7 +40,7 @@ func (a AuthManager) Login(passport, secret, credType, verifyCode string) (gw.Us
 		return gw.EmptyUser, err
 	}
 	// secret/password checker
-	_, perms, err := a.ssc.PermissionManager().QueryByUser(user.TenantId, user.ID, a.permPagerExpr)
+	_, perms, err := a.state.PermissionManager().QueryByUser(user.TenantId, user.ID, a.permPagerExpr)
 	if err != nil {
 		return gw.EmptyUser, err
 	}
@@ -54,14 +54,14 @@ func (a AuthManager) Login(passport, secret, credType, verifyCode string) (gw.Us
 
 func (a AuthManager) Logout(user gw.User) bool {
 	var userCacheKey = a.getUserCacheKey(user.Passport)
-	cache := a.ssc.Store().GetCacheStoreByName(a.cacheStoreName)
+	cache := a.state.State.Store()().GetCacheStoreByName(a.cacheStoreName)
 	err := cache.Del(context.Background(), userCacheKey).Err()
 	return err != nil
 }
 
-func DefaultAuthManager(ssc gw.ServerStateContext) AuthManager {
+func DefaultAuthManager(state gw.ServerState) AuthManager {
 	return AuthManager{
-		ssc:              ssc,
+		state:              state,
 		cacheStoreName:   "primary",
 		backendStoreName: "primary",
 		expiration:       time.Hour * 168, // One week.

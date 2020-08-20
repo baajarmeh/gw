@@ -25,10 +25,10 @@ type Context struct {
 	*gin.Context
 	RequestID  string
 	User       User
-	Store      Store
 	startTime  time.Time
 	logger     Logger
 	server     HostServer
+	State      ServerState
 	queries    map[string][]string
 	params     map[string]interface{}
 	bindModels map[string]interface{}
@@ -261,7 +261,7 @@ func handle(c *gin.Context) {
 	var shouldStop bool = false
 	var payload interface{}
 	// action before Decorators
-	var s = hostServer(c)
+	var s = *hostServer(c)
 	var requestID = getRequestID(s, c)
 	var ctx = makeCtx(c, requestID)
 	for _, d := range router.beforeDecorators {
@@ -321,13 +321,13 @@ func makeCtx(c *gin.Context, requestID string) *Context {
 	s := hostServer(c)
 	user := getUser(c)
 	ctx := &Context{
-		server:     s,
+		server:     *s,
 		Context:    c,
 		User:       user,
-		Store:      s.Store,
 		RequestID:  requestID,
 		startTime:  time.Now(),
 		logger:     getLogger(c),
+		State:      ServerState{s: s},
 		queries:    make(map[string][]string),
 		params:     make(map[string]interface{}),
 		bindModels: make(map[string]interface{}),
