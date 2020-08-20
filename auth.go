@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	json "github.com/json-iterator/go"
-	"github.com/oceanho/gw/backend/gwdb"
 	"github.com/oceanho/gw/conf"
 	"gorm.io/gorm"
 	"net/http"
@@ -15,44 +14,17 @@ import (
 )
 
 type Permission struct {
-	gwdb.Model
-	gwdb.HasTenantState
-	Category   string `json:"category" gorm:"type:varchar(32);not null"`
-	Key        string `json:"key" gorm:"type:varchar(64);not null"`
-	Name       string `json:"name" gorm:"type:varchar(128); not null"`
-	Descriptor string `json:"descriptor" gorm:"type:varchar(256)"`
-	gwdb.HasCreationState
-	gwdb.HasModificationState
-}
-
-func (Permission) TableName() string {
-	return "gw_fw_perm"
+	ID         uint64
+	TenantId   uint64
+	Category   string
+	Key        string
+	Name       string
+	Descriptor string
 }
 
 func (p Permission) String() string {
 	b, _ := json.Marshal(p)
 	return string(b)
-}
-
-type PermissionType uint8
-
-const (
-	UserPermission PermissionType = 1
-	RolePermission                = 2
-)
-
-type ObjectPermission struct {
-	gwdb.Model
-	gwdb.HasTenantState
-	Type         PermissionType `gorm:"not null"` // 1. User Permission, 2. Role/Group Permission
-	ObjectID     uint64         `gorm:"index:idx_tenant_expr; not null"`
-	PermissionID uint64         `gorm:"not null"`
-	gwdb.HasCreationState
-	gwdb.HasModificationState
-}
-
-func (ObjectPermission) TableName() string {
-	return "gw_fw_object_perms"
 }
 
 func NewPerm(key, name, descriptor string) Permission {
@@ -116,7 +88,7 @@ type ISessionStateManager interface {
 type IPermissionManager interface {
 	Initial()
 	Has(user User, perms ...Permission) bool
-	Create(category string, perms ...*Permission) error
+	Create(category string, perms ...Permission) error
 	Modify(perms ...Permission) error
 	Drop(perms ...Permission) error
 	Query(tenantId uint64, category string, expr PagerExpr) (total int64, result []Permission, error error)
@@ -147,13 +119,13 @@ type DefaultSessionStateManagerImpl struct {
 	redisTimeout       time.Duration
 }
 
-func DefaultSessionStateManager(ctx ServerInitializationContext) *DefaultSessionStateManagerImpl {
-	defaultSs.cnf = ctx.AppConfig
-	defaultSs.store = ctx.Store
-	defaultSs.storeName = ctx.AppConfig.Security.Auth.Session.DefaultStore.Name
-	defaultSs.storePrefix = ctx.AppConfig.Security.Auth.Session.DefaultStore.Prefix
-	defaultSs.expirationDuration = time.Duration(ctx.AppConfig.Security.Auth.Cookie.MaxAge) * time.Second
-	defaultSs.redisTimeout = time.Duration(ctx.AppConfig.Settings.TimeoutControl.Redis) * time.Millisecond
+func DefaultSessionStateManager(ssc ServerStateContext) *DefaultSessionStateManagerImpl {
+	defaultSs.store = ssc.Store()
+	defaultSs.cnf = ssc.ApplicationConfig()
+	defaultSs.storeName = defaultSs.cnf.Security.Auth.Session.DefaultStore.Name
+	defaultSs.storePrefix = defaultSs.cnf.Security.Auth.Session.DefaultStore.Prefix
+	defaultSs.expirationDuration = time.Duration(defaultSs.cnf.Security.Auth.Cookie.MaxAge) * time.Second
+	defaultSs.redisTimeout = time.Duration(defaultSs.cnf.Settings.TimeoutControl.Redis) * time.Millisecond
 	return defaultSs
 }
 
@@ -205,7 +177,7 @@ var (
 	ErrorEmptyInput = fmt.Errorf("empty input")
 	defaultAm       *DefaultAuthManagerImpl
 	defaultSs       *DefaultSessionStateManagerImpl
-	defaultPm       *DefaultPermissionManagerImpl
+	defaultPm       *EmptyPermissionManagerImpl
 )
 
 func (d *DefaultAuthManagerImpl) Login(passport, secret, credType, verifyCode string) (User, error) {
@@ -221,9 +193,9 @@ func (d *DefaultAuthManagerImpl) Logout(user User) bool {
 	return true
 }
 
-func DefaultAuthManager(initCtx ServerInitializationContext) *DefaultAuthManagerImpl {
-	defaultAm.cnf = initCtx.AppConfig
-	defaultAm.store = initCtx.Store
+func DefaultAuthManager(ssc ServerStateContext) *DefaultAuthManagerImpl {
+	defaultAm.cnf = ssc.ApplicationConfig()
+	defaultAm.store = ssc.Store()
 	return defaultAm
 }
 
@@ -262,7 +234,7 @@ func init() {
 	defaultSs = &DefaultSessionStateManagerImpl{}
 }
 
-type DefaultPermissionManagerImpl struct {
+type EmptyPermissionManagerImpl struct {
 	state  int
 	store  Store
 	conf   conf.ApplicationConfig
@@ -270,199 +242,64 @@ type DefaultPermissionManagerImpl struct {
 	perms  map[string]map[string]Permission
 }
 
-func DefaultPermissionManager(initCtx ServerInitializationContext) *DefaultPermissionManagerImpl {
+func DefaultPermissionManager(ssc ServerStateContext) *EmptyPermissionManagerImpl {
 	if defaultPm == nil {
-		defaultPm = &DefaultPermissionManagerImpl{
-			conf:  initCtx.AppConfig,
-			store: initCtx.Store,
+		defaultPm = &EmptyPermissionManagerImpl{
+			conf:  ssc.ApplicationConfig(),
+			store: ssc.Store(),
 			perms: make(map[string]map[string]Permission),
 		}
 	}
 	return defaultPm
 }
 
-func (p *DefaultPermissionManagerImpl) getStore() *gorm.DB {
+func (p *EmptyPermissionManagerImpl) getStore() *gorm.DB {
 	return p.store.GetDbStoreByName(p.conf.Security.Auth.Permission.DefaultStore.Name)
 }
 
-func (p *DefaultPermissionManagerImpl) Initial() {
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	if p.state > 0 {
-		return
-	}
-	store := p.getStore()
-	var tables []interface{}
-	tables = append(tables, &Permission{})
-	tables = append(tables, &ObjectPermission{})
-	err := store.AutoMigrate(tables...)
-	if err != nil {
-		panic(err)
-	}
+func (p *EmptyPermissionManagerImpl) Initial() {
 }
 
-func (p *DefaultPermissionManagerImpl) Has(user User, perms ...Permission) bool {
-	if user.IsAuth() {
-		if user.IsAdmin() {
-			return true
-		}
-		for _, g := range p.perms {
-			for _, pm := range perms {
-				if _, ok := g[pm.Name]; ok {
-					return true
-				}
-			}
-		}
-	}
-	return false
+func (p *EmptyPermissionManagerImpl) Has(user User, perms ...Permission) bool {
+	return user.IsAuth()
 }
 
-func (p *DefaultPermissionManagerImpl) Create(category string, perms ...*Permission) error {
-	if len(perms) < 1 {
-		return ErrorEmptyInput
-	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	db := p.getStore()
-	tx := db.Begin()
-	var registered = make(map[string]bool)
-	for i := 0; i < len(perms); i++ {
-		p := perms[i]
-		uk := fmt.Sprintf("%d-%s-%s", p.TenantId, p.Category, p.Key)
-		if registered[uk] {
-			continue
-		}
-		var count int64
-		if p.Category == "" {
-			p.Category = category
-		}
-		err := db.Model(Permission{}).Where("tenant_id = ? and category = ? and `key` = ?",
-			p.TenantId, p.Category, p.Key).Count(&count).Error
-		if err != nil {
-			panic(fmt.Sprintf("check perms has exist fail, err: %v", err))
-		}
-		if count == 0 {
-			tx.Create(p)
-		}
-	}
-	return tx.Commit().Error
+func (p *EmptyPermissionManagerImpl) Create(category string, perms ...Permission) error {
+	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) Modify(perms ...Permission) error {
-	if len(perms) < 1 {
-		return ErrorEmptyInput
-	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
-	for _, p := range perms {
-		tx.Updates(p)
-	}
-	return tx.Commit().Error
+func (p *EmptyPermissionManagerImpl) Modify(perms ...Permission) error {
+	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) Drop(perms ...Permission) error {
-	if len(perms) < 1 {
-		return ErrorEmptyInput
-	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
-	for _, p := range perms {
-		tx.Delete(p)
-	}
-	return tx.Commit().Error
+func (p *EmptyPermissionManagerImpl) Drop(perms ...Permission) error {
+	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) Query(tenantId uint64, category string, expr PagerExpr) (
+func (p *EmptyPermissionManagerImpl) Query(tenantId uint64, category string, expr PagerExpr) (
 	total int64, result []Permission, error error) {
-	error = p.getStore().Where("tenant_id = ? and category = ?",
-		tenantId, category).Count(&total).Offset(expr.PageOffset()).Limit(expr.PageSize).Scan(result).Error
-	return
+	return 0, nil, nil
 }
 
-func (p *DefaultPermissionManagerImpl) QueryByUser(tenantId, userId uint64, expr PagerExpr) (
+func (p *EmptyPermissionManagerImpl) QueryByUser(tenantId, userId uint64, expr PagerExpr) (
 	total int64, result []Permission, error error) {
-	var perm Permission
-	var objPerm ObjectPermission
-	var perms []Permission
-	var sql = fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id "+
-		" where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d", perm.TableName(), objPerm.TableName(), tenantId, userId, UserPermission)
-	var countSql = fmt.Sprintf("select count(t1.Id) as total %s", sql)
-	var dataSql = fmt.Sprintf("select t1.* %s limit %d offset %d", sql, expr.PageSize, expr.PageOffset())
-	db := p.getStore().Begin()
-	err := db.Raw(countSql).Scan(&total).Error
-	if err != nil {
-		db.Rollback()
-		return total, nil, err
-	}
-	err = db.Raw(dataSql).Scan(&perms).Error
-	db.Commit()
-	return total, perms, err
+	return 0, nil, nil
 }
 
-func (p *DefaultPermissionManagerImpl) GrantToUser(uid uint64, perms ...Permission) error {
-	if len(perms) < 1 {
-		return nil
-	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
-	for _, p := range perms {
-		var pm ObjectPermission
-		pm.PermissionID = p.ID
-		pm.TenantId = p.TenantId
-		pm.Type = UserPermission
-		pm.ObjectID = uid
-		tx.Create(&pm)
-	}
-	return tx.Commit().Error
+func (p *EmptyPermissionManagerImpl) GrantToUser(uid uint64, perms ...Permission) error {
+	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) GrantToRole(roleId uint64, perms ...Permission) error {
-	if len(perms) < 1 {
-		return nil
-	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
-	for _, p := range perms {
-		var pm ObjectPermission
-		pm.PermissionID = p.ID
-		pm.TenantId = p.TenantId
-		pm.Type = RolePermission
-		pm.ObjectID = roleId
-		tx.Create(&pm)
-	}
-	return tx.Commit().Error
+func (p *EmptyPermissionManagerImpl) GrantToRole(roleId uint64, perms ...Permission) error {
+	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) RevokeFromUser(uid uint64, perms ...Permission) error {
-	if len(perms) < 1 {
-		return nil
-	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
-	for _, p := range perms {
-		tx.Delete(ObjectPermission{},
-			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", uid, p.TenantId, p.ID, UserPermission)
-	}
-	return tx.Commit().Error
+func (p *EmptyPermissionManagerImpl) RevokeFromUser(uid uint64, perms ...Permission) error {
+	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...Permission) error {
-	if len(perms) < 1 {
-		return nil
-	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	tx := p.getStore().Begin()
-	for _, p := range perms {
-		tx.Delete(ObjectPermission{},
-			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", roleId, p.TenantId, p.ID, RolePermission)
-	}
-	return tx.Commit().Error
+func (p *EmptyPermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...Permission) error {
+	return nil
 }
 
 var defaultPageExpr = DefaultPagerExpr(1024, 1)

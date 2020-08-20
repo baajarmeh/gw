@@ -39,6 +39,11 @@ type App interface {
 	Use(option *ServerOption)
 }
 
+type registerApp struct {
+	app     App
+	isPatch bool
+}
+
 // MigrationContext represents a Migration Context Object.
 type MigrationContext struct {
 	Store             Store
@@ -69,12 +74,13 @@ type ServerOption struct {
 	BackendStoreHandler      func(cnf conf.ApplicationConfig) Store
 	AppConfigHandler         func(cnf conf.BootConfig) *conf.ApplicationConfig
 	Crypto                   func(conf conf.ApplicationConfig) ICrypto
-	AuthManager              AuthManagerHandler
+	UserManagerHandler       func(ssc ServerStateContext) IUserManager
+	AuthManagerHandler       AuthManagerHandler
 	PermissionManagerHandler PermissionManagerHandler
 	StoreDbSetupHandler      StoreDbSetupHandler
 	SessionStateManager      SessionStateHandler
 	StoreCacheSetupHandler   StoreCacheSetupHandler
-	RespBodyBuildFunc        RespBodyCreationHandler
+	RespBodyBuildFunc        RespBodyCreationBuildFunc
 	cnf                      *conf.ApplicationConfig
 	bcs                      *conf.BootConfig
 }
@@ -88,12 +94,13 @@ type HostServer struct {
 	AuthManager            IAuthManager
 	SessionStateManager    ISessionStateManager
 	PermissionManager      IPermissionManager
-	RespBodyBuildFunc      RespBodyCreationHandler
+	UserManager            IUserManager
+	RespBodyBuildFunc      RespBodyCreationBuildFunc
 	state                  int
 	locker                 sync.Mutex
 	options                *ServerOption
 	router                 *Router
-	apps                   map[string]App
+	apps                   map[string]registerApp
 	conf                   *conf.ApplicationConfig
 	httpErrHandlers        map[int][]ErrorHandler
 	hooks                  []*Hook
@@ -106,21 +113,55 @@ type HostServer struct {
 	migrateContext         MigrationContext
 	serverExitSignal       chan struct{}
 	serverStartDone        chan struct{}
-	initializationContext  ServerInitializationContext
 }
 
-// ServerInitializationContext represents a Server initialization context object.
-type ServerInitializationContext struct {
-	Store               Store
-	Hash                ICryptoHash
-	Protect             ICryptoProtect
-	PasswordSigner      IPasswordSigner
-	AuthManager         IAuthManager
-	SessionStateManager ISessionStateManager
-	PermissionManager   IPermissionManager
-	RespBodyBuildFunc   RespBodyCreationHandler
-	ServerOption        ServerOption
-	AppConfig           conf.ApplicationConfig
+// ServerStateContext represents a Server state context object.
+type ServerStateContext struct {
+	s *HostServer
+}
+
+func (sic ServerStateContext) Store() Store {
+	return sic.s.Store
+}
+
+func (sic ServerStateContext) CryptoHash() ICryptoHash {
+	return sic.s.Hash
+}
+
+func (sic ServerStateContext) CryptoProtect() ICryptoProtect {
+	return sic.s.Protect
+}
+
+func (sic ServerStateContext) PasswordSigner() IPasswordSigner {
+	return sic.s.PasswordSigner
+}
+
+func (sic ServerStateContext) AuthManager() IAuthManager {
+	return sic.s.AuthManager
+}
+
+func (sic ServerStateContext) SessionStateManager() ISessionStateManager {
+	return sic.s.SessionStateManager
+}
+
+func (sic ServerStateContext) PermissionManager() IPermissionManager {
+	return sic.s.PermissionManager
+}
+
+func (sic ServerStateContext) UserManager() IUserManager {
+	return sic.s.UserManager
+}
+
+func (sic ServerStateContext) ServerOptions() ServerOption {
+	return *sic.s.options
+}
+
+func (sic ServerStateContext) ApplicationConfig() conf.ApplicationConfig {
+	return *sic.s.conf
+}
+
+func (sic ServerStateContext) RespBodyCreationBuildFunc() RespBodyCreationBuildFunc {
+	return sic.s.RespBodyBuildFunc
 }
 
 var (
@@ -171,14 +212,17 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		BackendStoreHandler:    appDefaultBackendHandler,
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
-		AuthManager: func(initCtx ServerInitializationContext) IAuthManager {
-			return DefaultAuthManager(initCtx)
+		UserManagerHandler: func(ssc ServerStateContext) IUserManager {
+			return DefaultUserManager(ssc)
 		},
-		PermissionManagerHandler: func(initCtx ServerInitializationContext) IPermissionManager {
-			return DefaultPermissionManager(initCtx)
+		AuthManagerHandler: func(ssc ServerStateContext) IAuthManager {
+			return DefaultAuthManager(ssc)
 		},
-		SessionStateManager: func(initialCtx ServerInitializationContext) ISessionStateManager {
-			return DefaultSessionStateManager(initialCtx)
+		PermissionManagerHandler: func(ssc ServerStateContext) IPermissionManager {
+			return DefaultPermissionManager(ssc)
+		},
+		SessionStateManager: func(ssc ServerStateContext) ISessionStateManager {
+			return DefaultSessionStateManager(ssc)
 		},
 		Crypto: func(conf conf.ApplicationConfig) ICrypto {
 			c := conf.Security.Crypto
@@ -233,7 +277,7 @@ func NewServerWithOption(sopt *ServerOption) *HostServer {
 		hooks:               make([]*Hook, 0),
 		beforeHooks:         make([]*Hook, 0),
 		afterHooks:          make([]*Hook, 0),
-		apps:                make(map[string]App),
+		apps:                make(map[string]registerApp),
 		httpErrHandlers:     make(map[int][]ErrorHandler),
 		authParamValidators: make(map[string]*regexp.Regexp),
 		serverExitSignal:    make(chan struct{}, 1),
@@ -312,7 +356,10 @@ func (s *HostServer) Register(apps ...App) {
 	for _, app := range apps {
 		appName := app.Name()
 		if _, ok := s.apps[appName]; !ok {
-			s.apps[appName] = app
+			s.apps[appName] = registerApp{
+				app:     app,
+				isPatch: false,
+			}
 			// ServerOptions used AT first.
 			app.Use(s.options)
 		}
@@ -320,31 +367,34 @@ func (s *HostServer) Register(apps ...App) {
 }
 
 // Patch patch up for HostServer with apps.
-// It's Usage scenarios are need change server Options with other ge App but not need that's router features.
+// It's Usage scenarios are need change server Options with other gw.App but not need that's router features.
 //
 // Example:
+//
 // Your have two gw App
+//
 // 1. UAP(your app one), It's implementation User/Permission features
+//
 // 2. DevOps(your app two), It's implementation DevOps features
 //    It's dependencies on UAP, but the UAP's router not necessary on DevOps service.
 //
 // Now, We can separate deployment of UAP and DevOps
+//
 // And we should be patch up UAP into DevOps app.
 func (s *HostServer) Patch(apps ...App) {
 	if len(apps) == 0 {
 		return
 	}
-	ctx := MigrationContext{
-		Store:             s.Store,
-		PermissionManager: s.PermissionManager,
-	}
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	for _, app := range apps {
+		app := app
 		appName := app.Name()
 		if _, ok := s.apps[appName]; !ok {
-			app.Use(s.options)
-			app.Migrate(ctx)
+			s.apps[appName] = registerApp{
+				app:     app,
+				isPatch: true,
+			}
 		}
 	}
 }
@@ -388,45 +438,31 @@ func (s *HostServer) RegisterByPluginDir(dirs ...string) {
 	}
 }
 
-func initial(s *HostServer) {
+func initialConfig(s *HostServer) {
 	//
 	// Before Server start, Must initial all of Server Options
 	// There are options may be changed by Custom app instance's .Use(...) APIs.
 	cnf := s.options.AppConfigHandler(*s.options.bcs)
-	crypto := s.options.Crypto(*cnf)
-
-	s.options.cnf = cnf
 	s.conf = cnf
+	s.options.cnf = cnf
+}
+
+func initialServer(s *HostServer) {
+	crypto := s.options.Crypto(*s.conf)
 	s.Hash = crypto.Hash()
 	s.Protect = crypto.Protect()
 	s.PasswordSigner = crypto.Password()
-
-	s.Store = s.options.BackendStoreHandler(*cnf)
-
+	s.Store = s.options.BackendStoreHandler(*s.conf)
 	if s.RespBodyBuildFunc == nil {
 		s.RespBodyBuildFunc = s.options.RespBodyBuildFunc
 	}
 
-	ctx := ServerInitializationContext{
-		Store:             s.Store,
-		Hash:              s.Hash,
-		Protect:           s.Protect,
-		PasswordSigner:    s.PasswordSigner,
-		RespBodyBuildFunc: s.RespBodyBuildFunc,
-		AppConfig:         *s.conf,
-		ServerOption:      *s.options,
-	}
+	ctx := ServerStateContext{s: s}
 
-	s.PermissionManager = s.options.PermissionManagerHandler(ctx)
-	ctx.PermissionManager = s.PermissionManager
-
-	s.AuthManager = s.options.AuthManager(ctx)
-	ctx.AuthManager = s.AuthManager
-
+	s.UserManager = s.options.UserManagerHandler(ctx)
+	s.AuthManager = s.options.AuthManagerHandler(ctx)
 	s.SessionStateManager = s.options.SessionStateManager(ctx)
-	ctx.SessionStateManager = s.SessionStateManager
-
-	s.initializationContext = ctx
+	s.PermissionManager = s.options.PermissionManagerHandler(ctx)
 
 	registerAuthParamValidators(s)
 
@@ -436,7 +472,7 @@ func initial(s *HostServer) {
 	g.Use(gwState(s.options.Name))
 
 	// Auth(login/logout) API routers.
-	registerAuthRouter(cnf, g)
+	registerAuthRouter(s.conf, g)
 
 	// global Auth middleware.
 	g.Use(gwAuthChecker(s.options.cnf.Security.Auth.AllowUrls))
@@ -510,21 +546,29 @@ func registerAuthRouter(cnf *conf.ApplicationConfig, router *gin.Engine) {
 	}
 }
 
+func useApps(s *HostServer) {
+	for _, app := range s.apps {
+		if app.isPatch {
+			app.app.Use(s.options)
+		}
+	}
+}
+
 func registerApps(s *HostServer) {
 	ctx := MigrationContext{
 		Store:             s.Store,
 		PermissionManager: s.PermissionManager,
 	}
 	for _, app := range s.apps {
-		//
-		// app routers.
-		logger.Info("register app: %s", app.Name())
-		rg := s.router.Group(app.Router(), nil)
-		app.Register(rg)
+		if !app.isPatch {
+			logger.Info("register app: %s", app.app.Name())
+			rg := s.router.Group(app.app.Router(), nil)
+			app.app.Register(rg)
 
+		}
 		// migrate
-		logger.Info("migrate app: %s", app.Name())
-		app.Migrate(ctx)
+		logger.Info("migrate app: %s", app.app.Name())
+		app.app.Migrate(ctx)
 	}
 }
 
@@ -553,7 +597,9 @@ func (s *HostServer) compile() {
 		return
 	}
 	// All of app server initial AT here.
-	initial(s)
+	initialConfig(s)
+	useApps(s)
+	initialServer(s)
 	registerApps(s)
 	prepareHooks(s)
 	s.state++

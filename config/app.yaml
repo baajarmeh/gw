@@ -7,6 +7,7 @@
 version: 1.0
 server:
   listenAddr: ":8090"
+  name: "Gw Api Server"
   TLS:
     enabled: false
     certificate:

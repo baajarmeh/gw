@@ -4,6 +4,7 @@ import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/contrib/apps/uap/api"
 	"github.com/oceanho/gw/contrib/apps/uap/dbModel"
+	"github.com/oceanho/gw/contrib/apps/uap/gwImpls"
 )
 
 func init() {
@@ -76,9 +77,14 @@ func (a App) Register(router *gw.RouterGroup) {
 
 func (a App) Migrate(ctx gw.MigrationContext) {
 	db := ctx.Store.GetDbStore()
-	db.AutoMigrate(&dbModel.User{}, &dbModel.Profile{})
+	db.AutoMigrate(&dbModel.User{}, &dbModel.Role{}, &dbModel.UserProfile{}, &dbModel.UserRoleMapping{})
 }
 
 func (a App) Use(opt *gw.ServerOption) {
-	//opt.AuthManager = &gwext.AuthManager{}
+	opt.AuthManagerHandler = func(ssc gw.ServerStateContext) gw.IAuthManager {
+		return gwImpls.DefaultAuthManager(ssc)
+	}
+	opt.PermissionManagerHandler = func(ssc gw.ServerStateContext) gw.IPermissionManager {
+		return gwImpls.DefaultPermissionManager(ssc)
+	}
 }

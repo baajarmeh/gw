@@ -95,6 +95,7 @@ type AllowUrl struct {
 // Server
 //
 type Server struct {
+	Name       string `yaml:"name" toml:"name" json:"name"`
 	ListenAddr string `yaml:"listenAddr" toml:"listenAddr" json:"listenAddr"`
 }
 
@@ -259,9 +260,9 @@ func genCustomMaps(prefix string, mapStore map[string]string, custom interface{}
 	var mps, ok = custom.(map[interface{}]interface{})
 	if ok {
 		for k, v := range mps {
-			processMaps(prefix,mapStore,k,v)
+			processMaps(prefix, mapStore, k, v)
 		}
-	}else{
+	} else {
 		var mps, ok = custom.(map[string]interface{})
 		if ok {
 			for k, v := range mps {
@@ -271,7 +272,7 @@ func genCustomMaps(prefix string, mapStore map[string]string, custom interface{}
 	}
 }
 
-func processMaps(prefix string, mapStore map[string]string,k interface{}, v interface{})  {
+func processMaps(prefix string, mapStore map[string]string, k interface{}, v interface{}) {
 	k1, o := k.(string)
 	if o {
 		if prefix != "" {
