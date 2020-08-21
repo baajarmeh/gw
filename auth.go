@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	json "github.com/json-iterator/go"
 	"github.com/oceanho/gw/conf"
+	"github.com/oceanho/gw/libs/gwjsoner"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ type Permission struct {
 }
 
 func (p Permission) String() string {
-	b, _ := json.Marshal(p)
+	b, _ := gwjsoner.Marshal(p)
 	return string(b)
 }
 
@@ -175,7 +176,7 @@ func (d *DefaultSessionStateManagerImpl) Query(sid string) (User, error) {
 	if err != nil {
 		return EmptyUser, err
 	}
-	err = json.Unmarshal(bytes, &user)
+	err = gwjsoner.Unmarshal(bytes, &user)
 	if err != nil {
 		return EmptyUser, err
 	}
@@ -511,14 +512,17 @@ func parseCredentials(s HostServer, c *gin.Context) (tenantId uint64,
 	//
 
 	tenantId = 0
+	var tenantIdStr = ""
 
 	// 1. User/Password
 	credType = UserPassword
 	passport, _ = c.GetPostForm(param.Passport)
 	secret, _ = c.GetPostForm(param.Secret)
+	tenantIdStr, _ = c.GetPostForm(param.TenantId)
 	verifyCode, _ = c.GetPostForm(param.VerifyCode)
 	result = passport != "" && secret != ""
 	if result {
+		tenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 		return
 	}
 
@@ -529,6 +533,7 @@ func parseCredentials(s HostServer, c *gin.Context) (tenantId uint64,
 			param.Passport:   "",
 			param.Secret:     "",
 			param.VerifyCode: "",
+			param.TenantId:   "",
 		}
 		err := c.Bind(&cred)
 		if err != nil {
@@ -543,6 +548,7 @@ func parseCredentials(s HostServer, c *gin.Context) (tenantId uint64,
 		}
 	}
 
+	tenantIdStr = c.GetHeader("X-GW-Tenant-ID")
 	// 2. Basic auth
 	credType = UserPassword
 	passport, secret, result = c.Request.BasicAuth()
@@ -551,6 +557,7 @@ func parseCredentials(s HostServer, c *gin.Context) (tenantId uint64,
 	}
 	result = passport != "" && secret != ""
 	if result {
+		tenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 		return
 	}
 
@@ -559,6 +566,7 @@ func parseCredentials(s HostServer, c *gin.Context) (tenantId uint64,
 	passport = c.GetHeader("X-Aks-Key")
 	secret = c.GetHeader("X-Aks-Secret")
 	verifyCode = c.GetHeader("X-Aks-VerifyCode")
+	tenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 	return
 }
 
@@ -578,6 +586,7 @@ type User struct {
 	TenantId    uint64
 	Passport    string
 	Secret      string       `gorm:"-"`
+	Password    string       `gorm:"-"` // Hash string
 	UserType    UserType     `gorm:"-"` // gw.AuthUserType
 	Roles       []string     `gorm:"-"`
 	Permissions []Permission `gorm:"-"`
@@ -596,7 +605,7 @@ type Session struct {
 }
 
 func (user User) MarshalBinary() (data []byte, err error) {
-	return json.Marshal(&user)
+	return gwjsoner.Marshal(&user)
 }
 
 func (user User) IsAuth() bool {
@@ -613,6 +622,10 @@ func (user User) IsAdmin() bool {
 
 func (user User) IsTenancy() bool {
 	return user.IsAuth() && user.UserType == Tenancy
+}
+
+func (user User) IsUser() bool {
+	return user.IsAuth() && user.UserType == NonUser
 }
 
 func getUser(c *gin.Context) User {

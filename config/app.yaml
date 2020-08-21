@@ -85,6 +85,7 @@ security:
     paramKey:
       passport: "email"
       secret: "password"
+      tenantId: "tenantId"
       verifyCode: "verifyCode"
     paramPattern:
       passport: '^\S{5,64}$'

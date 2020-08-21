@@ -1,0 +1,573 @@
+{
+	"info": {
+		"_postman_id": "9423e140-eeb1-4905-b5b4-9f43784c07f2",
+		"name": "gw",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "/api/v1/gw/auth/login(Admin)",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin@123456",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/gw/auth/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gw",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/gw/auth/login(gw-tenant-admin)",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "gw-tenant-admin",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "123@456",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/gw/auth/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gw",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "UAP",
+			"item": [
+				{
+					"name": "/api/v1/uap/user",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/uap/user",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"uap",
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/gw/auth/login(admin)",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin@123456",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/gw/auth/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gw",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/gw/auth/login(tenancy)",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "tenancy@123456",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "lanhu",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/gw/auth/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gw",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/gw/auth/login(user)",
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "lh-user1",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "tenancy@123456",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-GW-Tenant-ID",
+								"value": "9",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/api/v1/gw/auth/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gw",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "tester",
+			"item": [
+				{
+					"name": "500-tester",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "EskA1hbzv9MssedVgLWDJR_oV4lLcmr0HehkytnREm8IuFNAlynsnNg7DHuTP3bP_StUcDOW3dAEHCKzYFfiKlBQmEj04Mfnwx8HEYA",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/tester/err/500",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tester",
+								"err",
+								"500"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "401-tester",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "EskA1hbzv9MssedVgLWDJR_oV4lLcmr0HehkytnREm8IuFNAlynsnNg7DHuTP3bP_StUcDOW3dAEHCKzYFfiKlBQmEj04Mfnwx8HEYA",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/tester/err/401",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tester",
+								"err",
+								"401"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/tester/test/create",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "a4Rbc-yn8zuqosYqKJaCTx8z5ilH67cckMCPAZXNE0FjjHnBy_rNxZ0GTo7Km_yfpW709zeFjQezxn_ZWGY82DHiSurAO3fKVG7eMOk",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"str\": \"ABC\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/api/v1/tester/test/create",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tester",
+								"test",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/tester/my-tester-default-RestAPI",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "gIMt5dPz-N4Di-1a962Gcq3JJ2PQ3lJxDHCSZSWqE6Ui316ZQoq9hSOK83_nACc0q03d-wcGUvaiCNKhBsO9c8nA7STQEUnfjIedCcc",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/tester/my-tester-default-RestAPI",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tester",
+								"my-tester-default-RestAPI"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/tester/my-tester-default-RestAPI",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "OHt9UVrzgc56xdBIiKeGRy7WY9dS5Ma_HtlQmoa-rv3SSjBMVY2NDeEyZ_EvwonwNNc5RsuN4wpEmjWORJ4wTqA6gmKIE7R9X--tJd4",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/tester/my-tester-default-RestAPI",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tester",
+								"my-tester-default-RestAPI"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/tester/my-tester-default-RestAPI/query",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "gIMt5dPz-N4Di-1a962Gcq3JJ2PQ3lJxDHCSZSWqE6Ui316ZQoq9hSOK83_nACc0q03d-wcGUvaiCNKhBsO9c8nA7STQEUnfjIedCcc",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/tester/my-tester-default-RestAPI",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tester",
+								"my-tester-default-RestAPI"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "lhpdp",
+			"item": [
+				{
+					"name": "/api/v1/lhpdp/node/modify",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "QxsBMWWHlh9HuGSMXBycK9leNKie18CVb99fmhkDZPbCCBHbOZZW6KhVWkRUKw-kDPc2PH38YiNMR6ut2uhLv2j7WswX5S67uiOsB3IjBuEZTBv5LdzCVO0TcnSXsOTT2Q",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/lhpdp/pdpnode/modify/hehai",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lhpdp",
+								"pdpnode",
+								"modify",
+								"hehai"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/lhpdp/node/create",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "QxsBMWWHlh9HuGSMXBycK9leNKie18CVb99fmhkDZPbCCBHbOZZW6KhVWkRUKw-kDPc2PH38YiNMR6ut2uhLv2j7WswX5S67uiOsB3IjBuEZTBv5LdzCVO0TcnSXsOTT2Q",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/lhpdp/PDPNode/create",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lhpdp",
+								"PDPNode",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/api/v1/lhpdp/node",
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "Oi0fBx6uN9XOiJfnCWy-p7QBDrWR6d_p_bOg1ZLCmbaj_t7RZt6Yr8WsX0YZFmrpycTAXKrdtMLipVUgC2sPPH2PFO2UHEd1KOy8ld4",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "X-Auth-Token",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/lhpdp/PDPNode",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lhpdp",
+								"PDPNode"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}

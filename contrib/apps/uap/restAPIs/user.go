@@ -17,9 +17,9 @@ func (u User) Name() string {
 // APIs
 //
 func (u User) Get(ctx *gw.Context) {
-	store := ctx.State().Store()
+	store := ctx.Store()
 	db := store.GetDbStore()
-	var user dbModel.User
+	var user []dbModel.User
 	// var userDto dto.UserDto
 	err := db.Find(&user).Error
 	ctx.JSON(err, user)

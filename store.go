@@ -22,6 +22,8 @@ type IStore interface {
 // StoreDbSetupHandler represents a database ORM object handler that can be replace A *gorm.DB instances features.
 type StoreDbSetupHandler func(ctx Context, db *gorm.DB) *gorm.DB
 
+type dbCallbackHandler func(db *gorm.DB)
+
 // StoreCacheSetupHandler represents a redis Client object handler that can be replace A *redis.Client instances features.
 type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *redis.Client
 
@@ -38,15 +40,15 @@ type PermissionManagerHandler func(state ServerState) IPermissionManager
 type RespBodyBuildFunc func(status int, requestID string, err interface{}, msgBody interface{}) interface{}
 
 type backendWrapper struct {
-	ctx                    Context
-	user                   User
-	store                  IStore
-	storeDbSetupHandler    StoreDbSetupHandler
-	storeCacheSetupHandler StoreCacheSetupHandler
+	user                    User
+	store                   IStore
+	ctx                     *Context
+	storeDbSetupHandlers    []StoreDbSetupHandler
+	storeCacheSetupHandlers []StoreCacheSetupHandler
 }
 
 func (b backendWrapper) GetDbStore() *gorm.DB {
-	db := b.store.GetDbStore().WithContext(context.Background())
+	db := b.store.GetDbStore()
 	if db == nil {
 		panic("got db store fail, ret is nil.")
 	}
@@ -54,7 +56,7 @@ func (b backendWrapper) GetDbStore() *gorm.DB {
 }
 
 func (b backendWrapper) GetDbStoreByName(name string) *gorm.DB {
-	db := b.store.GetDbStoreByName(name).WithContext(context.Background())
+	db := b.store.GetDbStoreByName(name)
 	if db == nil {
 		panic("got db store by name fail, ret is nil.")
 	}
@@ -62,11 +64,19 @@ func (b backendWrapper) GetDbStoreByName(name string) *gorm.DB {
 }
 
 func (b backendWrapper) globalDbStep(db *gorm.DB) *gorm.DB {
-	return b.storeDbSetupHandler(b.ctx, db)
+	ctx := *b.ctx
+	for _, h := range b.storeDbSetupHandlers {
+		db = h(ctx, db)
+	}
+	return db
 }
 
 func (b backendWrapper) globalCacheSetup(db *redis.Client) *redis.Client {
-	return b.storeCacheSetupHandler(b.ctx, db, b.user)
+	ctx := *b.ctx
+	for _, h := range b.storeCacheSetupHandlers {
+		db = h(ctx, db, b.user)
+	}
+	return db
 }
 
 func (b backendWrapper) GetCacheStore() *redis.Client {
@@ -167,7 +177,62 @@ func createDb(db conf.Db) *gorm.DB {
 	if err := sqlDb.Ping(); err != nil {
 		panic(fmt.Sprintf("db not pong, db name:%s. addr: %s, port: %d", db.Name, db.Addr, db.Port))
 	}
+	//FIXME(Ocean): how to warp gw.Context and necessary?
+	setupDb(gDb)
 	return gDb
+}
+
+func setupDb(db *gorm.DB) {
+	//TODO(Ocean): Emmmmm, what are gorm process follow?
+	//db.Callback().Query().Before("gorm:query").Register("gw:query_before", func(db *gorm.DB) {
+	//	var obj, ok = db.Get(gwDbContextKey)
+	//	if !ok {
+	//		return
+	//	}
+	//	if ctx, ok := obj.(Context); ok {
+	//		user := ctx.User()
+	//		if user.IsEmpty() {
+	//			return
+	//		}
+	//		_, ok := db.Statement.Schema.FieldsByName["TenantId"]
+	//		if ok && user.IsTenancy() {
+	//			db = db.Where("tenant_id=1")
+	//		}
+	//	}
+	//})
+	db.Callback().Query().Before("gorm:query").Register("gw:query_global_filter", func(db *gorm.DB) {
+		var obj, ok = db.Get(gwDbContextKey)
+		if !ok {
+			return
+		}
+		if ctx, ok := obj.(Context); ok {
+			user := ctx.User()
+			if user.IsEmpty() {
+				return
+			}
+			_, ok := db.Statement.Schema.FieldsByName["TenantId"]
+			if ok {
+				if user.IsTenancy() {
+					db = db.Where("id = ? or tenant_id = ?", user.ID, user.ID)
+				} else if user.IsUser() {
+					if _, ok := db.Statement.Schema.FieldsByName["UserId"]; !ok {
+						db = db.Where("tenant_id = ?", user.TenantId)
+					} else {
+						db = db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantId)
+					}
+				}
+			}
+		}
+	})
+	db.Callback().Update().Register("gw:update_before", func(db *gorm.DB) {
+
+	})
+	db.Callback().Delete().Register("gw:delete_before", func(db *gorm.DB) {
+
+	})
+	db.Callback().Create().Register("gw:create_before", func(db *gorm.DB) {
+
+	})
 }
 
 func createCache(cache conf.Cache) *redis.Client {

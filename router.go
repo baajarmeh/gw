@@ -15,6 +15,7 @@ import (
 
 const (
 	gwRouterInfoKey = "gw-router"
+	gwDbContextKey  = "gw-context"
 )
 
 // Handler defines a http handler for gw framework.
@@ -27,19 +28,61 @@ type Context struct {
 	user       User
 	startTime  time.Time
 	logger     Logger
-	server     HostServer
-	state      ServerState
+	server     *HostServer
+	state      ContextState
 	queries    map[string][]string
 	params     map[string]interface{}
 	bindModels map[string]interface{}
 }
 
-func (c Context) User() User {
-	return c.User()
+// ServerState represents a Server state context object.
+type ContextState struct {
+	state ServerState
+	store IStore
 }
 
-func (c Context) State() ServerState {
-	return c.state
+func (c Context) User() User {
+	return c.user
+}
+
+func (c Context) Store() IStore {
+	return c.state.store
+}
+
+func (c Context) CryptoHash() ICryptoHash {
+	return c.state.state.CryptoHash()
+}
+
+func (c Context) CryptoProtect() ICryptoProtect {
+	return c.state.state.CryptoProtect()
+}
+
+func (c Context) PasswordSigner() IPasswordSigner {
+	return c.state.state.PasswordSigner()
+}
+
+func (c Context) AuthManager() IAuthManager {
+	return c.state.state.AuthManager()
+}
+
+func (c Context) SessionStateManager() ISessionStateManager {
+	return c.state.state.SessionStateManager()
+}
+
+func (c Context) PermissionManager() IPermissionManager {
+	return c.state.state.PermissionManager()
+}
+
+func (c Context) UserManager() IUserManager {
+	return c.state.state.UserManager()
+}
+
+func (c Context) IDGenerator() IdentifierGenerator {
+	return c.state.state.IDGenerator()
+}
+
+func (c Context) RespBodyBuildFunc() RespBodyBuildFunc {
+	return c.state.state.RespBodyBuildFunc()
 }
 
 // Router represents a gw's Router info.
@@ -79,9 +122,16 @@ func (r *RouterInfo) String() string {
 
 func (router *Router) createRouter(method, relativePath string, handler Handler, handlerActionName string, decorators ...Decorator) {
 	urlPath := path.Join(router.currentRouter.BasePath(), relativePath)
+	//var _decorators []Decorator
+	//_decorators = append(_decorators, NewStoreDbSetupDecorator(func(ctx Context, db *gorm.DB) *gorm.DB {
+	//	return db.Set(gwDbUserInfoKey, ctx.User())
+	//}))
+	//_decorators = append(_decorators, decorators...)
 	routerInfo := RouterInfo{
-		Method: method, UrlPath: urlPath,
-		Handler: handler, Decorators: decorators,
+		Method:     method,
+		UrlPath:    urlPath,
+		Handler:    handler,
+		Decorators: decorators,
 	}
 	beforeDecorators, afterDecorators := splitDecorators(decorators...)
 	pds := FilterDecorator(func(d Decorator) bool {
@@ -119,7 +169,6 @@ func (router *Router) createRouter(method, relativePath string, handler Handler,
 		c.Set(gwRouterInfoKey, routerInfo)
 		handle(c)
 	})
-
 	router.locker.Lock()
 	defer router.locker.Unlock()
 	router.routerInfos = append(router.routerInfos, routerInfo)
@@ -132,7 +181,7 @@ func getHandlerFullName(handler Handler) string {
 
 // Gw framework's APIs.
 func (c Context) GetHostServer() HostServer {
-	return c.server
+	return *c.server
 }
 
 // Query returns a string from queries.
@@ -328,18 +377,34 @@ func parseErrToRespBody(s HostServer, requestID string, msgBody interface{}, err
 func makeCtx(c *gin.Context, requestID string) *Context {
 	s := hostServer(c)
 	user := getUser(c)
+	serverState := ServerState{s: s}
 	ctx := &Context{
-		server:     *s,
-		Context:    c,
-		user:       user,
-		RequestID:  requestID,
-		startTime:  time.Now(),
-		logger:     getLogger(c),
-		state:      ServerState{s: s},
+		server:    s,
+		Context:   c,
+		user:      user,
+		RequestID: requestID,
+		startTime: time.Now(),
+		logger:    getLogger(c),
+		state: ContextState{
+			state: serverState,
+		},
 		queries:    make(map[string][]string),
 		params:     make(map[string]interface{}),
 		bindModels: make(map[string]interface{}),
 	}
+	var dbSetups []StoreDbSetupHandler
+	dbSetups = append(dbSetups, s.storeDbSetupHandler)
+	var cacheSetups []StoreCacheSetupHandler
+	cacheSetups = append(cacheSetups, s.storeCacheSetupHandler)
+	store := &backendWrapper{
+		user:                    user,
+		ctx:                     ctx,
+		storeDbSetupHandlers:    dbSetups,
+		storeCacheSetupHandlers: cacheSetups,
+		store:                   serverState.Store(),
+	}
+	// FIXME(Ocean): has circular reference?
+	ctx.state.store = store
 	return ctx
 }
 

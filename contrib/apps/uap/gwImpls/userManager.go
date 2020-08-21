@@ -22,6 +22,15 @@ type UserManager struct {
 	permPagerExpr    gw.PagerExpr
 }
 
+func (u UserManager) mapUserType(user dbModel.User) gw.UserType {
+	if user.IsTenancy {
+		return gw.Tenancy
+	}
+	if user.IsAdmin {
+		return gw.Administrator
+	}
+	return gw.NonUser
+}
 func (u UserManager) Backend() *gorm.DB {
 	return u.Store().GetDbStoreByName(u.backendStoreName)
 }
@@ -110,16 +119,24 @@ func (u UserManager) Delete(tenantId, userId uint64) error {
 
 func (u UserManager) QueryByUser(tenantId uint64, passport, password string) (gw.User, error) {
 	var user gw.User
-	var err = u.User().Find(&user, "tenant_id=? and passport=? and secret=?", tenantId, passport, password).Error
+	var model dbModel.User
+	var err = u.Backend().Take(&model, "tenant_id=? and passport=? and secret=?", tenantId, passport, password).Error
 	if err != nil {
 		return gw.EmptyUser, err
 	}
+
+	user.ID = model.ID
+	user.TenantId = model.TenantId
+	user.Passport = model.Passport
+	user.Password = model.Secret
+	user.UserType = u.mapUserType(model)
+
 	if user.IsEmpty() {
-		return user, gw.ErrorUserNotFound
+		return gw.EmptyUser, gw.ErrorUserNotFound
 	}
-	_, perms, err := u.PermissionManager().QueryByUser(user.TenantId, user.ID, gw.DefaultPageExpr)
+	_, perms, err := u.PermissionManager().QueryByUser(model.TenantId, model.ID, gw.DefaultPageExpr)
 	if err != nil {
-		return user, err
+		return gw.EmptyUser, err
 	}
 	user.Permissions = make([]gw.Permission, len(perms))
 	copy(user.Permissions, perms)

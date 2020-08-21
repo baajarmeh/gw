@@ -190,7 +190,7 @@ func (ss ServerState) IDGenerator() IdentifierGenerator {
 	return ss.s.IDGenerator
 }
 
-func (ss ServerState) RespBodyCreationBuildFunc() RespBodyBuildFunc {
+func (ss ServerState) RespBodyBuildFunc() RespBodyBuildFunc {
 	return ss.s.RespBodyBuildFunc
 }
 
@@ -210,7 +210,8 @@ var (
 		return conf.NewConfigWithBootConfig(&cnf)
 	}
 	appDefaultStoreDbSetupHandler = func(c Context, db *gorm.DB) *gorm.DB {
-		return db
+		// TODO(Ocean): consider new a context.ContextTimeout
+		return db.Set(gwDbContextKey, c)
 	}
 	appDefaultStoreCacheSetupHandler = func(c Context, client *redis.Client, user User) *redis.Client {
 		return client
