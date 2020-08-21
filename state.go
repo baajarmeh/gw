@@ -246,7 +246,7 @@ func getSid(s HostServer, c *gin.Context) (string, bool) {
 
 func hostServer(c *gin.Context) *HostServer {
 	serverName := c.MustGet(gwAppKey).(string)
-	return servers[serverName]
+	return servers[serverName].Server
 }
 
 func config(c *gin.Context) conf.ApplicationConfig {

@@ -11,7 +11,7 @@ import (
 
 type PermissionManagerImpl struct {
 	_state int
-	store  gw.Store
+	store  gw.IStore
 	conf   conf.ApplicationConfig
 	locker sync.Mutex
 	state  gw.ServerState
@@ -20,7 +20,7 @@ type PermissionManagerImpl struct {
 func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
 	return &PermissionManagerImpl{
 		state: state,
-		conf:  state.ApplicationConfig(),
+		conf:  *state.ApplicationConfig(),
 		store: state.Store(),
 	}
 }

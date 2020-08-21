@@ -11,8 +11,8 @@ import (
 	"strconv"
 )
 
-// Store represents a Store engine of gw framework.
-type Store interface {
+// IStore represents a Store engine of gw framework.
+type IStore interface {
 	GetDbStore() *gorm.DB
 	GetDbStoreByName(name string) *gorm.DB
 	GetCacheStore() *redis.Client
@@ -40,7 +40,7 @@ type RespBodyCreationBuildFunc func(status int, requestID string, err interface{
 type backendWrapper struct {
 	ctx                    Context
 	user                   User
-	store                  Store
+	store                  IStore
 	storeDbSetupHandler    StoreDbSetupHandler
 	storeCacheSetupHandler StoreCacheSetupHandler
 }
@@ -116,7 +116,7 @@ func (d DefaultBackendImpl) GetCacheStoreByName(name string) *redis.Client {
 	return db
 }
 
-func DefaultBackend(cnf conf.ApplicationConfig) Store {
+func DefaultBackend(cnf conf.ApplicationConfig) IStore {
 	storeBackend := DefaultBackendImpl{
 		dbs:    make(map[string]*gorm.DB),
 		caches: make(map[string]*redis.Client),

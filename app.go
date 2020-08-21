@@ -45,16 +45,16 @@ type App interface {
 	// Register define a API that for register your app router inside.
 	Register(router *RouterGroup)
 
-	// Migrate define a API that for create your app's database migrations and permission initialization inside.
-	Migrate(ctx MigrationContext)
-
 	// Use define a API that for modify Server Options capability AT your Application.
 	Use(option *ServerOption)
 
-	// Use define a API that notify your Application when server starting before.
+	// Migrate define a API that for create your app's database migrations and permission initialization inside.
+	Migrate(state ServerState)
+
+	// OnStart define a API that notify your Application when server starting before.
 	OnStart(state ServerState)
 
-	// Use define a API that notify your Application when server shutdown before.
+	// OnShutDown define a API that notify your Application when server shutdown before.
 	OnShutDown(state ServerState)
 
 	// Fixme(OceanHo): need?
@@ -93,7 +93,7 @@ type ServerOption struct {
 	PluginSymbolSuffix       string
 	StartBeforeHandler       func(s *HostServer) error
 	ShutDownBeforeHandler    func(s *HostServer) error
-	BackendStoreHandler      func(cnf conf.ApplicationConfig) Store
+	BackendStoreHandler      func(cnf conf.ApplicationConfig) IStore
 	AppConfigHandler         func(cnf conf.BootConfig) *conf.ApplicationConfig
 	Crypto                   func(conf conf.ApplicationConfig) ICrypto
 	UserManagerHandler       func(state ServerState) IUserManager
@@ -109,7 +109,8 @@ type ServerOption struct {
 
 // HostServer represents a Host Server.
 type HostServer struct {
-	Store                  Store
+	Name                   string
+	Store                  IStore
 	Hash                   ICryptoHash
 	Protect                ICryptoProtect
 	PasswordSigner         IPasswordSigner
@@ -141,7 +142,7 @@ type ServerState struct {
 	s *HostServer
 }
 
-func (ss ServerState) Store() Store {
+func (ss ServerState) Store() IStore {
 	return ss.s.Store
 }
 
@@ -177,8 +178,8 @@ func (ss ServerState) ServerOptions() ServerOption {
 	return *ss.s.options
 }
 
-func (ss ServerState) ApplicationConfig() conf.ApplicationConfig {
-	return *ss.s.conf
+func (ss ServerState) ApplicationConfig() *conf.ApplicationConfig {
+	return ss.s.conf
 }
 
 func (ss ServerState) RespBodyCreationBuildFunc() RespBodyCreationBuildFunc {
@@ -194,7 +195,7 @@ var (
 	appDefaultPluginSymbolSuffix    = ".so"
 	appDefaultStartBeforeHandler    = func(server *HostServer) error { return nil }
 	appDefaultShutdownBeforeHandler = func(server *HostServer) error { return nil }
-	appDefaultBackendHandler        = func(cnf conf.ApplicationConfig) Store {
+	appDefaultBackendHandler        = func(cnf conf.ApplicationConfig) IStore {
 		return DefaultBackend(cnf)
 	}
 	appDefaultAppConfigHandler = func(cnf conf.BootConfig) *conf.ApplicationConfig {
@@ -210,11 +211,20 @@ var (
 )
 
 var (
-	servers map[string]*HostServer
+	servers map[string]*hostServerState
 )
 
+type hostServerState struct {
+	State  *ServerState
+	Server *HostServer
+}
+
+func (hss *hostServerState) setState(state ServerState) {
+	hss.State = &state
+}
+
 func init() {
-	servers = make(map[string]*HostServer)
+	servers = make(map[string]*hostServerState)
 	logger.SetLogFormatter(internLogFormatter)
 }
 
@@ -291,9 +301,9 @@ func NewServerWithOption(sopt *ServerOption) *HostServer {
 	server, ok := servers[sopt.Name]
 	if ok {
 		logger.Warn("duplicated server, name: %s", sopt.Name)
-		return server
+		return server.Server
 	}
-	server = &HostServer{
+	serverInstance := &HostServer{
 		options:             sopt,
 		hooks:               make([]*Hook, 0),
 		beforeHooks:         make([]*Hook, 0),
@@ -304,8 +314,11 @@ func NewServerWithOption(sopt *ServerOption) *HostServer {
 		serverExitSignal:    make(chan struct{}, 1),
 		serverStartDone:     make(chan struct{}, 1),
 	}
-	servers[sopt.Name] = server
-	return server
+	servers[sopt.Name] = &hostServerState{
+		State:  nil,
+		Server: serverInstance,
+	}
+	return serverInstance
 }
 
 // AddHook register a global http handler API into the server.
@@ -465,9 +478,10 @@ func initialConfig(s *HostServer) {
 	s.options.cnf = cnf
 }
 
-func initialServer(s *HostServer) {
+func initialServer(s *HostServer) ServerState {
 	crypto := s.options.Crypto(*s.conf)
 	s.Hash = crypto.Hash()
+	s.Name = s.options.Name
 	s.Protect = crypto.Protect()
 	s.PasswordSigner = crypto.Password()
 	s.Store = s.options.BackendStoreHandler(*s.conf)
@@ -475,12 +489,12 @@ func initialServer(s *HostServer) {
 		s.RespBodyBuildFunc = s.options.RespBodyBuildFunc
 	}
 
-	ctx := ServerState{s: s}
+	state := ServerState{s: s}
 
-	s.UserManager = s.options.UserManagerHandler(ctx)
-	s.AuthManager = s.options.AuthManagerHandler(ctx)
-	s.SessionStateManager = s.options.SessionStateManager(ctx)
-	s.PermissionManager = s.options.PermissionManagerHandler(ctx)
+	s.UserManager = s.options.UserManagerHandler(state)
+	s.AuthManager = s.options.AuthManagerHandler(state)
+	s.SessionStateManager = s.options.SessionStateManager(state)
+	s.PermissionManager = s.options.PermissionManagerHandler(state)
 
 	registerAuthParamValidators(s)
 
@@ -530,6 +544,7 @@ func initialServer(s *HostServer) {
 	}
 	// permission manager initial
 	s.PermissionManager.Initial()
+	return state
 }
 
 func registerAuthParamValidators(s *HostServer) {
@@ -570,16 +585,13 @@ func useApps(s *HostServer) {
 	}
 }
 
-func onStarts(s *HostServer) {
-	state := ServerState{s: s}
+func onStarts(s *HostServer, state ServerState) {
 	for _, app := range s.apps {
 		app.instance.OnStart(state)
 	}
 }
 
-func registerApps(s *HostServer) {
-	ctx := MigrationContext{}
-	ctx.ServerState = ServerState{s: s}
+func registerApps(s *HostServer, state ServerState) {
 	for _, app := range s.apps {
 		if !app.isPatchOnly {
 			logger.Info("register app: %s", app.instance.Name())
@@ -589,7 +601,7 @@ func registerApps(s *HostServer) {
 		}
 		// migrate
 		logger.Info("migrate app: %s", app.instance.Name())
-		app.instance.Migrate(ctx)
+		app.instance.Migrate(state)
 	}
 }
 
@@ -620,10 +632,11 @@ func (s *HostServer) compile() {
 	// All of app server initial AT here.
 	initialConfig(s)
 	useApps(s)
-	initialServer(s)
-	registerApps(s)
+	state := initialServer(s)
+	registerApps(s, state)
 	prepareHooks(s)
-	onStarts(s)
+	onStarts(s, state)
+	servers[s.options.Name].setState(state)
 	s.state++
 }
 

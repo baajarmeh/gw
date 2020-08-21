@@ -108,7 +108,7 @@ type IPermissionManager interface {
 }
 
 type DefaultAuthManagerImpl struct {
-	store Store
+	store IStore
 	cnf   conf.ApplicationConfig
 	users map[string]*defaultUser
 }
@@ -119,7 +119,7 @@ type defaultUser struct {
 }
 
 type DefaultSessionStateManagerImpl struct {
-	store              Store
+	store              IStore
 	storeName          string
 	storePrefix        string
 	expirationDuration time.Duration
@@ -129,7 +129,7 @@ type DefaultSessionStateManagerImpl struct {
 
 func DefaultSessionStateManager(state ServerState) *DefaultSessionStateManagerImpl {
 	defaultSs.store = state.Store()
-	defaultSs.cnf = state.ApplicationConfig()
+	defaultSs.cnf = *state.ApplicationConfig()
 	defaultSs.storeName = defaultSs.cnf.Security.Auth.Session.DefaultStore.Name
 	defaultSs.storePrefix = defaultSs.cnf.Security.Auth.Session.DefaultStore.Prefix
 	defaultSs.expirationDuration = time.Duration(defaultSs.cnf.Security.Auth.Cookie.MaxAge) * time.Second
@@ -202,7 +202,7 @@ func (d *DefaultAuthManagerImpl) Logout(user User) bool {
 }
 
 func DefaultAuthManager(state ServerState) *DefaultAuthManagerImpl {
-	defaultAm.cnf = state.ApplicationConfig()
+	defaultAm.cnf = *state.ApplicationConfig()
 	defaultAm.store = state.Store()
 	return defaultAm
 }
@@ -244,7 +244,7 @@ func init() {
 
 type EmptyPermissionManagerImpl struct {
 	state  int
-	store  Store
+	store  IStore
 	conf   conf.ApplicationConfig
 	locker sync.Mutex
 	perms  map[string]map[string]Permission
@@ -253,7 +253,7 @@ type EmptyPermissionManagerImpl struct {
 func DefaultPermissionManager(state ServerState) *EmptyPermissionManagerImpl {
 	if defaultPm == nil {
 		defaultPm = &EmptyPermissionManagerImpl{
-			conf:  state.ApplicationConfig(),
+			conf:  *state.ApplicationConfig(),
 			store: state.Store(),
 			perms: make(map[string]map[string]Permission),
 		}

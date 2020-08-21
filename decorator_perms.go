@@ -149,7 +149,7 @@ func NewPermissionDecorator(perms ...Permission) Decorator {
 		MetaData: perms,
 		Before: func(c *Context) (status int, err error, payload interface{}) {
 			s := GetHostServer(c)
-			if s.PermissionManager.Has(c.User, perms...) {
+			if s.PermissionManager.Has(c.User(), perms...) {
 				return 0, nil, nil
 			}
 			return http.StatusForbidden, ErrPermissionDenied, msg

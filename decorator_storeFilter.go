@@ -16,10 +16,10 @@ func NewStoreDbSetupDecorator(setupDbFilterHandler StoreDbSetupHandler) Decorato
 		Catalog:  storeDbFilterDecoratorCatalog,
 		MetaData: nil,
 		Before: func(ctx *Context) (status int, err error, payload interface{}) {
-			store, ok := ctx.State.Store().(*backendWrapper)
+			store, ok := ctx.State().Store().(*backendWrapper)
 			if ok {
 				store.storeDbSetupHandler = setupDbFilterHandler
-				ctx.State.s.Store = store
+				ctx.State().s.Store = store
 			}
 			return 0, nil, nil
 		},

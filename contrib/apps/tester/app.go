@@ -67,10 +67,19 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("err/500", api.Err500)
 }
 
-func (a App) Migrate(ctx gw.MigrationContext) {
-	db := ctx.Store.GetDbStore()
+func (a App) Migrate(state gw.ServerState) {
+	db := state.Store().GetDbStore()
 	db.AutoMigrate(&dto.MyTester{})
 }
 
 func (a App) Use(opt *gw.ServerOption) {
+
+}
+
+func (a App) OnStart(state gw.ServerState) {
+
+}
+
+func (a App) OnShutDown(state gw.ServerState) {
+
 }

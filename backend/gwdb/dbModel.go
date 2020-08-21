@@ -7,33 +7,33 @@ type Model struct {
 }
 
 type HasTenantState struct {
-	TenantId uint64 `gorm:"default:0;not null;index:idx_tenant_expr"`
+	TenantId uint64 `gorm:"default:0;not null;index:idx_tenant_expr" json:"tenant_id"`
 }
 
 type HasCreationState struct {
-	CreatedAt *time.Time `gorm:"not null"`
+	CreatedAt time.Time `gorm:"not null"`
 }
 
 type HasModificationState struct {
-	ModifiedAt *time.Time
+	ModifiedAt time.Time
 }
 
 type HasSoftDeletionState struct {
-	IsDeleted *bool `gorm:"default:0"`
-	DeletedAt *time.Time
+	IsDeleted bool `gorm:"default:0"`
+	DeletedAt time.Time
 }
 
 type HasLockState struct {
-	IsLocked     *bool `gorm:"default:0;not null"`
-	LockedAt     *time.Time
+	IsLocked     bool `gorm:"default:0;not null"`
+	LockedAt     time.Time
 	LockedReason string `gorm:"type:varchar(128)"`
 }
 
 type HasActivationState struct {
-	IsActive *bool `gorm:"default:1;not null"`
+	IsActive bool `gorm:"default:1;not null"`
 }
 
 type HasEffectivePeriodState struct {
-	EffectiveFrom *time.Time
-	EffectiveTo   *time.Time
+	EffectiveAt time.Time
+	PeriodAt    time.Time
 }

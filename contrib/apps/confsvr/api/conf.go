@@ -6,7 +6,7 @@ import (
 )
 
 func GetConf(c *gw.Context) {
-	//user := c.User
+	//user := c.User()
 	c.JSON200(gin.H{
 		"status": "succ",
 		"payload": gin.H{

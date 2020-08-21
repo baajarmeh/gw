@@ -14,7 +14,7 @@ func GetAK(c *gw.Context) {
 
 	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %d, db result: %d, db err: %v",
-			c.RequestID, c.User.Id, result, err),
+			c.RequestID, c.User().Id, result, err),
 	})
 }
 
