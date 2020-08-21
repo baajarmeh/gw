@@ -166,13 +166,13 @@ custom:
         passport: admin
         tenantId: "0"
         desc: Platform Administrator
-        role: "1"
+        type: "1"
         secret: admin@123456 # go run cmd/gwcli/main.go gen-pass-hash <Plain Password>
       - user: lanhu
         passport: lanhu
         tenantId: "0"
         desc: Tenancy Administrator
-        role: "2"
+        type: "2"
         secret: tenancy@123456 # go run cmd/gwcli/main.go gen-pass-hash <Plain Password>
 #  user: OceanHo
 #  tags:

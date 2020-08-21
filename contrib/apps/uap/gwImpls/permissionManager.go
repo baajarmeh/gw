@@ -45,7 +45,7 @@ func (p *PermissionManagerImpl) Initial() {
 	}
 }
 
-func (p *PermissionManagerImpl) Has(user gw.User, perms ...gw.Permission) bool {
+func (p *PermissionManagerImpl) Has(user gw.AuthUser, perms ...gw.Permission) bool {
 	if user.IsAuth() {
 		if user.IsAdmin() {
 			return true
@@ -130,7 +130,7 @@ func (p *PermissionManagerImpl) QueryByUser(tenantId,
 	var sql = fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id "+
 		" where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d",
 		perm.TableName(), objPerm.TableName(), tenantId, userId, dbModel.UserPermission)
-	var countSql = fmt.Sprintf("select count(t1.Id) as total %s", sql)
+	var countSql = fmt.Sprintf("select count(t1.id) as total %s", sql)
 	var dataSql = fmt.Sprintf("select t1.* %s limit %d offset %d", sql, expr.PageSize, expr.PageOffset())
 	tx := p.Store().Begin()
 	err := tx.Raw(countSql).Scan(&total).Error

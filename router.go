@@ -24,7 +24,7 @@ type Handler func(ctx *Context)
 type Context struct {
 	*gin.Context
 	RequestID  string
-	user       User
+	user       AuthUser
 	startTime  time.Time
 	logger     Logger
 	server     HostServer
@@ -34,7 +34,7 @@ type Context struct {
 	bindModels map[string]interface{}
 }
 
-func (c Context) User() User {
+func (c Context) User() AuthUser {
 	return c.User()
 }
 

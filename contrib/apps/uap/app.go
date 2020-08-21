@@ -32,6 +32,10 @@ func (a App) Register(router *gw.RouterGroup) {
 	restAPIs.Register(router)
 }
 
+func (a App) Use(opt *gw.ServerOption) {
+	use(opt)
+}
+
 func (a App) Migrate(state gw.ServerState) {
 	dbModel.Migrate(state)
 }
@@ -44,11 +48,19 @@ func (a App) OnShutDown(state gw.ServerState) {
 
 }
 
-func (a App) Use(opt *gw.ServerOption) {
-	gwImpls.Use(opt)
+// helpers
+func use(opt *gw.ServerOption) {
+	opt.AuthManagerHandler = func(state gw.ServerState) gw.IAuthManager {
+		return gwImpls.DefaultAuthManager(state)
+	}
+	opt.UserManagerHandler = func(state gw.ServerState) gw.IUserManager {
+		return gwImpls.DefaultUserManager(state)
+	}
+	opt.PermissionManagerHandler = func(state gw.ServerState) gw.IPermissionManager {
+		return gwImpls.DefaultPermissionManager(state)
+	}
 }
 
-// helpers
 func initial(state gw.ServerState) {
 	initSystemAdministrator(state)
 }
@@ -67,13 +79,13 @@ func initSystemAdministrator(state gw.ServerState) {
 	var passwordSigner = state.PasswordSigner()
 	for _, u := range cnfUsers {
 		usr := u
-		var user gw.User
+		var user gw.AuthUser
 		user.TenantId = usr.TenantId
 		user.Passport = usr.Passport
-		user.SecretHash = passwordSigner.Sign(usr.Secret)
-		user.RoleId = usr.Role
+		user.Secret = passwordSigner.Sign(usr.Secret)
+		user.UserType = usr.UserType
 		err := userManager.Create(&user)
-		if err != nil && err != gwImpls.ErrUserHasExists {
+		if err != nil && err != gw.ErrorUserHasExists {
 			panic(fmt.Sprintf("uap -> initSystemAdministrator fail, err: %v", err))
 		}
 	}

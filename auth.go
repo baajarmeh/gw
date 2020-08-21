@@ -42,7 +42,7 @@ var DefaultPermNames = []string{
 
 //
 // NewPermAll ...
-// resource like: User, Role, Order etc.
+// resource like: AuthUser, Role, Order etc.
 // returns as
 //  ReadAllUserPermission, CreationUserPermission,
 //  ModificationUserPermission, DeletionUserPermission, DisableUserPermission, ReadDetailUserPermission etc.
@@ -53,7 +53,7 @@ func NewPermAll(resource string) []Permission {
 
 //
 // NewPermByNames ...
-// resource like: User, Role, Order etc.
+// resource like: AuthUser, Role, Order etc.
 // permNames like: ReadAll, Creation, Modification,Deletion, Disable, ReadDetail etc.
 //
 func NewPermByNames(resource string, permNames ...string) []Permission {
@@ -75,27 +75,29 @@ func NewPermSameKeyName(kn, descriptor string) Permission {
 }
 
 type IUserManager interface {
-	Create(user *User) error
-	Modify(user User) error
+	Create(user *AuthUser) error
+	Modify(user AuthUser) error
 	Delete(tenantId, userId uint64) error
-	Query(tenantId, userId uint64) (User, error)
-	QueryList(tenantId uint64, expr PagerExpr, total int64, out []User) error
+	Query(tenantId, userId uint64) (AuthUser, error)
+	QueryByUser(tenantId uint64, passport, password string) (AuthUser, error)
+	QueryByAKS(tenantId uint64, accessKey, accessSecret string) (AuthUser, error)
+	QueryList(tenantId uint64, expr PagerExpr, total int64, out []AuthUser) error
 }
 
 type IAuthManager interface {
-	Login(passport, secret, verifyCode string, credType CredentialType) (User, error)
-	Logout(user User) bool
+	Login(tenantId uint64, passport, secret, verifyCode string, credType CredentialType) (AuthUser, error)
+	Logout(user AuthUser) bool
 }
 
 type ISessionStateManager interface {
-	Save(sid string, user User) error
-	Query(sid string) (User, error)
+	Save(sid string, user AuthUser) error
+	Query(sid string) (AuthUser, error)
 	Remove(sid string) error
 }
 
 type IPermissionManager interface {
 	Initial()
-	Has(user User, perms ...Permission) bool
+	Has(user AuthUser, perms ...Permission) bool
 	Create(category string, perms ...Permission) error
 	Modify(perms ...Permission) error
 	Drop(perms ...Permission) error
@@ -114,7 +116,7 @@ type DefaultAuthManagerImpl struct {
 }
 
 type defaultUser struct {
-	User
+	AuthUser
 	secret string
 }
 
@@ -155,7 +157,7 @@ func (d *DefaultSessionStateManagerImpl) Remove(sid string) error {
 	return redis.Del(ctx, d.storeKey(sid)).Err()
 }
 
-func (d *DefaultSessionStateManagerImpl) Save(sid string, user User) error {
+func (d *DefaultSessionStateManagerImpl) Save(sid string, user AuthUser) error {
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
@@ -163,11 +165,11 @@ func (d *DefaultSessionStateManagerImpl) Save(sid string, user User) error {
 	return redis.Set(ctx, d.storeKey(sid), user, d.expirationDuration).Err()
 }
 
-func (d *DefaultSessionStateManagerImpl) Query(sid string) (User, error) {
+func (d *DefaultSessionStateManagerImpl) Query(sid string) (AuthUser, error) {
 	//ctx, cancel := d.context()
 	//defer cancel()
 	ctx := context.Background()
-	user := User{}
+	user := AuthUser{}
 	redis := d.store.GetCacheStoreByName(d.storeName)
 	bytes, err := redis.Get(ctx, d.storeKey(sid)).Bytes()
 	if err != nil {
@@ -181,11 +183,13 @@ func (d *DefaultSessionStateManagerImpl) Query(sid string) (User, error) {
 }
 
 var (
-	EmptyUser       = User{Id: 0}
-	ErrorEmptyInput = fmt.Errorf("empty input")
-	defaultAm       *DefaultAuthManagerImpl
-	defaultSs       *DefaultSessionStateManagerImpl
-	defaultPm       *EmptyPermissionManagerImpl
+	EmptyUser          = AuthUser{ID: 0}
+	ErrorEmptyInput    = fmt.Errorf("empty input")
+	ErrorUserNotFound  = fmt.Errorf("user not found")
+	ErrorUserHasExists = fmt.Errorf("user object has exists")
+	defaultAm          *DefaultAuthManagerImpl
+	defaultSs          *DefaultSessionStateManagerImpl
+	defaultPm          *EmptyPermissionManagerImpl
 )
 
 type CredentialType string
@@ -195,15 +199,15 @@ const (
 	AccessKeySecret CredentialType = "aks"
 )
 
-func (d *DefaultAuthManagerImpl) Login(passport, secret, verifyCode string, credType CredentialType) (User, error) {
+func (d *DefaultAuthManagerImpl) Login(tenantId uint64, passport, secret, verifyCode string, credType CredentialType) (AuthUser, error) {
 	user, ok := d.users[passport]
 	if ok && user.secret == secret {
-		return user.User, nil
+		return user.AuthUser, nil
 	}
 	return EmptyUser, fmt.Errorf("user:%s not found or serect not match", passport)
 }
 
-func (d *DefaultAuthManagerImpl) Logout(user User) bool {
+func (d *DefaultAuthManagerImpl) Logout(user AuthUser) bool {
 	// Nothing to do.
 	return true
 }
@@ -218,29 +222,10 @@ func init() {
 	defaultAm = &DefaultAuthManagerImpl{
 		users: map[string]*defaultUser{
 			"admin": {
-				User: User{
-					Id:       10000,
+				AuthUser: AuthUser{
+					ID:       10000,
 					Passport: "admin",
 					TenantId: 0,
-					RoleId:   1,
-				},
-				secret: "123@456",
-			},
-			"gw-tenant-admin": {
-				User: User{
-					Id:       10001,
-					Passport: "gw-tenant-admin",
-					TenantId: 0,
-					RoleId:   2,
-				},
-				secret: "123@456",
-			},
-			"gw-user1": {
-				User: User{
-					Id:       100000,
-					Passport: "gw-user1",
-					TenantId: 10001,
-					RoleId:   100000,
 				},
 				secret: "123@456",
 			},
@@ -275,7 +260,7 @@ func (p *EmptyPermissionManagerImpl) getStore() *gorm.DB {
 func (p *EmptyPermissionManagerImpl) Initial() {
 }
 
-func (p *EmptyPermissionManagerImpl) Has(user User, perms ...Permission) bool {
+func (p *EmptyPermissionManagerImpl) Has(user AuthUser, perms ...Permission) bool {
 	return user.IsAuth()
 }
 
@@ -328,12 +313,12 @@ type EmptyUserManagerImpl struct {
 	state ServerState
 }
 
-func (d EmptyUserManagerImpl) Create(user *User) error {
+func (d EmptyUserManagerImpl) Create(user *AuthUser) error {
 	pm := d.state.PermissionManager()
-	return pm.GrantToUser(user.Id, user.Permissions...)
+	return pm.GrantToUser(user.ID, user.Permissions...)
 }
 
-func (d EmptyUserManagerImpl) Modify(user User) error {
+func (d EmptyUserManagerImpl) Modify(user AuthUser) error {
 	return nil
 }
 
@@ -341,11 +326,19 @@ func (d EmptyUserManagerImpl) Delete(tenantId, userId uint64) error {
 	return nil
 }
 
-func (d EmptyUserManagerImpl) Query(tenantId, userId uint64) (User, error) {
+func (d EmptyUserManagerImpl) Query(tenantId, userId uint64) (AuthUser, error) {
 	return EmptyUser, nil
 }
 
-func (d EmptyUserManagerImpl) QueryList(tenantId uint64, expr PagerExpr, total int64, out []User) error {
+func (d EmptyUserManagerImpl) QueryByUser(tenantId uint64, user, password string) (AuthUser, error) {
+	return EmptyUser, nil
+}
+
+func (d EmptyUserManagerImpl) QueryByAKS(tenantId uint64, accessKey, accessSecret string) (AuthUser, error) {
+	return EmptyUser, nil
+}
+
+func (d EmptyUserManagerImpl) QueryList(tenantId uint64, expr PagerExpr, total int64, out []AuthUser) error {
 	return nil
 }
 
@@ -361,7 +354,7 @@ func gwLogin(c *gin.Context) {
 	// 1. User/Password
 	// 2. X-Access-Key/X-Access-Secret
 	// 3. Realm auth (Basic auth)
-	passport, secret, verifyCode, credType, ok := parseCredentials(s, c)
+	tenantId, passport, secret, verifyCode, credType, ok := parseCredentials(s, c)
 	if !ok {
 		c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(400, reqId, "Missing Credentials.", nil))
 		c.Abort()
@@ -392,7 +385,7 @@ func gwLogin(c *gin.Context) {
 	}
 
 	// Login
-	user, err := s.AuthManager.Login(passport, secret, verifyCode, credType)
+	user, err := s.AuthManager.Login(tenantId, passport, secret, verifyCode, credType)
 	if err != nil || user.IsEmpty() {
 		c.JSON(http.StatusNotFound, s.RespBodyBuildFunc(404, reqId, err.Error(), nil))
 		c.Abort()
@@ -409,7 +402,7 @@ func gwLogin(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	_, perms, err := s.PermissionManager.QueryByUser(user.TenantId, user.Id, defaultPageExpr)
+	_, perms, err := s.PermissionManager.QueryByUser(user.TenantId, user.ID, defaultPageExpr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(-1, reqId, "Query user's permission.", err.Error()))
 		c.Abort()
@@ -427,7 +420,7 @@ func gwLogin(c *gin.Context) {
 	cks := s.conf.Security.Auth.Cookie
 	expiredAt := time.Duration(cks.MaxAge) * time.Second
 	var userRoles = gin.H{
-		"Id":   user.RoleId,
+		"Id":   0,
 		"name": "",
 		"desc": "",
 	}
@@ -513,7 +506,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 }
 
 // helpers
-func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, verifyCode string, credType CredentialType, result bool) {
+func parseCredentials(s HostServer, c *gin.Context) (tenantId uint64, passport, secret string, verifyCode string, credType CredentialType, result bool) {
 	//
 	// Auth Param configuration.
 	param := s.conf.Security.Auth.ParamKey
@@ -524,6 +517,8 @@ func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, ve
 	// 3. Realm auth
 	// ===============================
 	//
+
+	tenantId = 0
 
 	// 1. User/Password
 	credType = UserPassword
@@ -575,43 +570,51 @@ func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, ve
 	return
 }
 
+type UserType uint8
+
+const (
+	Administrator       UserType = 1
+	TenantAdministrator UserType = 2
+	User                UserType = 3
+)
+
 //
-// Auth User
+// Gw Auth User
 //
-type User struct {
-	Id              uint64
-	TenantId        uint64
-	Passport        string
-	SecretHash      string
-	RoleId          int // Platform Admin:1, Tenant Admin:2, roleId >= 10000 are custom role.
-	ExtraRoleIdList []string
-	Permissions     []Permission
+type AuthUser struct {
+	ID          uint64
+	TenantId    uint64
+	Passport    string
+	Secret      string       `gorm:"-"`
+	UserType    UserType     `gorm:"-"` // gw.AuthUserType
+	Roles       []string     `gorm:"-"`
+	Permissions []Permission `gorm:"-"`
 }
 
-func (user User) MarshalBinary() (data []byte, err error) {
+func (user AuthUser) MarshalBinary() (data []byte, err error) {
 	return json.Marshal(&user)
 }
 
-func (user User) IsAuth() bool {
-	return &user != nil && user.Id > 0
+func (user AuthUser) IsAuth() bool {
+	return &user != nil && user.ID > 0
 }
 
-func (user User) IsEmpty() bool {
-	return user.Id == EmptyUser.Id
+func (user AuthUser) IsEmpty() bool {
+	return user.ID == EmptyUser.ID
 }
 
-func (user User) IsAdmin() bool {
-	return user.IsAuth() && user.RoleId == 1
+func (user AuthUser) IsAdmin() bool {
+	return user.IsAuth() && user.UserType == Administrator
 }
 
-func (user User) IsTenantAdmin() bool {
-	return user.IsAuth() && user.RoleId == 2
+func (user AuthUser) IsTenantAdmin() bool {
+	return user.IsAuth() && user.UserType == TenantAdministrator
 }
 
-func getUser(c *gin.Context) User {
+func getUser(c *gin.Context) AuthUser {
 	obj, ok := c.Get(gwUserKey)
 	if ok {
-		return obj.(User)
+		return obj.(AuthUser)
 	}
 	return EmptyUser
 }

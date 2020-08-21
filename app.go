@@ -204,7 +204,7 @@ var (
 	appDefaultStoreDbSetupHandler = func(c Context, db *gorm.DB) *gorm.DB {
 		return db
 	}
-	appDefaultStoreCacheSetupHandler = func(c Context, client *redis.Client, user User) *redis.Client {
+	appDefaultStoreCacheSetupHandler = func(c Context, client *redis.Client, user AuthUser) *redis.Client {
 		return client
 	}
 	internLogFormatter = "[$prefix-$level] $msg\n"
