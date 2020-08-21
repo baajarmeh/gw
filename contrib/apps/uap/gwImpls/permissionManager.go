@@ -123,8 +123,8 @@ func (p *PermissionManagerImpl) Query(tenantId uint64, category string, expr gw.
 	return
 }
 
-func (p *PermissionManagerImpl) QueryByUser(tenantId, userId uint64, expr gw.PagerExpr) (
-	total int64, result []gw.Permission, error error) {
+func (p *PermissionManagerImpl) QueryByUser(tenantId,
+	userId uint64, expr gw.PagerExpr) (total int64, result []gw.Permission, error error) {
 	var perm dbModel.Permission
 	var objPerm dbModel.PermissionMapping
 	var sql = fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id "+
@@ -153,6 +153,7 @@ func (p *PermissionManagerImpl) GrantToUser(uid uint64, perms ...gw.Permission) 
 	}
 	tx := p.Store().Begin()
 	for _, p := range perms {
+		p := p
 		var pm dbModel.PermissionMapping
 		pm.PermissionID = p.ID
 		pm.TenantId = p.TenantId
@@ -169,6 +170,7 @@ func (p *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...gw.Permissio
 	}
 	tx := p.Store().Begin()
 	for _, p := range perms {
+		p := p
 		var pm dbModel.PermissionMapping
 		pm.PermissionID = p.ID
 		pm.TenantId = p.TenantId
@@ -185,6 +187,7 @@ func (p *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...gw.Permissio
 	}
 	tx := p.Store().Begin()
 	for _, p := range perms {
+		p := p
 		tx.Delete(dbModel.PermissionMapping{},
 			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", uid, p.TenantId, p.ID, dbModel.UserPermission)
 	}
@@ -197,6 +200,7 @@ func (p *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...gw.Permis
 	}
 	tx := p.Store().Begin()
 	for _, p := range perms {
+		p := p
 		tx.Delete(dbModel.PermissionMapping{},
 			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", roleId, p.TenantId, p.ID, dbModel.RolePermission)
 	}
