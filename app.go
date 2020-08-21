@@ -102,7 +102,7 @@ type ServerOption struct {
 	StoreDbSetupHandler      StoreDbSetupHandler
 	SessionStateManager      SessionStateHandler
 	StoreCacheSetupHandler   StoreCacheSetupHandler
-	RespBodyBuildFunc        RespBodyCreationBuildFunc
+	RespBodyBuildFunc        RespBodyBuildFunc
 	cnf                      *conf.ApplicationConfig
 	bcs                      *conf.BootConfig
 }
@@ -118,7 +118,7 @@ type HostServer struct {
 	SessionStateManager    ISessionStateManager
 	PermissionManager      IPermissionManager
 	UserManager            IUserManager
-	RespBodyBuildFunc      RespBodyCreationBuildFunc
+	RespBodyBuildFunc      RespBodyBuildFunc
 	state                  int
 	locker                 sync.Mutex
 	options                *ServerOption
@@ -182,7 +182,7 @@ func (ss ServerState) ApplicationConfig() *conf.ApplicationConfig {
 	return ss.s.conf
 }
 
-func (ss ServerState) RespBodyCreationBuildFunc() RespBodyCreationBuildFunc {
+func (ss ServerState) RespBodyCreationBuildFunc() RespBodyBuildFunc {
 	return ss.s.RespBodyBuildFunc
 }
 

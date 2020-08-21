@@ -34,8 +34,8 @@ type AuthManagerHandler func(state ServerState) IAuthManager
 // PermissionManagerHandler represents a Permission state manager handler.
 type PermissionManagerHandler func(state ServerState) IPermissionManager
 
-// RespBodyCreationBuildFunc represents a response body build handler.
-type RespBodyCreationBuildFunc func(status int, requestID string, err interface{}, msgBody interface{}) interface{}
+// RespBodyBuildFunc represents a response body build handler.
+type RespBodyBuildFunc func(status int, requestID string, err interface{}, msgBody interface{}) interface{}
 
 type backendWrapper struct {
 	ctx                    Context

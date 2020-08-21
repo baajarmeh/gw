@@ -22,7 +22,7 @@ func (a AuthManager) getUserCacheKey(passport string) string {
 	return fmt.Sprintf("%s.%s", a.userCachePrefix, passport)
 }
 
-func (a AuthManager) Login(passport, secret, credType, verifyCode string) (gw.User, error) {
+func (a AuthManager) Login(passport, secret, verifyCode string, credType gw.CredentialType) (gw.User, error) {
 	var gwUser gw.User
 	var store = a.state.Store()
 	var password = a.state.PasswordSigner().Sign(secret)

@@ -83,7 +83,7 @@ type IUserManager interface {
 }
 
 type IAuthManager interface {
-	Login(passport, secret, credType, verifyCode string) (User, error)
+	Login(passport, secret, verifyCode string, credType CredentialType) (User, error)
 	Logout(user User) bool
 }
 
@@ -188,7 +188,14 @@ var (
 	defaultPm       *EmptyPermissionManagerImpl
 )
 
-func (d *DefaultAuthManagerImpl) Login(passport, secret, credType, verifyCode string) (User, error) {
+type CredentialType string
+
+const (
+	UserPassword    CredentialType = "user"
+	AccessKeySecret CredentialType = "aks"
+)
+
+func (d *DefaultAuthManagerImpl) Login(passport, secret, verifyCode string, credType CredentialType) (User, error) {
 	user, ok := d.users[passport]
 	if ok && user.secret == secret {
 		return user.User, nil
@@ -385,7 +392,7 @@ func gwLogin(c *gin.Context) {
 	}
 
 	// Login
-	user, err := s.AuthManager.Login(passport, secret, credType, verifyCode)
+	user, err := s.AuthManager.Login(passport, secret, verifyCode, credType)
 	if err != nil || user.IsEmpty() {
 		c.JSON(http.StatusNotFound, s.RespBodyBuildFunc(404, reqId, err.Error(), nil))
 		c.Abort()
@@ -506,7 +513,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 }
 
 // helpers
-func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, verifyCode string, credType string, result bool) {
+func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, verifyCode string, credType CredentialType, result bool) {
 	//
 	// Auth Param configuration.
 	param := s.conf.Security.Auth.ParamKey
@@ -519,7 +526,7 @@ func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, ve
 	//
 
 	// 1. User/Password
-	credType = "passport"
+	credType = UserPassword
 	passport, _ = c.GetPostForm(param.Passport)
 	secret, _ = c.GetPostForm(param.Secret)
 	verifyCode, _ = c.GetPostForm(param.VerifyCode)
@@ -549,7 +556,7 @@ func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, ve
 		}
 	}
 
-	credType = "aks"
+	credType = AccessKeySecret
 	// 2. X-Access-Key/X-Access-Secret
 	passport = c.GetHeader("X-Access-Key")
 	secret = c.GetHeader("X-Access-Secret")
@@ -560,7 +567,7 @@ func parseCredentials(s HostServer, c *gin.Context) (passport, secret string, ve
 	}
 
 	// 3. Basic auth
-	credType = "account"
+	credType = UserPassword
 	passport, secret, result = c.Request.BasicAuth()
 	if verifyCode == "" {
 		verifyCode = c.Query(param.VerifyCode)
