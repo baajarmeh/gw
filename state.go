@@ -131,41 +131,42 @@ func gwState(serverName string) gin.HandlerFunc {
 	}
 }
 
-func encryptSid(s HostServer, passport string) (secureSid string, ok bool) {
+func encryptSid(s HostServer, passport string) (sid, credential string, ok bool) {
 
+	// Create a sid.
+	sid = s.SessionSidCreationFunc(passport)
+
+	// sid protect password keys
 	rdnKey := secure.RandomStr(32)
-
 	block := secure.AesBlock(rdnKey)
 	encryptor := secure.AesEncryptCFB(rdnKey, block)
-	passportSrc := []byte(passport)
+	passportSrc := []byte(sid)
 	passportDst := make([]byte, len(passportSrc))
 	encryptor.XORKeyStream(passportDst, passportSrc)
 	encryptedPassport := string(passportDst)
-
 	rdnKeySrc := []byte(rdnKey)
 	rdnKeyDst := make([]byte, len(rdnKeySrc))
 	_ = s.Protect.Encrypt(rdnKeyDst, rdnKeySrc)
 	encryptedRdnKey := string(rdnKeyDst)
 
-	sid := fmt.Sprintf("%s,%s", encryptedPassport, encryptedRdnKey)
+	_sid := fmt.Sprintf("%s,%s", encryptedPassport, encryptedRdnKey)
 
-	sidSrc := []byte(sid)
+	sidSrc := []byte(_sid)
 	sidDst := make([]byte, len(sidSrc))
 	_ = s.Hash.Hash(sidDst, sidSrc)
 	sigSum := string(sidDst)
 
 	// Append sid Hash.
-	sid = fmt.Sprintf("%s,%s", sid, sigSum)
+	_sid = fmt.Sprintf("%s,%s", _sid, sigSum)
 
-	src := []byte(sid)
+	src := []byte(_sid)
 	dst := make([]byte, len(src))
 	err := s.Protect.Encrypt(dst, src)
 	if err != nil {
 		logger.Error("encryptSid() -> s.crypto.Encrypt(dst,b) fail, err: %v.", err)
-		return "", false
+		return "", "", false
 	}
-	secureSid = secure.EncodeBase64URL(dst)
-	return secureSid, true
+	return sid, secure.EncodeBase64URL(dst), true
 }
 
 func decryptSid(s HostServer, secureSid string, client string) (passport string, ok bool) {

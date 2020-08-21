@@ -10,32 +10,27 @@ import (
 )
 
 type PermissionManagerImpl struct {
-	_state int
-	store  gw.IStore
-	conf   conf.ApplicationConfig
-	locker sync.Mutex
-	state  gw.ServerState
+	_state          int
+	state           gw.ServerState
+	store           gw.IStore
+	conf            conf.ApplicationConfig
+	locker          sync.Mutex
+	queryPermSQL    string
+	delPermMapSQL   string
+	queryPermMapSQL string
 }
 
-func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
-	return &PermissionManagerImpl{
-		state: state,
-		conf:  *state.ApplicationConfig(),
-		store: state.Store(),
-	}
+func (pm *PermissionManagerImpl) Store() *gorm.DB {
+	return pm.store.GetDbStoreByName(pm.conf.Security.Auth.Permission.DefaultStore.Name)
 }
 
-func (p *PermissionManagerImpl) Store() *gorm.DB {
-	return p.store.GetDbStoreByName(p.conf.Security.Auth.Permission.DefaultStore.Name)
-}
-
-func (p *PermissionManagerImpl) Initial() {
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	if p._state > 0 {
+func (pm *PermissionManagerImpl) Initial() {
+	pm.locker.Lock()
+	defer pm.locker.Unlock()
+	if pm._state > 0 {
 		return
 	}
-	store := p.Store()
+	store := pm.Store()
 	var tables []interface{}
 	tables = append(tables, &dbModel.Permission{})
 	tables = append(tables, &dbModel.PermissionMapping{})
@@ -45,7 +40,7 @@ func (p *PermissionManagerImpl) Initial() {
 	}
 }
 
-func (p *PermissionManagerImpl) Has(user gw.AuthUser, perms ...gw.Permission) bool {
+func (pm *PermissionManagerImpl) Has(user gw.User, perms ...gw.Permission) bool {
 	if user.IsAuth() {
 		if user.IsAdmin() {
 			return true
@@ -61,78 +56,81 @@ func (p *PermissionManagerImpl) Has(user gw.AuthUser, perms ...gw.Permission) bo
 	return false
 }
 
-func (p *PermissionManagerImpl) Create(category string, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) Create(category string, perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	db := p.Store()
+	pm.locker.Lock()
+	defer pm.locker.Unlock()
+	db := pm.Store()
 	tx := db.Begin()
 	var registered = make(map[string]bool)
 	for i := 0; i < len(perms); i++ {
 		p := perms[i]
+		var model dbModel.Permission
 		uk := fmt.Sprintf("%d-%s-%s", p.TenantId, p.Category, p.Key)
 		if registered[uk] {
 			continue
 		}
-		var count int64
 		if p.Category == "" {
 			p.Category = category
 		}
-		err := db.Model(dbModel.Permission{}).Where("tenant_id = ? and category = ? and `key` = ?",
-			p.TenantId, p.Category, p.Key).Count(&count).Error
+		err := db.Model(dbModel.Permission{}).Where(pm.queryPermMapSQL, p.TenantId, p.Category, p.Key).Take(&model).Error
 		if err != nil {
 			panic(fmt.Sprintf("check perms has exist fail, err: %v", err))
 		}
-		if count == 0 {
-			tx.Create(p)
+		if model.ID == 0 {
+			model.Key = p.Key
+			model.Name = p.Name
+			model.TenantId = p.TenantId
+			model.Category = p.Category
+			model.Descriptor = p.Descriptor
+			tx.Create(&model)
+			perms[i].ID = model.ID
 		}
+		// FIXME(OceanHo): needs?
+		// tx.Updates(model)
 	}
 	return tx.Commit().Error
 }
 
-func (p *PermissionManagerImpl) Modify(perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) Modify(perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
-	tx := p.Store().Begin()
+	pm.locker.Lock()
+	defer pm.locker.Unlock()
+	tx := pm.Store().Begin()
 	for _, p := range perms {
 		tx.Updates(p)
 	}
 	return tx.Commit().Error
 }
 
-func (p *PermissionManagerImpl) Drop(perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) Drop(perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
-	tx := p.Store().Begin()
+	tx := pm.Store().Begin()
 	for _, p := range perms {
 		tx.Delete(p)
 	}
 	return tx.Commit().Error
 }
 
-func (p *PermissionManagerImpl) Query(tenantId uint64, category string, expr gw.PagerExpr) (
+func (pm *PermissionManagerImpl) Query(tenantId uint64, category string, expr gw.PagerExpr) (
 	total int64, result []gw.Permission, error error) {
-	error = p.Store().Where("tenant_id = ? and category = ?",
+	error = pm.Store().Where("tenant_id = ? and category = ?",
 		tenantId, category).Count(&total).Offset(expr.PageOffset()).Limit(expr.PageSize).Scan(result).Error
 	return
 }
 
-func (p *PermissionManagerImpl) QueryByUser(tenantId,
+func (pm *PermissionManagerImpl) QueryByUser(tenantId,
 	userId uint64, expr gw.PagerExpr) (total int64, result []gw.Permission, error error) {
-	var perm dbModel.Permission
-	var objPerm dbModel.PermissionMapping
-	var sql = fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id "+
-		" where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d",
-		perm.TableName(), objPerm.TableName(), tenantId, userId, dbModel.UserPermission)
-	var countSql = fmt.Sprintf("select count(t1.id) as total %s", sql)
+	var sql = fmt.Sprintf(pm.queryPermSQL, tenantId, userId, dbModel.UserPermission)
+	var countSql = fmt.Sprintf("select t1.id as total %s", sql)
 	var dataSql = fmt.Sprintf("select t1.* %s limit %d offset %d", sql, expr.PageSize, expr.PageOffset())
-	tx := p.Store().Begin()
+	tx := pm.Store().Begin()
 	err := tx.Raw(countSql).Scan(&total).Error
 	if err != nil {
 		tx.Rollback()
@@ -147,11 +145,11 @@ func (p *PermissionManagerImpl) QueryByUser(tenantId,
 	return total, result, err
 }
 
-func (p *PermissionManagerImpl) GrantToUser(uid uint64, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) GrantToUser(uid uint64, perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
-	tx := p.Store().Begin()
+	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
 		var pm dbModel.PermissionMapping
@@ -164,11 +162,11 @@ func (p *PermissionManagerImpl) GrantToUser(uid uint64, perms ...gw.Permission) 
 	return tx.Commit().Error
 }
 
-func (p *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
-	tx := p.Store().Begin()
+	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
 		var pm dbModel.PermissionMapping
@@ -181,28 +179,42 @@ func (p *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...gw.Permissio
 	return tx.Commit().Error
 }
 
-func (p *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
-	tx := p.Store().Begin()
+	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		tx.Delete(dbModel.PermissionMapping{},
-			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", uid, p.TenantId, p.ID, dbModel.UserPermission)
+		tx.Delete(dbModel.PermissionMapping{}, pm.delPermMapSQL, uid, p.TenantId, p.ID, dbModel.UserPermission)
 	}
 	return tx.Commit().Error
 }
 
-func (p *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
-	tx := p.Store().Begin()
+	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		tx.Delete(dbModel.PermissionMapping{},
-			"object_id = ? and tenant_id = ? and permission_id = ? and type = ?", roleId, p.TenantId, p.ID, dbModel.RolePermission)
+		tx.Delete(dbModel.PermissionMapping{}, pm.delPermMapSQL, roleId, p.TenantId, p.ID, dbModel.RolePermission)
 	}
 	return tx.Commit().Error
+}
+
+func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
+	cnf := state.ApplicationConfig()
+	ptn := dbModel.Permission{}.TableName()
+	pmtn := dbModel.PermissionMapping{}.TableName()
+	queryPermSQL := fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id", ptn, pmtn)
+	queryPermSQL = queryPermSQL + " where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d"
+	return &PermissionManagerImpl{
+		conf:            *cnf,
+		state:           state,
+		store:           state.Store(),
+		queryPermSQL:    queryPermSQL,
+		delPermMapSQL:   " object_id = ? and tenant_id = ? and permission_id = ? and type = ? ",
+		queryPermMapSQL: " tenant_id = ? and category = ? and `key` = ? ",
+	}
 }

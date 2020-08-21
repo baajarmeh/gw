@@ -174,6 +174,7 @@ type Security struct {
 				Name   string `yaml:"name" toml:"name" json:"name"`
 				Prefix string `yaml:"prefix" toml:"prefix" json:"prefix"`
 			} `yaml:"defaultStore" toml:"defaultStore" json:"defaultStore"`
+			SidGenerator string `yaml:"sidGenerator" toml:"sidGenerator" json:"sidGenerator"`
 		} `yaml:"session" toml:"session" json:"session"`
 		Permission struct {
 			DefaultStore struct {

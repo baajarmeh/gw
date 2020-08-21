@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/oceanho/gw/utils/secure"
 	"sync"
+	"time"
 )
 
 type ICrypto interface {
@@ -24,6 +25,11 @@ type ICryptoProtect interface {
 
 type IPasswordSigner interface {
 	Sign(plainPassword string) string
+}
+
+type IdentifierGenerator interface {
+	NewID() int64
+	NewStrID() string
 }
 
 var (
@@ -139,4 +145,19 @@ func (d DefaultPasswordSignerMd5Impl) str(ori string) string {
 
 func (d DefaultPasswordSignerMd5Impl) Sign(plainPassword string) string {
 	return secure.Md5Str(d.str(plainPassword))
+}
+
+type DefaultIdentifierGeneratorImpl struct {
+}
+
+func DefaultIdentifierGenerator() IdentifierGenerator {
+	return DefaultIdentifierGeneratorImpl{}
+}
+
+func (d DefaultIdentifierGeneratorImpl) NewID() int64 {
+	return time.Now().UnixNano()
+}
+
+func (d DefaultIdentifierGeneratorImpl) NewStrID() string {
+	return secure.Md5Str(secure.RandomStr(32))
 }

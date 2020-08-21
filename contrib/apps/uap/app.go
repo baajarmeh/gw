@@ -10,10 +10,15 @@ import (
 	"github.com/oceanho/gw/logger"
 )
 
-func init() {
-}
+var (
+	AksDecorator     = gw.NewPermAllDecorator("Aks")
+	RoleDecorator    = gw.NewPermAllDecorator("Role")
+	UserDecorator    = gw.NewPermAllDecorator("User")
+	TenancyDecorator = gw.NewPermAllDecorator("Tenant")
+)
 
 type App struct {
+	uap conf.Uap
 }
 
 func New() App {
@@ -29,7 +34,7 @@ func (a App) Router() string {
 }
 
 func (a App) Register(router *gw.RouterGroup) {
-	restAPIs.Register(router)
+	router.RegisterRestAPIs(&restAPIs.User{})
 }
 
 func (a App) Use(opt *gw.ServerOption) {
@@ -59,27 +64,38 @@ func use(opt *gw.ServerOption) {
 	opt.PermissionManagerHandler = func(state gw.ServerState) gw.IPermissionManager {
 		return gwImpls.DefaultPermissionManager(state)
 	}
+	opt.SessionStateManager = func(state gw.ServerState) gw.ISessionStateManager {
+		return gwImpls.DefaultSessionManager(state)
+	}
 }
 
 func initial(state gw.ServerState) {
-	initSystemAdministrator(state)
+	initPerms(state)
+	initUsers(state)
 }
 
-// initial system administrator
-func initSystemAdministrator(state gw.ServerState) {
-	var cnfUsers []conf.User
-	var cnf = state.ApplicationConfig()
-	err := cnf.ParseCustomPathTo("gwcontrib.uap.initialUsers", &cnfUsers)
-	_ = cnf.ParseCustomPathTo("gwcontrib.uap.initialUsers", &cnfUsers)
+// initial permission
+func initPerms(state gw.ServerState) {
+	var perms []gw.Permission
+	perms = append(perms, UserDecorator.Permissions()...)
+	perms = append(perms, TenancyDecorator.Permissions()...)
+	perms = append(perms, AksDecorator.Permissions()...)
+	perms = append(perms, RoleDecorator.Permissions()...)
+	err := state.PermissionManager().Create("uap", perms...)
 	if err != nil {
-		logger.Error("read gwcontrib.uap.initialUsers fail, err: %v", err)
+		logger.Error("initial permissions fail, err: %v", err)
 		return
 	}
+}
+
+// initial users
+func initUsers(state gw.ServerState) {
+	var uapCnf = conf.GetUAP(state.ApplicationConfig())
 	var userManager = state.UserManager()
 	var passwordSigner = state.PasswordSigner()
-	for _, u := range cnfUsers {
+	for _, u := range uapCnf.User.Users {
 		usr := u
-		var user gw.AuthUser
+		var user gw.User
 		user.TenantId = usr.TenantId
 		user.Passport = usr.Passport
 		user.Secret = passwordSigner.Sign(usr.Secret)

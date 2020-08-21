@@ -6,6 +6,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/logger"
+	"github.com/oceanho/gw/utils/secure"
 	"gorm.io/gorm"
 	"io/ioutil"
 	"os"
@@ -96,6 +97,7 @@ type ServerOption struct {
 	BackendStoreHandler      func(cnf conf.ApplicationConfig) IStore
 	AppConfigHandler         func(cnf conf.BootConfig) *conf.ApplicationConfig
 	Crypto                   func(conf conf.ApplicationConfig) ICrypto
+	IDGeneratorHandler       func(conf conf.ApplicationConfig) IdentifierGenerator
 	UserManagerHandler       func(state ServerState) IUserManager
 	AuthManagerHandler       AuthManagerHandler
 	PermissionManagerHandler PermissionManagerHandler
@@ -116,8 +118,10 @@ type HostServer struct {
 	PasswordSigner         IPasswordSigner
 	AuthManager            IAuthManager
 	SessionStateManager    ISessionStateManager
+	SessionSidCreationFunc func(passport string) string
 	PermissionManager      IPermissionManager
 	UserManager            IUserManager
+	IDGenerator            IdentifierGenerator
 	RespBodyBuildFunc      RespBodyBuildFunc
 	state                  int
 	locker                 sync.Mutex
@@ -182,6 +186,10 @@ func (ss ServerState) ApplicationConfig() *conf.ApplicationConfig {
 	return ss.s.conf
 }
 
+func (ss ServerState) IDGenerator() IdentifierGenerator {
+	return ss.s.IDGenerator
+}
+
 func (ss ServerState) RespBodyCreationBuildFunc() RespBodyBuildFunc {
 	return ss.s.RespBodyBuildFunc
 }
@@ -204,7 +212,7 @@ var (
 	appDefaultStoreDbSetupHandler = func(c Context, db *gorm.DB) *gorm.DB {
 		return db
 	}
-	appDefaultStoreCacheSetupHandler = func(c Context, client *redis.Client, user AuthUser) *redis.Client {
+	appDefaultStoreCacheSetupHandler = func(c Context, client *redis.Client, user User) *redis.Client {
 		return client
 	}
 	internLogFormatter = "[$prefix-$level] $msg\n"
@@ -243,6 +251,9 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		BackendStoreHandler:    appDefaultBackendHandler,
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
+		IDGeneratorHandler: func(conf conf.ApplicationConfig) IdentifierGenerator {
+			return DefaultIdentifierGenerator()
+		},
 		UserManagerHandler: func(state ServerState) IUserManager {
 			return DefaultUserManager(state)
 		},
@@ -485,6 +496,7 @@ func initialServer(s *HostServer) ServerState {
 	s.Protect = crypto.Protect()
 	s.PasswordSigner = crypto.Password()
 	s.Store = s.options.BackendStoreHandler(*s.conf)
+	s.IDGenerator = s.options.IDGeneratorHandler(*s.conf)
 	if s.RespBodyBuildFunc == nil {
 		s.RespBodyBuildFunc = s.options.RespBodyBuildFunc
 	}
@@ -541,6 +553,26 @@ func initialServer(s *HostServer) ServerState {
 
 	if s.conf.Server.ListenAddr != "" && s.options.Addr == appDefaultAddr {
 		s.options.Addr = s.conf.Server.ListenAddr
+	}
+	// SessionSidCreationFunc
+	if s.SessionSidCreationFunc == nil {
+		if s.conf.Security.Auth.Session.SidGenerator == "p" {
+			s.SessionSidCreationFunc = func(passport string) string {
+				return passport
+			}
+		} else if s.conf.Security.Auth.Session.SidGenerator == "p,md5" {
+			s.SessionSidCreationFunc = func(passport string) string {
+				return secure.Md5Str(passport)
+			}
+		} else if s.conf.Security.Auth.Session.SidGenerator == "p,smd5" {
+			s.SessionSidCreationFunc = func(passport string) string {
+				return s.PasswordSigner.Sign(passport)
+			}
+		} else {
+			s.SessionSidCreationFunc = func(passport string) string {
+				return s.IDGenerator.NewStrID()
+			}
+		}
 	}
 	// permission manager initial
 	s.PermissionManager.Initial()

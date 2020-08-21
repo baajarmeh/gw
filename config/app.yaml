@@ -94,6 +94,7 @@ security:
       defaultStore:
         name: primary
         prefix: gw-sid
+      sidGenerator: "p,smd5" # p / p,md5 / p,smd5 / others <create a 32 length random str as sids>
     permission:
       defaultStore:
         type: db        # db/cache
@@ -135,8 +136,8 @@ security:
         - "Get"
   limit:
     pagination:
-        minPageSize: "20"
-        maxPageSize: "2000"
+      minPageSize: "20"
+      maxPageSize: "2000"
 
 # -------------------------------
 #  Service Settings Configuration
@@ -161,19 +162,45 @@ settings:
 custom:
   gwcontrib:
     uap:
-      initialUsers:
-      - user: admin
-        passport: admin
-        tenantId: "0"
-        desc: Platform Administrator
-        type: "1"
-        secret: admin@123456 # go run cmd/gwcli/main.go gen-pass-hash <Plain Password>
-      - user: lanhu
-        passport: lanhu
-        tenantId: "0"
-        desc: Tenancy Administrator
-        type: "2"
-        secret: tenancy@123456 # go run cmd/gwcli/main.go gen-pass-hash <Plain Password>
+      sessionManager:
+        cache:
+          name: primary
+          prefix: gw-uap-ss
+          expirationHours: "168"
+      permissionManager:
+        backend:
+          name: primary
+        cache:
+          enable: True
+          name: primary
+          prefix: gw-uap-perm
+          expirationHours: "168"
+      authManager:
+        cache:
+          name: primary
+          prefix: gw-uap-auth
+          expirationHours: "168"
+      userManager:
+        backend:
+          name: primary
+        cache:
+          enable: True
+          name: primary
+          prefix: gw-uap-user
+          expirationHours: "168"
+        initUsers:
+        - user: admin
+          passport: admin
+          tenantId: "0"
+          desc: Administrator
+          type: "1"
+          secret: admin@123456 # go run cmd/gwcli/main.go gen-pass-hash <Plain Password>
+        - user: lanhu
+          passport: lanhu
+          tenantId: "0"
+          desc: Tenancy
+          type: "2"
+          secret: tenancy@123456 # go run cmd/gwcli/main.go gen-pass-hash <Plain Password>
 #  user: OceanHo
 #  tags:
 #    - body

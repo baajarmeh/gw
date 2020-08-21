@@ -19,7 +19,6 @@ var (
 
 type PermissionDecorator struct {
 	locker         sync.Mutex
-	items          []Decorator
 	permDecorators map[string]Decorator
 }
 
@@ -52,20 +51,25 @@ func (p PermissionDecorator) Has(name string) bool {
 	return ok
 }
 
+func (p PermissionDecorator) Permissions() []Permission {
+	var perms []Permission
+	for _, item := range p.permDecorators {
+		item := item
+		if perm, ok := item.MetaData.([]Permission); ok {
+			perms = append(perms, perm...)
+		}
+	}
+	return perms
+}
+
 func (p PermissionDecorator) All() []Decorator {
 	p.locker.Lock()
 	defer p.locker.Unlock()
-	if p.items == nil {
-		var items []Decorator
-		for _, v := range p.permDecorators {
-			items = append(items, v)
-		}
-		p.items = make([]Decorator, len(items))
-		copy(p.items, items)
+	var items []Decorator
+	for _, v := range p.permDecorators {
+		items = append(items, v)
 	}
-	var list = make([]Decorator, len(p.items))
-	copy(list, p.items)
-	return list
+	return items
 }
 
 // NewPermAllDecorator returns a PermissionDecoratorList, that has

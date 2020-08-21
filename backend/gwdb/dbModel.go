@@ -11,21 +11,21 @@ type HasTenantState struct {
 }
 
 type HasCreationState struct {
-	CreatedAt time.Time `gorm:"not null"`
+	CreatedAt *time.Time `gorm:"not null"`
 }
 
 type HasModificationState struct {
-	ModifiedAt time.Time
+	ModifiedAt *time.Time
 }
 
 type HasSoftDeletionState struct {
 	IsDeleted bool `gorm:"default:0"`
-	DeletedAt time.Time
+	DeletedAt *time.Time
 }
 
 type HasLockState struct {
 	IsLocked     bool `gorm:"default:0;not null"`
-	LockedAt     time.Time
+	LockedAt     *time.Time
 	LockedReason string `gorm:"type:varchar(128)"`
 }
 
@@ -34,6 +34,6 @@ type HasActivationState struct {
 }
 
 type HasEffectivePeriodState struct {
-	EffectiveAt time.Time
-	PeriodAt    time.Time
+	EffectiveAt *time.Time
+	PeriodAt    *time.Time
 }

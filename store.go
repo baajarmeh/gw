@@ -23,7 +23,7 @@ type IStore interface {
 type StoreDbSetupHandler func(ctx Context, db *gorm.DB) *gorm.DB
 
 // StoreCacheSetupHandler represents a redis Client object handler that can be replace A *redis.Client instances features.
-type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user AuthUser) *redis.Client
+type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *redis.Client
 
 // SessionStateHandler represents a Session state manager handler.
 type SessionStateHandler func(state ServerState) ISessionStateManager
@@ -39,7 +39,7 @@ type RespBodyBuildFunc func(status int, requestID string, err interface{}, msgBo
 
 type backendWrapper struct {
 	ctx                    Context
-	user                   AuthUser
+	user                   User
 	store                  IStore
 	storeDbSetupHandler    StoreDbSetupHandler
 	storeCacheSetupHandler StoreCacheSetupHandler
