@@ -151,8 +151,6 @@ func (p *PermissionManagerImpl) GrantToUser(uid uint64, perms ...gw.Permission) 
 	if len(perms) < 1 {
 		return nil
 	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
 	tx := p.Store().Begin()
 	for _, p := range perms {
 		var pm dbModel.PermissionMapping
@@ -169,8 +167,6 @@ func (p *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...gw.Permissio
 	if len(perms) < 1 {
 		return nil
 	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
 	tx := p.Store().Begin()
 	for _, p := range perms {
 		var pm dbModel.PermissionMapping
@@ -187,8 +183,6 @@ func (p *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...gw.Permissio
 	if len(perms) < 1 {
 		return nil
 	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
 	tx := p.Store().Begin()
 	for _, p := range perms {
 		tx.Delete(dbModel.PermissionMapping{},
@@ -201,8 +195,6 @@ func (p *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...gw.Permis
 	if len(perms) < 1 {
 		return nil
 	}
-	p.locker.Lock()
-	defer p.locker.Unlock()
 	tx := p.Store().Begin()
 	for _, p := range perms {
 		tx.Delete(dbModel.PermissionMapping{},
