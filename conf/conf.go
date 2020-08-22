@@ -253,8 +253,8 @@ type Settings struct {
 	} `yaml:"expirationTimeControl" toml:"expirationTimeControl" json:"expirationTimeControl"`
 }
 
-func (cnf ApplicationConfig) String() string {
-	b, _ := json.MarshalIndent(cnf, "", "  ")
+func (conf ApplicationConfig) String() string {
+	b, _ := json.MarshalIndent(conf, "", "  ")
 	return string(b)
 }
 
@@ -319,32 +319,32 @@ var (
 //
 // <Your ApplicationConfig>.ParseCustomPathTo("gwpro", &gwPro)
 //
-func (cnf *ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
-	cnf.locker.Lock()
-	defer cnf.locker.Unlock()
-	if cnf.customMapState == 0 {
-		cnf.customJsonStrMaps = make(map[string]string)
-		genCustomMaps("", cnf.customJsonStrMaps, cnf.Custom)
-		cnf.customMapState++
-	}
-	str, ok := cnf.customJsonStrMaps[path]
+func (conf ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
+	str, ok := conf.customJsonStrMaps[path]
 	if !ok {
 		return ErrNoPathSection
 	}
 	return json.Unmarshal([]byte(str), out)
 }
 
-func (cnf *ApplicationConfig) ParseCustomTo(out interface{}) error {
-	cnf.locker.Lock()
-	defer cnf.locker.Unlock()
-	if cnf.customJson == "" {
-		b, err := json.Marshal(cnf.Custom)
+func (conf ApplicationConfig) ParseCustomTo(out interface{}) error {
+	return json.Unmarshal([]byte(conf.customJson), out)
+}
+
+func (conf *ApplicationConfig) Compile() {
+	conf.locker.Lock()
+	defer conf.locker.Unlock()
+	if conf.customMapState == 0 {
+		conf.customJsonStrMaps = make(map[string]string)
+		genCustomMaps("", conf.customJsonStrMaps, conf.Custom)
+		conf.customMapState++
+		b, err := json.Marshal(conf.Custom)
 		if err != nil {
-			return err
+			panic(fmt.Sprintf("compile application fail, err: %v", err))
 		}
-		cnf.customJson = string(b)
+		conf.customJson = string(b)
+		conf.customMapState++
 	}
-	return json.Unmarshal([]byte(cnf.customJson), out)
 }
 
 // ============ End of configuration items ============= //

@@ -76,7 +76,7 @@ func (pm *PermissionManagerImpl) Create(category string, perms ...gw.Permission)
 			p.Category = category
 		}
 		err := db.Model(dbModel.Permission{}).Where(pm.queryPermMapSQL, p.TenantId, p.Category, p.Key).Take(&model).Error
-		if err != nil {
+		if err != nil && err.Error() != "record not found" {
 			panic(fmt.Sprintf("check perms has exist fail, err: %v", err))
 		}
 		if model.ID == 0 {

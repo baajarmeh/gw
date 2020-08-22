@@ -486,6 +486,7 @@ func initialConfig(s *HostServer) {
 	// Before Server start, Must initial all of Server Options
 	// There are options may be changed by Custom app instance's .Use(...) APIs.
 	cnf := s.options.AppConfigHandler(*s.options.bcs)
+	cnf.Compile()
 	s.conf = cnf
 	s.options.cnf = cnf
 }
