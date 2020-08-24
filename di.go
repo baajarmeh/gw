@@ -36,8 +36,8 @@ type IDIProvider interface {
 	RegisterWithName(typerName string, actual interface{}) bool
 	Resolve(typerName string) interface{}
 	ResolveByTyper(typer reflect.Type) interface{}
-	ResolveWithState(state ContextState, typerName string) interface{}
-	ResolveByTyperWithState(state ContextState, typer reflect.Type) interface{}
+	ResolveWithState(state interface{}, typerName string) interface{}
+	ResolveByTyperWithState(state interface{}, typer reflect.Type) interface{}
 }
 
 type DefaultDIProviderImpl struct {
@@ -127,11 +127,11 @@ func (d *DefaultDIProviderImpl) ResolveByTyper(typer reflect.Type) interface{} {
 	return d.ResolveByTyperWithState(ctxState, typer)
 }
 
-func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state ContextState, typer reflect.Type) interface{} {
+func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state interface{}, typer reflect.Type) interface{} {
 	return d.ResolveWithState(state, gwreflect.GetPkgFullName(typer))
 }
 
-func (d *DefaultDIProviderImpl) ResolveWithState(state ContextState, typerName string) interface{} {
+func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName string) interface{} {
 	var objectTyper, ok = d.typedMaps[typerName]
 	if !ok {
 		panic(fmt.Sprintf("object typer(%s) not found", typerName))
@@ -146,7 +146,7 @@ func (d *DefaultDIProviderImpl) ResolveWithState(state ContextState, typerName s
 			_objTyper := objTyper
 			preparedTypers[objTyper.Name] = _objTyper
 		}
-		prepareBuiltinTypers(preparedTypers, state)
+		prepareBuiltinTypers(preparedTypers, state.(ContextState))
 		for _, typerDp := range objectTyper.DependOn {
 			values = append(values, d.resolver(typerDp, preparedTypers))
 		}
@@ -190,6 +190,7 @@ func (d *DefaultDIProviderImpl) resolver(typerDependency TyperDependency, prepar
 		}
 	}
 }
+
 func prepareBuiltinTypers(typers map[string]ObjectTyper, state ContextState) {
 	for k, v := range state.objectTypers() {
 		typers[k] = v
