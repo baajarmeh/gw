@@ -163,11 +163,11 @@ func (c Context) IDGenerator() IdentifierGenerator {
 }
 
 func (c Context) Resolve(typerName string) interface{} {
-	return c.state.state.s.DIProvider.Resolve(typerName)
+	return c.state.state.s.DIProvider.ResolveWithState(c.state, typerName)
 }
 
 func (c Context) ResolveByTyper(typer reflect.Type) interface{} {
-	return c.state.state.s.DIProvider.ResolveByTyper(typer)
+	return c.state.state.s.DIProvider.ResolveByTyperWithState(c.state, typer)
 }
 
 func (c Context) RespBodyBuildFunc() RespBodyBuildFunc {

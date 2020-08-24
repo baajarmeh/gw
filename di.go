@@ -57,6 +57,9 @@ func (d *DefaultDIProviderImpl) Register(actual ...interface{}) bool {
 func (d *DefaultDIProviderImpl) RegisterWithName(name string, actual interface{}) bool {
 	var actualValue = reflect.ValueOf(actual)
 	var newMethod = actualValue.MethodByName("New")
+	if newMethod.Kind() != reflect.Func {
+		panic(fmt.Sprintf("typer(%s) has no New(...) APIs.", gwreflect.GetPkgFullName(reflect.TypeOf(actual))))
+	}
 	var newMethodTyper = newMethod.Type()
 	var newMethodNumIn = newMethodTyper.NumIn()
 	var newMethodNumOut = newMethodTyper.NumOut()

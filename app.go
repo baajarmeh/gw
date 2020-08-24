@@ -13,7 +13,6 @@ import (
 	"os/signal"
 	"path"
 	"plugin"
-	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -107,6 +106,7 @@ type ServerOption struct {
 	SessionStateManager      SessionStateHandler
 	StoreCacheSetupHandler   StoreCacheSetupHandler
 	RespBodyBuildFunc        RespBodyBuildFunc
+	isTester                 bool
 	cnf                      *conf.ApplicationConfig
 	bcs                      *conf.BootConfig
 }
@@ -204,12 +204,8 @@ func (ss ServerState) IDGenerator() IdentifierGenerator {
 	return ss.s.IDGenerator
 }
 
-func (ss ServerState) Resolve(typerName string) interface{} {
-	return ss.s.DIProvider.Resolve(typerName)
-}
-
-func (ss ServerState) ResolveByTyper(typer reflect.Type) interface{} {
-	return ss.s.DIProvider.ResolveByTyper(typer)
+func (ss ServerState) DIProvider() IDIProvider {
+	return ss.s.DIProvider
 }
 
 func (ss ServerState) RespBodyBuildFunc() RespBodyBuildFunc {
@@ -261,7 +257,7 @@ func init() {
 
 // NewServerOption returns a *ServerOption with bcs.
 func NewServerOption(bcs *conf.BootConfig) *ServerOption {
-	conf := &ServerOption{
+	cnf := &ServerOption{
 		Addr:                   appDefaultAddr,
 		Name:                   appDefaultName,
 		Restart:                appDefaultRestart,
@@ -297,15 +293,24 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		DIProviderHandler: func(state ServerState) IDIProvider {
 			return DefaultDIProvider(state)
 		},
-		bcs: bcs,
+		bcs:      bcs,
+		isTester: false,
 	}
-	return conf
+	return cnf
 }
 
 // DefaultServer returns a default HostServer(the server instance's bcs,svr are default config items.)
 func DefaultServer() *HostServer {
 	bcs := conf.DefaultBootConfig()
 	return NewServerWithOption(NewServerOption(bcs))
+}
+
+// NewTesterServer returns a default HostServer(the server instance's bcs,svr are default config items.)
+func NewTesterServer() *HostServer {
+	bcs := conf.DefaultBootConfig()
+	opts := NewServerOption(bcs)
+	opts.isTester = true
+	return NewServerWithOption(opts)
 }
 
 // NewServerWithName returns a specifies name, other use default HostServer(the server instance's bcs,svr are default config items.)
@@ -538,27 +543,6 @@ func initialServer(s *HostServer) ServerState {
 
 	registerAuthParamValidators(s)
 
-	// gin engine.
-	g := gin.New()
-	// g.Use(gin.Recovery())
-	g.Use(gwState(s.options.Name))
-
-	// Auth(login/logout) API routers.
-	registerAuthRouter(s.conf, g)
-
-	// global Auth middleware.
-	g.Use(gwAuthChecker(s.options.cnf.Security.Auth.AllowUrls))
-
-	if gin.IsDebugging() {
-		g.Use(gin.Logger())
-	}
-
-	httpRouter := &Router{
-		server:      g,
-		prefix:      s.options.Prefix,
-		routerInfos: make([]RouterInfo, 0),
-	}
-
 	// Must ensure store handler is not nil.
 	if s.options.StoreDbSetupHandler == nil {
 		s.options.StoreDbSetupHandler = appDefaultStoreDbSetupHandler
@@ -584,9 +568,33 @@ func initialServer(s *HostServer) ServerState {
 	if s.DIProvider == nil {
 		s.DIProvider = s.options.DIProviderHandler(state)
 	}
-	// initial routes.
-	httpRouter.router = httpRouter.server.Group(s.options.Prefix)
-	s.router = httpRouter
+
+	if !s.options.isTester {
+		// gin engine.
+		g := gin.New()
+		// g.Use(gin.Recovery())
+		g.Use(gwState(s.options.Name))
+
+		// Auth(login/logout) API routers.
+		registerAuthRouter(s.conf, g)
+
+		// global Auth middleware.
+		g.Use(gwAuthChecker(s.options.cnf.Security.Auth.AllowUrls))
+
+		if gin.IsDebugging() {
+			g.Use(gin.Logger())
+		}
+
+		httpRouter := &Router{
+			server:      g,
+			prefix:      s.options.Prefix,
+			routerInfos: make([]RouterInfo, 0),
+		}
+
+		// initial routes.
+		httpRouter.router = httpRouter.server.Group(s.options.Prefix)
+		s.router = httpRouter
+	}
 
 	if s.conf.Server.ListenAddr != "" && s.options.Addr == appDefaultAddr {
 		s.options.Addr = s.conf.Server.ListenAddr

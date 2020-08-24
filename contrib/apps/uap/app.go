@@ -19,10 +19,17 @@ var (
 
 type App struct {
 	uap conf.Uap
+	store gw.IStore
 }
 
 func New() App {
 	return App{}
+}
+
+func (App) New(store gw.IStore) App {
+	return App{
+		store: store,
+	}
 }
 
 func (a App) Name() string {
@@ -43,6 +50,7 @@ func (a App) Use(opt *gw.ServerOption) {
 
 func (a App) Migrate(state gw.ServerState) {
 	dbModel.Migrate(state)
+	state.DIProvider().Register(a)
 }
 
 func (a App) OnStart(state gw.ServerState) {

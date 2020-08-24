@@ -108,7 +108,7 @@ func (MyService4) New(serverState ServerState, store IStore, service IMyService,
 }
 
 func TestDefaultDIProviderImpl(t *testing.T) {
-	var server = DefaultServer()
+	var server = NewTesterServer()
 	var state = NewServerState(server)
 	var di = DefaultDIProvider(state)
 	var myS1Impl MyService
@@ -116,7 +116,6 @@ func TestDefaultDIProviderImpl(t *testing.T) {
 	var myS3Impl MyService3
 	var myS4Impl MyService4
 	di.Register(myS1Impl, myS2Impl, myS3Impl, myS4Impl)
-
 	var myS1, ok = di.Resolve(IMyTestServiceName).(IMyService)
 	assert.IsEqual(ok, true)
 	var dto Dto1

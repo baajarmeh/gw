@@ -16,11 +16,14 @@ func (u User) Name() string {
 //
 // APIs
 //
+// var userDto dto.UserDto
 func (u User) Get(ctx *gw.Context) {
+	var app = ctx.Resolve("github.com/oceanho/gw/contrib/apps/uap.App")
+	_ = app
+
 	store := ctx.Store()
 	db := store.GetDbStore()
 	var user []dbModel.User
-	// var userDto dto.UserDto
 	err := db.Find(&user).Error
 	ctx.JSON(err, user)
 }
