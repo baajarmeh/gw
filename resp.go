@@ -156,7 +156,7 @@ func (c *Context) JSON500PayloadMsg(status int, errMsg interface{}, payload inte
 // Auto call c.Abort() when code < 200 || code > 202.
 func (c *Context) StatusJSON(code int, status int, errMsg interface{}, payload interface{}) {
 	s := hostServer(c.Context)
-	c.Context.JSON(code, s.RespBodyBuildFunc(status, c.RequestID, errMsg, payload))
+	c.Context.JSON(code, s.RespBodyBuildFunc(status, c.RequestId(), errMsg, payload))
 }
 
 func defaultRespBodyBuildFunc(status int, requestID string, errMsg interface{}, payload interface{}) interface{} {

@@ -24,7 +24,7 @@ type Handler func(ctx *Context)
 // Context represents a gw Context object, it's extension from gin.Context.
 type Context struct {
 	*gin.Context
-	RequestID  string
+	requestId  string
 	user       User
 	startTime  time.Time
 	logger     Logger
@@ -116,6 +116,10 @@ func (state ContextState) objectTypers() map[string]ObjectTyper {
 		newAPI:      nullReflectValue,
 	}
 	return typers
+}
+
+func (c *Context) RequestId() string {
+	return c.requestId
 }
 
 func (c Context) User() User {
@@ -471,7 +475,7 @@ func makeCtx(c *gin.Context, requestID string) *Context {
 		server:    s,
 		Context:   c,
 		user:      user,
-		RequestID: requestID,
+		requestId: requestID,
 		startTime: time.Now(),
 		logger:    getLogger(c),
 		state: ContextState{

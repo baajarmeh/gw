@@ -14,30 +14,30 @@ func GetAK(c *gw.Context) {
 
 	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %d, db result: %d, db err: %v",
-			c.RequestID, c.User().ID, result, err),
+			c.RequestId(), c.User().ID, result, err),
 	})
 }
 
 func CreateAK(c *gw.Context) {
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }
 
 func ModifyAK(c *gw.Context) {
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }
 
 func DeleteAK(c *gw.Context) {
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }
 
 func QueryAK(c *gw.Context) {
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }

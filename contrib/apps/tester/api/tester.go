@@ -30,7 +30,7 @@ func GetTester(c *gw.Context) {
 	c.JSON200(struct {
 		RequestID string
 	}{
-		RequestID: c.RequestID,
+		RequestID: c.RequestId(),
 	})
 }
 

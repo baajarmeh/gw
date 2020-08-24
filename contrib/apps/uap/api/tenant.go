@@ -20,30 +20,30 @@ func GetTenant(c *gw.Context) {
 		return
 	}
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user are %v", c.RequestID, c.User()),
+		"payload": fmt.Sprintf("request id is: %s, user are %v", c.RequestId(), c.User()),
 	})
 }
 
 func CreateTenant(c *gw.Context) {
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }
 
 func ModifyTenant(c *gw.Context) {
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }
 
 func DeleteTenant(c *gw.Context) {
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }
 
 func QueryTenant(c *gw.Context) {
 	c.JSON200(gin.H{
-		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestID, c.Query("uid")),
+		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }

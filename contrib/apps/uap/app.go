@@ -18,7 +18,7 @@ var (
 )
 
 type App struct {
-	uap conf.Uap
+	uap   conf.Uap
 	store gw.IStore
 }
 
