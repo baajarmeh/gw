@@ -16,6 +16,16 @@ type ObjectTyper struct {
 	IsPtr       bool
 }
 
+func newObjectTyper(name string, value interface{}) ObjectTyper {
+	return ObjectTyper{
+		Name:        name,
+		IsPtr:       false,
+		newAPI:      nullReflectValue,
+		Typer:       reflect.TypeOf(value),
+		ActualValue: reflect.ValueOf(value),
+	}
+}
+
 type TyperDependency struct {
 	Name  string
 	IsPtr bool

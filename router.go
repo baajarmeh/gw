@@ -60,61 +60,17 @@ var nullReflectValue = reflect.ValueOf(nil)
 
 func (state ContextState) objectTypers() map[string]ObjectTyper {
 	var typers = make(map[string]ObjectTyper)
-	typers[IStoreName] = ObjectTyper{
-		Name:        IStoreName,
-		ActualValue: reflect.ValueOf(state.store),
-		newAPI:      nullReflectValue,
-	}
-	typers[IPermissionManagerName] = ObjectTyper{
-		Name:        IPermissionManagerName,
-		ActualValue: reflect.ValueOf(state.state.PermissionManager()),
-		newAPI:      nullReflectValue,
-	}
-	typers[IAuthManagerName] = ObjectTyper{
-		Name:        IAuthManagerName,
-		ActualValue: reflect.ValueOf(state.state.AuthManager()),
-		newAPI:      nullReflectValue,
-	}
-	typers[IPermissionCheckerName] = ObjectTyper{
-		Name:        IPermissionCheckerName,
-		ActualValue: reflect.ValueOf(state.state.PermissionManager()),
-		newAPI:      nullReflectValue,
-	}
-	typers[ISessionStateManagerName] = ObjectTyper{
-		Name:        ISessionStateManagerName,
-		ActualValue: reflect.ValueOf(state.state.SessionStateManager()),
-		newAPI:      nullReflectValue,
-	}
-	typers[IPasswordSignerName] = ObjectTyper{
-		Name:        IPasswordSignerName,
-		ActualValue: reflect.ValueOf(state.state.PasswordSigner()),
-		newAPI:      nullReflectValue,
-	}
-	typers[IUserManagerName] = ObjectTyper{
-		Name:        IUserManagerName,
-		ActualValue: reflect.ValueOf(state.state.UserManager()),
-		newAPI:      nullReflectValue,
-	}
-	typers[IdentifierGeneratorName] = ObjectTyper{
-		Name:        IdentifierGeneratorName,
-		ActualValue: reflect.ValueOf(state.state.IDGenerator()),
-		newAPI:      nullReflectValue,
-	}
-	typers[ContextStateName] = ObjectTyper{
-		Name:        HostServerName,
-		ActualValue: reflect.ValueOf(state),
-		newAPI:      nullReflectValue,
-	}
-	typers[HostServerName] = ObjectTyper{
-		Name:        HostServerName,
-		ActualValue: reflect.ValueOf(state.state.s),
-		newAPI:      nullReflectValue,
-	}
-	typers[ServerStateName] = ObjectTyper{
-		Name:        ServerStateName,
-		ActualValue: reflect.ValueOf(state.state),
-		newAPI:      nullReflectValue,
-	}
+	typers[IStoreName] = newObjectTyper(IStoreName, state.store)
+	typers[IPermissionManagerName] = newObjectTyper(IPermissionManagerName, state.state.PermissionManager())
+	typers[IAuthManagerName] = newObjectTyper(IAuthManagerName, state.state.AuthManager())
+	typers[IPermissionCheckerName] = newObjectTyper(IPermissionCheckerName, state.state.PermissionChecker())
+	typers[ISessionStateManagerName] = newObjectTyper(ISessionStateManagerName, state.state.SessionStateManager())
+	typers[IPasswordSignerName] = newObjectTyper(IPasswordSignerName, state.state.PasswordSigner())
+	typers[IUserManagerName] = newObjectTyper(IUserManagerName, state.state.UserManager())
+	typers[IdentifierGeneratorName] = newObjectTyper(IdentifierGeneratorName, state.state.IDGenerator())
+	typers[ContextStateName] = newObjectTyper(ContextStateName, state)
+	typers[HostServerName] = newObjectTyper(HostServerName, state.state.s)
+	typers[ServerStateName] = newObjectTyper(HostServerName, state.state)
 	return typers
 }
 
