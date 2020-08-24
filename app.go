@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path"
 	"plugin"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -99,6 +100,7 @@ type ServerOption struct {
 	Crypto                   func(conf conf.ApplicationConfig) ICrypto
 	IDGeneratorHandler       func(conf conf.ApplicationConfig) IdentifierGenerator
 	UserManagerHandler       func(state ServerState) IUserManager
+	DIProviderHandler        func(state ServerState) IDIProvider
 	AuthManagerHandler       AuthManagerHandler
 	PermissionManagerHandler PermissionManagerHandler
 	StoreDbSetupHandler      StoreDbSetupHandler
@@ -122,6 +124,7 @@ type HostServer struct {
 	PermissionManager      IPermissionManager
 	UserManager            IUserManager
 	IDGenerator            IdentifierGenerator
+	DIProvider             IDIProvider
 	RespBodyBuildFunc      RespBodyBuildFunc
 	state                  int
 	locker                 sync.Mutex
@@ -146,6 +149,13 @@ type ServerState struct {
 	s *HostServer
 }
 
+func NewServerState(server *HostServer) ServerState {
+	server.compile()
+	return ServerState{
+		s: server,
+	}
+}
+
 func (ss ServerState) Store() IStore {
 	return ss.s.Store
 }
@@ -164,6 +174,10 @@ func (ss ServerState) PasswordSigner() IPasswordSigner {
 
 func (ss ServerState) AuthManager() IAuthManager {
 	return ss.s.AuthManager
+}
+
+func (ss ServerState) PermissionChecker() IPermissionChecker {
+	return ss.s.PermissionManager.Checker()
 }
 
 func (ss ServerState) SessionStateManager() ISessionStateManager {
@@ -188,6 +202,14 @@ func (ss ServerState) ApplicationConfig() *conf.ApplicationConfig {
 
 func (ss ServerState) IDGenerator() IdentifierGenerator {
 	return ss.s.IDGenerator
+}
+
+func (ss ServerState) Resolve(typerName string) interface{} {
+	return ss.s.DIProvider.Resolve(typerName)
+}
+
+func (ss ServerState) ResolveByTyper(typer reflect.Type) interface{} {
+	return ss.s.DIProvider.ResolveByTyper(typer)
 }
 
 func (ss ServerState) RespBodyBuildFunc() RespBodyBuildFunc {
@@ -272,7 +294,10 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 			return DefaultCrypto(c.Protect.Secret, c.Hash.Salt)
 		},
 		RespBodyBuildFunc: defaultRespBodyBuildFunc,
-		bcs:               bcs,
+		DIProviderHandler: func(state ServerState) IDIProvider {
+			return DefaultDIProvider(state)
+		},
+		bcs: bcs,
 	}
 	return conf
 }
@@ -492,13 +517,14 @@ func initialConfig(s *HostServer) {
 }
 
 func initialServer(s *HostServer) ServerState {
-	crypto := s.options.Crypto(*s.conf)
+	var cnf = s.conf.Clone()
+	crypto := s.options.Crypto(cnf)
 	s.Hash = crypto.Hash()
 	s.Name = s.options.Name
 	s.Protect = crypto.Protect()
 	s.PasswordSigner = crypto.Password()
-	s.Store = s.options.BackendStoreHandler(*s.conf)
-	s.IDGenerator = s.options.IDGeneratorHandler(*s.conf)
+	s.Store = s.options.BackendStoreHandler(cnf)
+	s.IDGenerator = s.options.IDGeneratorHandler(cnf)
 	if s.RespBodyBuildFunc == nil {
 		s.RespBodyBuildFunc = s.options.RespBodyBuildFunc
 	}
@@ -548,6 +574,15 @@ func initialServer(s *HostServer) ServerState {
 	}
 	if s.storeCacheSetupHandler == nil {
 		s.storeCacheSetupHandler = s.options.StoreCacheSetupHandler
+	}
+	if s.options.DIProviderHandler == nil {
+		s.options.DIProviderHandler = func(state ServerState) IDIProvider {
+			return DefaultDIProvider(state)
+		}
+	}
+	// DI
+	if s.DIProvider == nil {
+		s.DIProvider = s.options.DIProviderHandler(state)
 	}
 	// initial routes.
 	httpRouter.router = httpRouter.server.Group(s.options.Prefix)

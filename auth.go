@@ -28,6 +28,13 @@ func (p Permission) String() string {
 	return string(b)
 }
 
+func (p Permission) IdStr() string {
+	if p.TenantId > 0 {
+		return fmt.Sprintf("%d.%s.%s", p.TenantId, p.Category, p.Key)
+	}
+	return fmt.Sprintf("%s.%s", p.Category, p.Key)
+}
+
 func NewPerm(key, name, descriptor string) Permission {
 	return Permission{
 		Key:        key,
@@ -96,9 +103,12 @@ type ISessionStateManager interface {
 	Remove(sid string) error
 }
 
+type IPermissionChecker interface {
+	Check(user User, perms ...Permission) bool
+}
 type IPermissionManager interface {
 	Initial()
-	Has(user User, perms ...Permission) bool
+	Checker() IPermissionChecker
 	Create(category string, perms ...Permission) error
 	Modify(perms ...Permission) error
 	Drop(perms ...Permission) error
@@ -192,6 +202,7 @@ var (
 	defaultAm            *DefaultAuthManagerImpl
 	defaultSs            *DefaultSessionStateManagerImpl
 	defaultPm            *EmptyPermissionManagerImpl
+	defaultChecker       *DefaultPassPermissionChecker
 )
 
 type CredentialType string
@@ -237,11 +248,12 @@ func init() {
 }
 
 type EmptyPermissionManagerImpl struct {
-	state  int
-	store  IStore
-	conf   conf.ApplicationConfig
-	locker sync.Mutex
-	perms  map[string]map[string]Permission
+	state             int
+	store             IStore
+	conf              conf.ApplicationConfig
+	locker            sync.Mutex
+	perms             map[string]map[string]Permission
+	permissionChecker IPermissionChecker
 }
 
 func DefaultPermissionManager(state ServerState) *EmptyPermissionManagerImpl {
@@ -250,9 +262,35 @@ func DefaultPermissionManager(state ServerState) *EmptyPermissionManagerImpl {
 			conf:  *state.ApplicationConfig(),
 			store: state.Store(),
 			perms: make(map[string]map[string]Permission),
+			permissionChecker: DefaultPassPermissionChecker{
+				State: state,
+			},
 		}
 	}
 	return defaultPm
+}
+
+type DefaultPassPermissionChecker struct {
+	State           ServerState
+	CustomCheckFunc func(user User, perms ...Permission) bool
+}
+
+func (a DefaultPassPermissionChecker) Check(user User, perms ...Permission) bool {
+	if a.CustomCheckFunc != nil {
+		return a.CustomCheckFunc(user, perms...)
+	}
+	if user.IsAdmin() {
+		return true
+	}
+	if !user.IsAuth() || user.PermMaps == nil {
+		return false
+	}
+	for _, p := range perms {
+		if _, ok := user.PermMaps[p.IdStr()]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *EmptyPermissionManagerImpl) getStore() *gorm.DB {
@@ -262,8 +300,8 @@ func (p *EmptyPermissionManagerImpl) getStore() *gorm.DB {
 func (p *EmptyPermissionManagerImpl) Initial() {
 }
 
-func (p *EmptyPermissionManagerImpl) Has(user User, perms ...Permission) bool {
-	return user.IsAuth()
+func (p *EmptyPermissionManagerImpl) Checker() IPermissionChecker {
+	return p.permissionChecker
 }
 
 func (p *EmptyPermissionManagerImpl) Create(category string, perms ...Permission) error {
@@ -585,11 +623,12 @@ type User struct {
 	ID          uint64
 	TenantId    uint64
 	Passport    string
-	Secret      string       `gorm:"-"`
-	Password    string       `gorm:"-"` // Hash string
-	UserType    UserType     `gorm:"-"` // gw.AuthUserType
-	Roles       []string     `gorm:"-"`
-	Permissions []Permission `gorm:"-"`
+	Secret      string                `gorm:"-"`
+	Password    string                `gorm:"-"` // Hash string
+	UserType    UserType              `gorm:"-"` // gw.AuthUserType
+	Roles       []string              `gorm:"-"`
+	Permissions []Permission          `gorm:"-"`
+	PermMaps    map[string]Permission `gorm:"-"`
 }
 
 //

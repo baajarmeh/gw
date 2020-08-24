@@ -37,8 +37,85 @@ type Context struct {
 
 // ServerState represents a Server state context object.
 type ContextState struct {
-	state ServerState
-	store IStore
+	store  IStore
+	state  ServerState
+	values map[string]interface{}
+}
+
+const (
+	IStoreName               = "github.com/oceanho/gw.IStore"
+	IPasswordSignerName      = "github.com/oceanho/gw.IPasswordSigner"
+	IPermissionManagerName   = "github.com/oceanho/gw.IPermissionManager"
+	IPermissionCheckerName   = "github.com/oceanho/gw.IPermissionChecker"
+	ISessionStateManagerName = "github.com/oceanho/gw.ISessionStateManager"
+	IdentifierGeneratorName  = "github.com/oceanho/gw.IdentifierGenerator"
+	IAuthManagerName         = "github.com/oceanho/gw.IAuthManager"
+	IUserManagerName         = "github.com/oceanho/gw.IUserManager"
+	ContextStateName         = "github.com/oceanho/gw.ContextState"
+	ServerStateName          = "github.com/oceanho/gw.ServerState"
+	HostServerName           = "github.com/oceanho/gw.HostServer"
+)
+
+var nullReflectValue = reflect.ValueOf(nil)
+
+func (state ContextState) objectTypers() map[string]ObjectTyper {
+	var typers = make(map[string]ObjectTyper)
+	typers[IStoreName] = ObjectTyper{
+		Name:        IStoreName,
+		ActualValue: reflect.ValueOf(state.store),
+		newAPI:      nullReflectValue,
+	}
+	typers[IPermissionManagerName] = ObjectTyper{
+		Name:        IPermissionManagerName,
+		ActualValue: reflect.ValueOf(state.state.PermissionManager()),
+		newAPI:      nullReflectValue,
+	}
+	typers[IAuthManagerName] = ObjectTyper{
+		Name:        IAuthManagerName,
+		ActualValue: reflect.ValueOf(state.state.AuthManager()),
+		newAPI:      nullReflectValue,
+	}
+	typers[IPermissionCheckerName] = ObjectTyper{
+		Name:        IPermissionCheckerName,
+		ActualValue: reflect.ValueOf(state.state.PermissionManager()),
+		newAPI:      nullReflectValue,
+	}
+	typers[ISessionStateManagerName] = ObjectTyper{
+		Name:        ISessionStateManagerName,
+		ActualValue: reflect.ValueOf(state.state.SessionStateManager()),
+		newAPI:      nullReflectValue,
+	}
+	typers[IPasswordSignerName] = ObjectTyper{
+		Name:        IPasswordSignerName,
+		ActualValue: reflect.ValueOf(state.state.PasswordSigner()),
+		newAPI:      nullReflectValue,
+	}
+	typers[IUserManagerName] = ObjectTyper{
+		Name:        IUserManagerName,
+		ActualValue: reflect.ValueOf(state.state.UserManager()),
+		newAPI:      nullReflectValue,
+	}
+	typers[IdentifierGeneratorName] = ObjectTyper{
+		Name:        IdentifierGeneratorName,
+		ActualValue: reflect.ValueOf(state.state.IDGenerator()),
+		newAPI:      nullReflectValue,
+	}
+	typers[ContextStateName] = ObjectTyper{
+		Name:        HostServerName,
+		ActualValue: reflect.ValueOf(state),
+		newAPI:      nullReflectValue,
+	}
+	typers[HostServerName] = ObjectTyper{
+		Name:        HostServerName,
+		ActualValue: reflect.ValueOf(state.state.s),
+		newAPI:      nullReflectValue,
+	}
+	typers[ServerStateName] = ObjectTyper{
+		Name:        ServerStateName,
+		ActualValue: reflect.ValueOf(state.state),
+		newAPI:      nullReflectValue,
+	}
+	return typers
 }
 
 func (c Context) User() User {
@@ -73,12 +150,24 @@ func (c Context) PermissionManager() IPermissionManager {
 	return c.state.state.PermissionManager()
 }
 
+func (c Context) PermissionChecker() IPermissionChecker {
+	return c.PermissionManager().Checker()
+}
+
 func (c Context) UserManager() IUserManager {
 	return c.state.state.UserManager()
 }
 
 func (c Context) IDGenerator() IdentifierGenerator {
 	return c.state.state.IDGenerator()
+}
+
+func (c Context) Resolve(typerName string) interface{} {
+	return c.state.state.s.DIProvider.Resolve(typerName)
+}
+
+func (c Context) ResolveByTyper(typer reflect.Type) interface{} {
+	return c.state.state.s.DIProvider.ResolveByTyper(typer)
 }
 
 func (c Context) RespBodyBuildFunc() RespBodyBuildFunc {

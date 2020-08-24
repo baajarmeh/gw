@@ -17,7 +17,7 @@ func (MyTesterRestAPI) Name() string {
 
 // http Get
 func (MyTesterRestAPI) Get(c *gw.Context) {
-	db := c.State.Store().GetDbStore()
+	db := c.Store().GetDbStore()
 	out := &[]dto.MyTester{}
 	err := db.Model(&dto.MyTester{}).Limit(200).Offset(0).Scan(out).Error
 	c.JSON(err, out)
@@ -49,7 +49,7 @@ func (MyTesterRestAPI) Query(c *gw.Context) {
 	if c.Bind(expr) != nil {
 		return
 	}
-	db := c.State.Store().GetDbStore()
+	db := c.Store().GetDbStore()
 	out := &[]dto.MyTester{}
 	var total int64
 	err := db.Model(&dto.MyTester{}).Count(&total).Limit(expr.PageSize).Offset(expr.PageOffset()).Scan(out).Error
@@ -74,7 +74,7 @@ func (m MyTesterGlobalDecorator) OnAfterCall(ctx *gw.Context) (friendlyMsg strin
 // http Post
 func (MyTesterRestAPI) Post(c *gw.Context) {
 	obj := &dto.MyTester{}
-	err := c.State.Store().GetDbStore().Create(obj).Error
+	err := c.Store().GetDbStore().Create(obj).Error
 	c.JSON(err, obj)
 }
 

@@ -84,6 +84,19 @@ type ApplicationConfig struct {
 	customJsonStrMaps map[string]string
 }
 
+func (cnf *ApplicationConfig) Clone() ApplicationConfig {
+	var _cnf ApplicationConfig
+	_cnf.Server = cnf.Server
+	_cnf.Backend = cnf.Backend
+	_cnf.Security = cnf.Security
+	_cnf.Service = cnf.Service
+	_cnf.Settings = cnf.Settings
+	_cnf.Custom = cnf.Custom
+	_cnf.customJson = cnf.customJson
+	_cnf.customJsonStrMaps = cnf.customJsonStrMaps
+	return _cnf
+}
+
 // allow urls
 type AllowUrl struct {
 	Name string   `yaml:"name" toml:"name" json:"name"`
@@ -253,8 +266,8 @@ type Settings struct {
 	} `yaml:"expirationTimeControl" toml:"expirationTimeControl" json:"expirationTimeControl"`
 }
 
-func (conf ApplicationConfig) String() string {
-	b, _ := json.MarshalIndent(conf, "", "  ")
+func (cnf ApplicationConfig) String() string {
+	b, _ := json.MarshalIndent(cnf, "", "  ")
 	return string(b)
 }
 
@@ -319,31 +332,31 @@ var (
 //
 // <Your ApplicationConfig>.ParseCustomPathTo("gwpro", &gwPro)
 //
-func (conf ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
-	str, ok := conf.customJsonStrMaps[path]
+func (cnf ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
+	str, ok := cnf.customJsonStrMaps[path]
 	if !ok {
 		return ErrNoPathSection
 	}
 	return json.Unmarshal([]byte(str), out)
 }
 
-func (conf ApplicationConfig) ParseCustomTo(out interface{}) error {
-	return json.Unmarshal([]byte(conf.customJson), out)
+func (cnf ApplicationConfig) ParseCustomTo(out interface{}) error {
+	return json.Unmarshal([]byte(cnf.customJson), out)
 }
 
-func (conf *ApplicationConfig) Compile() {
-	conf.locker.Lock()
-	defer conf.locker.Unlock()
-	if conf.customMapState == 0 {
-		conf.customJsonStrMaps = make(map[string]string)
-		genCustomMaps("", conf.customJsonStrMaps, conf.Custom)
-		conf.customMapState++
-		b, err := json.Marshal(conf.Custom)
+func (cnf *ApplicationConfig) Compile() {
+	cnf.locker.Lock()
+	defer cnf.locker.Unlock()
+	if cnf.customMapState == 0 {
+		cnf.customJsonStrMaps = make(map[string]string)
+		genCustomMaps("", cnf.customJsonStrMaps, cnf.Custom)
+		cnf.customMapState++
+		b, err := json.Marshal(cnf.Custom)
 		if err != nil {
 			panic(fmt.Sprintf("compile application fail, err: %v", err))
 		}
-		conf.customJson = string(b)
-		conf.customMapState++
+		cnf.customJson = string(b)
+		cnf.customMapState++
 	}
 }
 

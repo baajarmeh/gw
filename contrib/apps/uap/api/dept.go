@@ -7,7 +7,7 @@ import (
 )
 
 func GetDept(c *gw.Context) {
-	db := c.State.Store().GetDbStore()
+	db := c.Store().GetDbStore()
 	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, Dept ID is %s, db: %v", c.RequestID, c.Query("uid"), db),
 	})

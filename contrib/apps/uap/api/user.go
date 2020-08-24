@@ -13,7 +13,7 @@ func GetUser(c *gw.Context) {
 		return
 	}
 	//user := &db
-	//db := c.State.Store().GetDbStoreByName("user-primary")
+	//db := c.Store().GetDbStoreByName("user-primary")
 	//biz.CreateUser(db)
 }
 func CreateUser(c *gw.Context) {

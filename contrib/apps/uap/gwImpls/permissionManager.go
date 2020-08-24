@@ -10,14 +10,15 @@ import (
 )
 
 type PermissionManagerImpl struct {
-	_state          int
-	state           gw.ServerState
-	store           gw.IStore
-	conf            conf.ApplicationConfig
-	locker          sync.Mutex
-	queryPermSQL    string
-	delPermMapSQL   string
-	queryPermMapSQL string
+	_state            int
+	state             gw.ServerState
+	store             gw.IStore
+	conf              conf.ApplicationConfig
+	locker            sync.Mutex
+	queryPermSQL      string
+	delPermMapSQL     string
+	queryPermMapSQL   string
+	permissionChecker gw.IPermissionChecker
 }
 
 func (pm *PermissionManagerImpl) Store() *gorm.DB {
@@ -40,20 +41,8 @@ func (pm *PermissionManagerImpl) Initial() {
 	}
 }
 
-func (pm *PermissionManagerImpl) Has(user gw.User, perms ...gw.Permission) bool {
-	if user.IsAuth() {
-		if user.IsAdmin() {
-			return true
-		}
-		for _, g := range user.Permissions {
-			for _, pm := range perms {
-				if g.Key == pm.Key {
-					return true
-				}
-			}
-		}
-	}
-	return false
+func (pm *PermissionManagerImpl) Checker() gw.IPermissionChecker {
+	return pm.permissionChecker
 }
 
 func (pm *PermissionManagerImpl) Create(category string, perms ...gw.Permission) error {
@@ -216,5 +205,9 @@ func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
 		queryPermSQL:    queryPermSQL,
 		delPermMapSQL:   " object_id = ? and tenant_id = ? and permission_id = ? and type = ? ",
 		queryPermMapSQL: " tenant_id = ? and category = ? and `key` = ? ",
+		permissionChecker: gw.DefaultPassPermissionChecker{
+			State:           state,
+			CustomCheckFunc: nil,
+		},
 	}
 }
