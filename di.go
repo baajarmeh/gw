@@ -3,24 +3,27 @@ package gw
 import (
 	"fmt"
 	"github.com/oceanho/gw/libs/gwreflect"
-	"github.com/oceanho/gw/logger"
 	"reflect"
 	"sync"
 )
 
 type ObjectTyper struct {
 	Name        string
-	DependOn    []string
+	DependOn    []TyperDependency
 	Typer       reflect.Type
 	ActualValue reflect.Value
 	newAPI      reflect.Value
+	IsPtr       bool
 }
 
-type BuildFunc func(state ContextState, typers map[string]ObjectTyper) (interface{}, error)
+type TyperDependency struct {
+	Name  string
+	IsPtr bool
+}
 
 type IDIProvider interface {
-	Register(actual interface{}) bool
-	RegisterWithName(name string, actual interface{}) bool
+	Register(actual ...interface{}) bool
+	RegisterWithName(typerName string, actual interface{}) bool
 	Resolve(typerName string) interface{}
 	ResolveByTyper(typer reflect.Type) interface{}
 	ResolveWithState(state ContextState, typerName string) interface{}
@@ -34,11 +37,6 @@ type DefaultDIProviderImpl struct {
 	state        ServerState
 }
 
-type parameter struct {
-	Name  string
-	Value reflect.Value
-}
-
 func DefaultDIProvider(state ServerState) IDIProvider {
 	return &DefaultDIProviderImpl{
 		state:        state,
@@ -47,12 +45,13 @@ func DefaultDIProvider(state ServerState) IDIProvider {
 	}
 }
 
-func (d *DefaultDIProviderImpl) Register(actual interface{}) bool {
-	return d.RegisterByName("", actual)
-}
-
-func (d *DefaultDIProviderImpl) RegisterByName(name string, actual interface{}) bool {
-	return d.RegisterWithName(name, actual)
+func (d *DefaultDIProviderImpl) Register(actual ...interface{}) bool {
+	for _, a := range actual {
+		if !d.RegisterWithName("", a) {
+			return false
+		}
+	}
+	return true
 }
 
 func (d *DefaultDIProviderImpl) RegisterWithName(name string, actual interface{}) bool {
@@ -69,7 +68,7 @@ func (d *DefaultDIProviderImpl) RegisterWithName(name string, actual interface{}
 	if name != "" {
 		virtualName = name
 	}
-	var newFunParamObjectTypers = make([]string, newMethodNumIn)
+	var newFunParamObjectTypers = make([]TyperDependency, newMethodNumIn)
 	for idx := 0; idx < newMethodNumIn; idx++ {
 		newFunParamObjectTypers[idx] = typeToObjectTyperName(newMethodTyper.In(idx))
 	}
@@ -122,8 +121,7 @@ func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state ContextState, type
 func (d *DefaultDIProviderImpl) ResolveWithState(state ContextState, typerName string) interface{} {
 	var objectTyper, ok = d.typedMaps[typerName]
 	if !ok {
-		logger.Error("object typer(%s) not found", typerName)
-		return nil
+		panic(fmt.Sprintf("object typer(%s) not found", typerName))
 	}
 	var result reflect.Value
 	if objectTyper.newAPI == nullReflectValue {
@@ -136,35 +134,48 @@ func (d *DefaultDIProviderImpl) ResolveWithState(state ContextState, typerName s
 			preparedTypers[objTyper.Name] = _objTyper
 		}
 		prepareBuiltinTypers(preparedTypers, state)
-		for _, dp := range objectTyper.DependOn {
-			values = append(values, d.resolver(dp, preparedTypers))
+		for _, typerDp := range objectTyper.DependOn {
+			values = append(values, d.resolver(typerDp, preparedTypers))
 		}
 		result = objectTyper.newAPI.Call(values)[0]
-	}
-	if result.Kind() == reflect.Ptr {
-		//FIXME(OceanHo): how to returns a pointer typer?
-		// looking for: #OC-20200824.001
-		return result.Elem().Interface()
 	}
 	return result.Interface()
 }
 
 // helpers
-func (d *DefaultDIProviderImpl) resolver(typerName string, preparedTypers map[string]ObjectTyper) reflect.Value {
+func (d *DefaultDIProviderImpl) resolver(typerDependency TyperDependency, preparedTypers map[string]ObjectTyper) reflect.Value {
 	var values []reflect.Value
-	var objectTyper, ok = preparedTypers[typerName]
+	var objectTyper, ok = preparedTypers[typerDependency.Name]
 	if !ok {
-		panic(fmt.Sprintf("missing typer(%s)", typerName))
+		panic(fmt.Sprintf("missing typer(%s)", typerDependency.Name))
 	}
 	if objectTyper.newAPI == nullReflectValue {
 		return objectTyper.ActualValue
 	}
 	for _, dp := range objectTyper.DependOn {
-		if objTyper, ok := preparedTypers[dp]; ok {
-			values = append(values, d.resolver(objTyper.Name, preparedTypers))
+		if _, ok := preparedTypers[dp.Name]; ok {
+			values = append(values, d.resolver(dp, preparedTypers))
+		} else {
+			panic(fmt.Sprintf("object typer(%s) not found", dp.Name))
 		}
 	}
-	return objectTyper.newAPI.Call(values)[0]
+	var result = objectTyper.newAPI.Call(values)[0]
+	switch result.Kind() {
+	case reflect.Ptr:
+		if typerDependency.IsPtr {
+			return result
+		} else {
+			return reflect.ValueOf(result.Elem().Interface())
+		}
+	default:
+		if !typerDependency.IsPtr {
+			return result
+		} else {
+			var typeValue = reflect.New(reflect.TypeOf(result.Interface()))
+			typeValue.Elem().Set(result)
+			return typeValue
+		}
+	}
 }
 func prepareBuiltinTypers(typers map[string]ObjectTyper, state ContextState) {
 	for k, v := range state.objectTypers() {
@@ -172,8 +183,11 @@ func prepareBuiltinTypers(typers map[string]ObjectTyper, state ContextState) {
 	}
 }
 
-func typeToObjectTyperName(typ reflect.Type) string {
-	return gwreflect.GetPkgFullName(typ)
+func typeToObjectTyperName(typ reflect.Type) TyperDependency {
+	return TyperDependency{
+		Name:  gwreflect.GetPkgFullName(typ),
+		IsPtr: typ.Kind() == reflect.Ptr,
+	}
 }
 
 func typeToObjectTyper(typ reflect.Type) ObjectTyper {
