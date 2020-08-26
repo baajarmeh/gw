@@ -10,9 +10,9 @@ out-of-the-box, Fully features:
 - Multi-tenancy
 - ORM (gorm. mysql, postgresql)
 - Cache (redis)
-- Modular Module mode app.
+- Module mode development.
 - REST/Dynamic style Api support.
-- Api decorator.
+- Api decorator supports.
 - DI framework supports.
 - Base on go template config generator.
 - Out-of-the-box Web Api framework.
