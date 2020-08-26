@@ -98,10 +98,10 @@ type ServerOption struct {
 	PluginSymbolSuffix       string
 	StartBeforeHandler       func(s *HostServer) error
 	ShutDownBeforeHandler    func(s *HostServer) error
-	BackendStoreHandler      func(cnf conf.ApplicationConfig) IStore
-	AppConfigHandler         func(cnf conf.BootConfig) *conf.ApplicationConfig
-	Crypto                   func(conf conf.ApplicationConfig) ICrypto
-	IDGeneratorHandler       func(conf conf.ApplicationConfig) IdentifierGenerator
+	BackendStoreHandler      func(cnf *conf.ApplicationConfig) IStore
+	AppConfigHandler         func(cnf *conf.BootConfig) *conf.ApplicationConfig
+	Crypto                   func(conf *conf.ApplicationConfig) ICrypto
+	IDGeneratorHandler       func(conf *conf.ApplicationConfig) IdentifierGenerator
 	UserManagerHandler       func(state ServerState) IUserManager
 	DIProviderHandler        func(state ServerState) IDIProvider
 	AuthManagerHandler       AuthManagerHandler
@@ -225,11 +225,11 @@ var (
 	appDefaultPluginSymbolSuffix    = ".so"
 	appDefaultStartBeforeHandler    = func(server *HostServer) error { return nil }
 	appDefaultShutdownBeforeHandler = func(server *HostServer) error { return nil }
-	appDefaultBackendHandler        = func(cnf conf.ApplicationConfig) IStore {
+	appDefaultBackendHandler        = func(cnf *conf.ApplicationConfig) IStore {
 		return DefaultBackend(cnf)
 	}
-	appDefaultAppConfigHandler = func(cnf conf.BootConfig) *conf.ApplicationConfig {
-		return conf.NewConfigWithBootConfig(&cnf)
+	appDefaultAppConfigHandler = func(cnf *conf.BootConfig) *conf.ApplicationConfig {
+		return conf.NewConfigWithBootConfig(cnf)
 	}
 	appDefaultStoreDbSetupHandler = func(c Context, db *gorm.DB) *gorm.DB {
 		// TODO(Ocean): consider new a context.ContextTimeout
@@ -274,7 +274,7 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		BackendStoreHandler:    appDefaultBackendHandler,
 		StoreDbSetupHandler:    appDefaultStoreDbSetupHandler,
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
-		IDGeneratorHandler: func(conf conf.ApplicationConfig) IdentifierGenerator {
+		IDGeneratorHandler: func(conf *conf.ApplicationConfig) IdentifierGenerator {
 			return DefaultIdentifierGenerator()
 		},
 		UserManagerHandler: func(state ServerState) IUserManager {
@@ -289,7 +289,7 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		SessionStateManager: func(state ServerState) ISessionStateManager {
 			return DefaultSessionStateManager(state)
 		},
-		Crypto: func(conf conf.ApplicationConfig) ICrypto {
+		Crypto: func(conf *conf.ApplicationConfig) ICrypto {
 			c := conf.Security.Crypto
 			return DefaultCrypto(c.Protect.Secret, c.Hash.Salt)
 		},
@@ -519,14 +519,14 @@ func initialConfig(s *HostServer) {
 	//
 	// Before Server start, Must initial all of Server Options
 	// There are options may be changed by Custom app instance's .Use(...) APIs.
-	cnf := s.options.AppConfigHandler(*s.options.bcs)
+	cnf := s.options.AppConfigHandler(s.options.bcs)
 	cnf.Compile()
 	s.conf = cnf
 	s.options.cnf = cnf
 }
 
 func initialServer(s *HostServer) ServerState {
-	var cnf = s.conf.Clone()
+	var cnf = s.conf
 	crypto := s.options.Crypto(cnf)
 	s.Hash = crypto.Hash()
 	s.Name = s.options.Name

@@ -124,7 +124,7 @@ func (d DefaultBackendImpl) GetCacheStoreByName(name string) *redis.Client {
 	return db
 }
 
-func DefaultBackend(cnf conf.ApplicationConfig) IStore {
+func DefaultBackend(cnf *conf.ApplicationConfig) IStore {
 	storeBackend := DefaultBackendImpl{
 		dbs:    make(map[string]*gorm.DB),
 		caches: make(map[string]*redis.Client),

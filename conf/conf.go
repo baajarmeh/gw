@@ -84,19 +84,6 @@ type ApplicationConfig struct {
 	customJsonStrMaps map[string]string
 }
 
-func (cnf *ApplicationConfig) Clone() ApplicationConfig {
-	var _cnf ApplicationConfig
-	_cnf.Server = cnf.Server
-	_cnf.Backend = cnf.Backend
-	_cnf.Security = cnf.Security
-	_cnf.Service = cnf.Service
-	_cnf.Settings = cnf.Settings
-	_cnf.Custom = cnf.Custom
-	_cnf.customJson = cnf.customJson
-	_cnf.customJsonStrMaps = cnf.customJsonStrMaps
-	return _cnf
-}
-
 // allow urls
 type AllowUrl struct {
 	Name string   `yaml:"name" toml:"name" json:"name"`
