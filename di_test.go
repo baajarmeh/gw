@@ -24,7 +24,8 @@ type IMyService interface {
 }
 
 type MyService struct {
-	User *gorm.DB
+	User  *gorm.DB
+	typer IMyService
 }
 
 func (myService MyService) Create(dto Dto1) error {

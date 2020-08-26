@@ -7,6 +7,7 @@ import (
 	"github.com/oceanho/gw/contrib/apps/uap/dbModel"
 	"github.com/oceanho/gw/contrib/apps/uap/gwImpls"
 	"github.com/oceanho/gw/contrib/apps/uap/restAPIs"
+	"github.com/oceanho/gw/contrib/apps/uap/uapdi"
 	"github.com/oceanho/gw/logger"
 )
 
@@ -50,7 +51,7 @@ func (a App) Use(opt *gw.ServerOption) {
 
 func (a App) Migrate(state gw.ServerState) {
 	dbModel.Migrate(state)
-	state.DIProvider().Register(a)
+	uapdi.Register(state.DI())
 }
 
 func (a App) OnStart(state gw.ServerState) {

@@ -22,8 +22,6 @@ type IStore interface {
 // StoreDbSetupHandler represents a database ORM object handler that can be replace A *gorm.DB instances features.
 type StoreDbSetupHandler func(ctx Context, db *gorm.DB) *gorm.DB
 
-type dbCallbackHandler func(db *gorm.DB)
-
 // StoreCacheSetupHandler represents a redis Client object handler that can be replace A *redis.Client instances features.
 type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *redis.Client
 
@@ -183,24 +181,7 @@ func createDb(db conf.Db) *gorm.DB {
 }
 
 func setupDb(db *gorm.DB) {
-	//TODO(Ocean): Emmmmm, what are gorm process follow?
-	//db.Callback().Query().Before("gorm:query").Register("gw:query_before", func(db *gorm.DB) {
-	//	var obj, ok = db.Get(gwDbContextKey)
-	//	if !ok {
-	//		return
-	//	}
-	//	if ctx, ok := obj.(Context); ok {
-	//		user := ctx.User()
-	//		if user.IsEmpty() {
-	//			return
-	//		}
-	//		_, ok := db.Statement.Schema.FieldsByName["TenantId"]
-	//		if ok && user.IsTenancy() {
-	//			db = db.Where("tenant_id=1")
-	//		}
-	//	}
-	//})
-	db.Callback().Query().Before("gorm:query").Register("gw:query_global_filter", func(db *gorm.DB) {
+	err := db.Callback().Query().Before("gorm:query").Register("gw:query_global_filter", func(db *gorm.DB) {
 		var obj, ok = db.Get(gwDbContextKey)
 		if !ok {
 			return
@@ -224,15 +205,9 @@ func setupDb(db *gorm.DB) {
 			}
 		}
 	})
-	db.Callback().Update().Register("gw:update_before", func(db *gorm.DB) {
-
-	})
-	db.Callback().Delete().Register("gw:delete_before", func(db *gorm.DB) {
-
-	})
-	db.Callback().Create().Register("gw:create_before", func(db *gorm.DB) {
-
-	})
+	if err != nil {
+		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
+	}
 }
 
 func createCache(cache conf.Cache) *redis.Client {

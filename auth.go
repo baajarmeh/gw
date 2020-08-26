@@ -616,6 +616,18 @@ const (
 	NonUser       UserType = 3
 )
 
+func (ut UserType) IsAdmin() bool {
+	return ut == Administrator
+}
+
+func (ut UserType) IsTenancy() bool {
+	return ut == Tenancy
+}
+
+func (ut UserType) IsUser() bool {
+	return ut == NonUser
+}
+
 //
 // Gw User
 //

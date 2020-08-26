@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/oceanho/gw/contrib/gwcli"
+	"github.com/oceanho/gw/contrib/cmder/gwcli"
 	"os"
 )
 

@@ -2,8 +2,9 @@ package restAPIs
 
 import (
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/contrib/apps/uap/dbModel"
-	"gorm.io/gorm"
+	"github.com/oceanho/gw/contrib/apps/uap/constants"
+	"github.com/oceanho/gw/contrib/apps/uap/dto"
+	"github.com/oceanho/gw/contrib/apps/uap/uapdi"
 )
 
 type User struct {
@@ -18,34 +19,51 @@ func (u User) Name() string {
 //
 // var userDto dto.UserDto
 func (u User) Get(ctx *gw.Context) {
-	var app = ctx.Resolve("github.com/oceanho/gw/contrib/apps/uap.App")
-	_ = app
-
-	store := ctx.Store()
-	db := store.GetDbStore()
-	var user []dbModel.User
-	err := db.Find(&user).Error
-	ctx.JSON(err, user)
+	var id uint64
+	if ctx.GetUint64IdParam(&id) != nil {
+		// If binding fail, error message has sent by GW framework.
+		// Here returns then done.
+		return
+	}
+	var services = uapdi.Services(ctx)
+	err := services.UserService.GetById(id)
+	ctx.JSON(err, nil)
 }
 
-func (u User) OnGetBefore() gw.Decorator {
-	return gw.NewStoreDbSetupDecorator(func(ctx gw.Context, db *gorm.DB) *gorm.DB {
-		return db
-	})
-}
+//func (u User) OnGetBefore() gw.Decorator {
+//}
 
 func (u User) Post(ctx *gw.Context) {
 
 }
 
-func (u User) Put(ctx *gw.Context) {
-
+func (u User) OnPostBefore() gw.Decorator {
+	return constants.UserDecorators.Modification()
 }
 
+// Put, Creation & decorators
+func (u User) Put(ctx *gw.Context) {
+	var dto dto.UserDto
+	if ctx.Bind(&dto) != nil {
+		// If binding fail, error message has sent by GW framework.
+		// Here returns then done.
+		return
+	}
+	var services = uapdi.Services(ctx)
+	err := services.UserService.Create(dto)
+	ctx.JSON(err, nil)
+}
+
+func (u User) OnPutBefore() gw.Decorator {
+	return constants.UserDecorators.Creation()
+}
+
+// Delete, Deletion & decorators
 func (u User) Delete(ctx *gw.Context) {
 
 }
 
+// QueryList, Query Pager data & decorators
 func (u User) QueryList(ctx *gw.Context) {
 
 }

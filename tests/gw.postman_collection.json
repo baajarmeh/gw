@@ -87,141 +87,201 @@
 			"name": "UAP",
 			"item": [
 				{
-					"name": "/api/v1/uap/user",
-					"request": {
-						"auth": {
-							"type": "noauth"
+					"name": "auth",
+					"item": [
+						{
+							"name": "/api/v1/gw/auth/login(admin)",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "admin@123456",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "admin",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{host}}/api/v1/gw/auth/login",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"gw",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"response": []
 						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{host}}/api/v1/uap/user",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"uap",
-								"user"
-							]
+						{
+							"name": "/api/v1/gw/auth/login(tenancy)",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "tenancy@123456",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "lanhu",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{host}}/api/v1/gw/auth/login",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"gw",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "/api/v1/gw/auth/login(user)",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "username",
+											"value": "lh-user1",
+											"type": "string"
+										},
+										{
+											"key": "password",
+											"value": "tenancy@123456",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-GW-Tenant-ID",
+										"value": "9",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{host}}/api/v1/gw/auth/login",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"gw",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"response": []
 						}
-					},
-					"response": []
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
 				},
 				{
-					"name": "/api/v1/gw/auth/login(admin)",
-					"request": {
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "password",
-									"value": "admin@123456",
-									"type": "string"
+					"name": "user",
+					"item": [
+						{
+							"name": "/api/v1/uap/user",
+							"request": {
+								"auth": {
+									"type": "noauth"
 								},
-								{
-									"key": "username",
-									"value": "admin",
-									"type": "string"
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{host}}/api/v1/uap/user",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"uap",
+										"user"
+									]
 								}
-							]
+							},
+							"response": []
 						},
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{host}}/api/v1/gw/auth/login",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"gw",
-								"auth",
-								"login"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "/api/v1/gw/auth/login(tenancy)",
-					"request": {
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "password",
-									"value": "tenancy@123456",
-									"type": "string"
+						{
+							"name": "/api/v1/uap/user",
+							"request": {
+								"auth": {
+									"type": "noauth"
 								},
-								{
-									"key": "username",
-									"value": "lanhu",
-									"type": "string"
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{host}}/api/v1/uap/user",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"uap",
+										"user"
+									]
 								}
-							]
+							},
+							"response": []
 						},
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{host}}/api/v1/gw/auth/login",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"gw",
-								"auth",
-								"login"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "/api/v1/gw/auth/login(user)",
-					"request": {
-						"auth": {
-							"type": "basic",
-							"basic": [
-								{
-									"key": "username",
-									"value": "lh-user1",
-									"type": "string"
+						{
+							"name": "/api/v1/uap/user",
+							"request": {
+								"auth": {
+									"type": "noauth"
 								},
-								{
-									"key": "password",
-									"value": "tenancy@123456",
-									"type": "string"
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{host}}/api/v1/uap/user",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"uap",
+										"user"
+									]
 								}
-							]
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "X-GW-Tenant-ID",
-								"value": "9",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{host}}/api/v1/gw/auth/login",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"gw",
-								"auth",
-								"login"
-							]
+							},
+							"response": []
 						}
-					},
-					"response": []
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
 				}
 			],
 			"protocolProfileBehavior": {}

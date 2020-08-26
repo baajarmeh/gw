@@ -33,6 +33,7 @@ type TyperDependency struct {
 
 type IDIProvider interface {
 	Register(actual ...interface{}) bool
+	RegisterWithTyper(typers ...reflect.Type) bool
 	RegisterWithName(typerName string, actual interface{}) bool
 	Resolve(typerName string) interface{}
 	ResolveByTyper(typer reflect.Type) interface{}
@@ -58,6 +59,15 @@ func DefaultDIProvider(state ServerState) IDIProvider {
 func (d *DefaultDIProviderImpl) Register(actual ...interface{}) bool {
 	for _, a := range actual {
 		if !d.RegisterWithName("", a) {
+			return false
+		}
+	}
+	return true
+}
+
+func (d *DefaultDIProviderImpl) RegisterWithTyper(typers ...reflect.Type) bool {
+	for _, typer := range typers {
+		if !d.RegisterWithName("", reflect.New(typer).Interface()) {
 			return false
 		}
 	}

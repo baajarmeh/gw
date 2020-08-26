@@ -9,6 +9,7 @@ import (
 	"path"
 	"reflect"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -16,6 +17,10 @@ import (
 const (
 	gwRouterInfoKey = "gw-router"
 	gwDbContextKey  = "gw-context"
+)
+
+var (
+	ErrorParamNotFound = fmt.Errorf("param not found")
 )
 
 // Handler defines a http handler for gw framework.
@@ -233,23 +238,6 @@ func (c Context) GetHostServer() HostServer {
 	return *c.server
 }
 
-// Query returns a string from queries.
-func (c Context) Query(key string) string {
-	val := c.Context.Query(key)
-	if val == "" {
-		queries := c.QueryArray(key)
-		if len(queries) > 0 {
-			val = queries[0]
-		}
-	}
-	return val
-}
-
-// QueryArray returns a string array from queries.
-func (c Context) QueryArray(key string) []string {
-	return c.queries[key]
-}
-
 // StartTime returns the Context start *time.Time
 func (c Context) StartTime() *time.Time {
 	return &c.startTime
@@ -334,6 +322,50 @@ func (c *Context) Config() conf.ApplicationConfig {
 	return config(c.Context)
 }
 
+// Query returns a string from queries.
+func (c *Context) Query(key string) string {
+	val := c.QueryArray(key)
+	if len(val) > 0 {
+		return val[0]
+	}
+	return ""
+}
+
+// QueryArray returns a string array from queries.
+func (c *Context) QueryArray(key string) []string {
+	val := c.Context.QueryArray(key)
+	if len(val) == 0 {
+		val = c.queries[key]
+	}
+	return val
+}
+
+// GetIdParam returns a string from c.Params
+func (c *Context) GetUint64IdParam(out *uint64) (err error) {
+	var _out string
+	if err := c.GetIdParam(&_out); err != nil {
+		return err
+	}
+	var _outUint, err1 = strconv.ParseUint(_out, 10, 64)
+	*out = _outUint
+	return err1
+}
+
+// GetIdParam returns a string from c.Params
+func (c *Context) GetIdParam(out *string) error {
+	return c.MustParam("id", out)
+}
+
+// MustParam returns a string from c.Params
+func (c *Context) MustParam(key string, out *string) error {
+	*out = c.Param(key)
+	if *out == "" {
+		c.JSON400Msg(400, fmt.Sprintf("missing parameter(%s)", key))
+		return ErrorParamNotFound
+	}
+	return nil
+}
+
 // Bind define a Api that can be bind data to out object by gin.Context's Bind(...) APIs.
 // It's auto response 400, invalid request parameter to client if bind fail.
 // returns a error message for c.Bind(...).
@@ -356,6 +388,7 @@ func (c *Context) BindQuery(out interface{}) error {
 	return nil
 }
 
+// handle code APIs.
 func handle(c *gin.Context) {
 	var router, ok = c.MustGet(gwRouterInfoKey).(RouterInfo)
 	if !ok {

@@ -1,13 +1,17 @@
 package dto
 
-import "github.com/oceanho/gw/backend/gwdb"
+import (
+	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/backend/gwdb"
+)
 
 type UserDto struct {
 	gwdb.Model
 	TenantId uint64
 	Passport string
 	Secret   string
-	UserRole uint8 `gorm:"-"`
+	IsActive bool
+	UserType gw.UserType `gorm:"-"`
 }
 
 type ProfileDto struct {

@@ -80,6 +80,10 @@ type IDynamicRestAPI interface {
 	Name() string
 }
 
+type ITyper interface {
+	ITyper() interface{}
+}
+
 // ErrorHandler represents a http Error handler.
 type ErrorHandler func(requestId string, httpRequest string, headers []string, stack string, err []*gin.Error)
 
@@ -204,7 +208,7 @@ func (ss ServerState) IDGenerator() IdentifierGenerator {
 	return ss.s.IDGenerator
 }
 
-func (ss ServerState) DIProvider() IDIProvider {
+func (ss ServerState) DI() IDIProvider {
 	return ss.s.DIProvider
 }
 
