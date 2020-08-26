@@ -3,6 +3,7 @@ package gw
 import (
 	"github.com/go-playground/assert/v2"
 	"gorm.io/gorm"
+	"reflect"
 	"testing"
 )
 
@@ -11,13 +12,6 @@ type Dto1 struct {
 
 type MyUser struct {
 }
-
-const (
-	IMyTestServiceName string = "github.com/oceanho/gw.IMyService"
-	MyTestService2Name string = "github.com/oceanho/gw.MyService2"
-	MyTestService3Name string = "github.com/oceanho/gw.MyService3"
-	MyTestService4Name string = "github.com/oceanho/gw.MyService4"
-)
 
 type IMyService interface {
 	Create(dto Dto1) error
@@ -108,33 +102,57 @@ func (MyService4) New(serverState ServerState, store IStore, service IMyService,
 	return myService
 }
 
-func TestDefaultDIProviderImpl(t *testing.T) {
+type MyServices struct {
+	MyService1    IMyService
+	MyService2    MyService2
+	MyService3    *MyService3
+	MyService3Non MyService3
+	MyService4    MyService4
+}
+
+func (s MyServices) New(service IMyService, service2 MyService2,
+	service3 *MyService3, service3Non MyService3, service4 MyService4) MyServices {
+	s.MyService1 = service
+	s.MyService2 = service2
+	s.MyService3 = service3
+	s.MyService3Non = service3Non
+	s.MyService4 = service4
+	return s
+}
+
+var diTester IDIProvider
+var diTesterStore IStore
+var myServicesTyper reflect.Type
+
+func init() {
 	var server = NewTesterServer()
 	var state = NewServerState(server)
-	var di = DefaultDIProvider(state)
+	diTesterStore = state.Store()
+	diTester = DefaultDIProvider(state)
 	var myS1Impl MyService
 	var myS2Impl MyService2
 	var myS3Impl MyService3
 	var myS4Impl MyService4
-	di.Register(myS1Impl, myS2Impl, myS3Impl, myS4Impl)
-	var myS1, ok = di.Resolve(IMyTestServiceName).(IMyService)
+	var myServices MyServices
+	myServicesTyper = reflect.TypeOf(myServices)
+	diTester.Register(myS1Impl, myS2Impl, myS3Impl, myS4Impl, myServices)
+}
+
+func BenchmarkDefaultDIProviderImpl_ResolveByTyperWithState(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = diTester.ResolveByTyperWithState(diTesterStore, myServicesTyper).(MyServices)
+	}
+}
+
+// FIXME(OceanHo): go test ./*.go can not pass ?
+func TestDefaultDIProviderImpl(t *testing.T) {
+	var myServices MyServices
+	var services, ok = diTester.ResolveByTyper(reflect.TypeOf(myServices)).(MyServices)
 	assert.IsEqual(ok, true)
 	var dto Dto1
-	_ = myS1.Create(dto)
-
-	// Resolve can not return a pointer Object.
-	var mys2 = di.Resolve(MyTestService2Name)
-	var myS2, ok2 = mys2.(*MyService2)
-	assert.IsEqual(ok2, true)
-	_ = myS2.Create(dto)
-
-	var mys3 = di.Resolve(MyTestService3Name)
-	var myS3, ok3 = mys3.(MyService3)
-	assert.IsEqual(ok3, true)
-	_ = myS3.Create(dto)
-
-	var mys4 = di.Resolve(MyTestService4Name)
-	var myS4, ok4 = mys4.(MyService4)
-	assert.IsEqual(ok4, true)
-	_ = myS4.Create(dto)
+	_ = services.MyService1.Create(dto)
+	_ = services.MyService2.Create(dto)
+	_ = services.MyService3.Create(dto)
+	_ = services.MyService3Non.Create(dto)
+	_ = services.MyService4.Create(dto)
 }
