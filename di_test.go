@@ -93,7 +93,7 @@ func (myService MyService4) Create(dto Dto1) error {
 
 //
 // Gw DI framework dependOns
-func (MyService4) New(serverState ServerState, store IStore, service IMyService, service2 MyService2, service3 *MyService3) MyService4 {
+func (MyService4) New(store IStore, service IMyService, service2 MyService2, service3 *MyService3) MyService4 {
 	var myService = MyService4{}
 	myService.User = store.GetDbStore().Model(MyUser{})
 	myService.MyService1 = service
