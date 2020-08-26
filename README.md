@@ -6,14 +6,16 @@ out-of-the-box, Fully features:
 
 - Auth manager
 - Permission manager
+- Session manager
 - Multi-tenancy
 - ORM (gorm. mysql, postgresql)
 - Cache (redis)
-- Modular module application.
+- Modular Module mode app.
 - REST/Dynamic style Api support.
-- Out-of-the-box Web Api framework.
 - Api decorator.
+- DI framework supports.
 - Base on go template config generator.
+- Out-of-the-box Web Api framework.
 
 ## Step by step.
 
