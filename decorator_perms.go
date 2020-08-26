@@ -22,36 +22,46 @@ type PermissionDecorator struct {
 	permDecorators map[string]Decorator
 }
 
-func (p PermissionDecorator) Administration() Decorator {
+func (p *PermissionDecorator) Administration() Decorator {
 	return p.permDecorators["Administration"]
 }
 
-func (p PermissionDecorator) Creation() Decorator {
+func (p *PermissionDecorator) Creation() Decorator {
 	return p.permDecorators["Creation"]
 }
 
-func (p PermissionDecorator) Modification() Decorator {
+func (p *PermissionDecorator) Modification() Decorator {
 	return p.permDecorators["Modification"]
 }
 
-func (p PermissionDecorator) Deletion() Decorator {
+func (p *PermissionDecorator) Deletion() Decorator {
 	return p.permDecorators["Deletion"]
 }
 
-func (p PermissionDecorator) ReadAll() Decorator {
+func (p *PermissionDecorator) ReadAll() Decorator {
 	return p.permDecorators["ReadAll"]
 }
 
-func (p PermissionDecorator) ReadDetail() Decorator {
+func (p *PermissionDecorator) ReadDetail() Decorator {
 	return p.permDecorators["ReadDetail"]
 }
 
-func (p PermissionDecorator) Has(name string) bool {
+func (p *PermissionDecorator) Has(name string) bool {
 	var _, ok = p.permDecorators[name]
 	return ok
 }
 
-func (p PermissionDecorator) Permissions() []Permission {
+func (p *PermissionDecorator) Merge(decorators ...*PermissionDecorator) {
+	p.locker.Lock()
+	defer p.locker.Unlock()
+	for _, d := range decorators {
+		for k, v := range d.permDecorators {
+			p.permDecorators[k] = v
+		}
+	}
+}
+
+func (p *PermissionDecorator) Permissions() []Permission {
 	var perms []Permission
 	for _, item := range p.permDecorators {
 		item := item
@@ -62,7 +72,7 @@ func (p PermissionDecorator) Permissions() []Permission {
 	return perms
 }
 
-func (p PermissionDecorator) All() []Decorator {
+func (p *PermissionDecorator) All() []Decorator {
 	p.locker.Lock()
 	defer p.locker.Unlock()
 	var items []Decorator
@@ -74,7 +84,7 @@ func (p PermissionDecorator) All() []Decorator {
 
 // NewPermAllDecorator returns a PermissionDecoratorList, that has
 // Administration,Creation,Deletion,Modification,RealAll,ReadDetail Permission
-func NewPermAllDecorator(resource string) PermissionDecorator {
+func NewPermAllDecorator(resource string) *PermissionDecorator {
 	var pdList = NewCrudPermDecorator(resource)
 	pdList.permDecorators["Administration"] = NewAdministrationPermDecorator(resource)
 	return pdList
@@ -131,8 +141,8 @@ func NewReadAllPermDecorator(resource string) Decorator {
 
 // NewCrudPermDecorator returns
 // A resources Create, Delete,
-func NewCrudPermDecorator(resource string) PermissionDecorator {
-	var pdList = PermissionDecorator{
+func NewCrudPermDecorator(resource string) *PermissionDecorator {
+	var pdList = &PermissionDecorator{
 		permDecorators: make(map[string]Decorator),
 	}
 	pdList.permDecorators["ReadAll"] = NewReadAllPermDecorator(resource)
