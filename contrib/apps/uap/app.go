@@ -52,10 +52,6 @@ func (a App) Use(opt *gw.ServerOption) {
 func (a App) Migrate(state *gw.ServerState) {
 	dbModel.Migrate(state)
 	uapdi.Register(state.DI())
-	state.EventManager().Subscribe("uap_tester", func(event gw.IEvent) error {
-		logger.Info("uap_got_event_handler, %v", event.MetaInfo())
-		return nil
-	})
 }
 
 func (a App) OnStart(state *gw.ServerState) {
