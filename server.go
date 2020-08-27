@@ -570,9 +570,7 @@ func initialServer(s *HostServer) *ServerState {
 	s.SessionStateManager = s.options.SessionStateManager(state)
 	s.PermissionManager = s.options.PermissionManagerHandler(state)
 	s.EventManager = s.options.EventManagerHandler(state)
-
 	s.DIProvider = s.options.DIProviderHandler(state)
-
 	if !s.options.isTester {
 		// gin engine.
 		g := gin.New()
