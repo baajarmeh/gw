@@ -12,7 +12,7 @@ import (
 )
 
 type SessionManager struct {
-	gw.ServerState
+	*gw.ServerState
 	cachePrefix     string
 	cacheStoreName  string
 	cacheExpiration time.Duration
@@ -65,7 +65,7 @@ func (sm SessionManager) Remove(sid string) error {
 	return sm.RemoveSessionUserFromCache(sid)
 }
 
-func DefaultSessionManager(state gw.ServerState) SessionManager {
+func DefaultSessionManager(state *gw.ServerState) SessionManager {
 	var cnf = conf.GetUAP(state.ApplicationConfig())
 	var sm = SessionManager{
 		ServerState:     state,

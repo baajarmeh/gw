@@ -28,17 +28,17 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.POST("object/modify", api.ModifyObject)
 }
 
-func (a App) Migrate(state gw.ServerState) {
+func (a App) Migrate(state *gw.ServerState) {
 	// db := store.GetDbStore()
 }
 
 func (a App) Use(opt *gw.ServerOption) {
 }
 
-func (a App) OnStart(state gw.ServerState) {
+func (a App) OnStart(state *gw.ServerState) {
 
 }
 
-func (a App) OnShutDown(state gw.ServerState) {
+func (a App) OnShutDown(state *gw.ServerState) {
 
 }

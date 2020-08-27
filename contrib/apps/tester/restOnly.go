@@ -27,7 +27,7 @@ func (a AppRestOnly) Register(router *gw.RouterGroup) {
 	router.RegisterRestAPIs(&rest.MyTesterRestAPI{})
 }
 
-func (a AppRestOnly) Migrate(state gw.ServerState) {
+func (a AppRestOnly) Migrate(state *gw.ServerState) {
 	//db := ctx.Store.GetDbStore()
 	//pm := ctx.PermissionManager
 	perms := gw.NewPermAll("MyTester")

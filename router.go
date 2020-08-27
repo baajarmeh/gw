@@ -31,10 +31,9 @@ type Context struct {
 	*gin.Context
 	requestId  string
 	user       User
+	store      IStore
 	startTime  time.Time
 	logger     Logger
-	server     *HostServer
-	state      ContextState
 	queries    map[string][]string
 	params     map[string]interface{}
 	bindModels map[string]interface{}
@@ -43,100 +42,20 @@ type Context struct {
 // ServerState represents a Server state context object.
 type ContextState struct {
 	store  IStore
-	state  ServerState
+	state  *ServerState
 	values map[string]interface{}
-}
-
-const (
-	IStoreName               = "github.com/oceanho/gw.IStore"
-	IPasswordSignerName      = "github.com/oceanho/gw.IPasswordSigner"
-	IPermissionManagerName   = "github.com/oceanho/gw.IPermissionManager"
-	IPermissionCheckerName   = "github.com/oceanho/gw.IPermissionChecker"
-	ISessionStateManagerName = "github.com/oceanho/gw.ISessionStateManager"
-	IdentifierGeneratorName  = "github.com/oceanho/gw.IdentifierGenerator"
-	IAuthManagerName         = "github.com/oceanho/gw.IAuthManager"
-	IUserManagerName         = "github.com/oceanho/gw.IUserManager"
-	ContextStateName         = "github.com/oceanho/gw.ContextState"
-	ServerStateName          = "github.com/oceanho/gw.ServerState"
-	HostServerName           = "github.com/oceanho/gw.HostServer"
-)
-
-var nullReflectValue = reflect.ValueOf(nil)
-
-func (state ContextState) objectTypers() map[string]ObjectTyper {
-	var typers = make(map[string]ObjectTyper)
-	typers[IStoreName] = newObjectTyper(IStoreName, state.store)
-	typers[IPermissionManagerName] = newObjectTyper(IPermissionManagerName, state.state.PermissionManager())
-	typers[IAuthManagerName] = newObjectTyper(IAuthManagerName, state.state.AuthManager())
-	typers[IPermissionCheckerName] = newObjectTyper(IPermissionCheckerName, state.state.PermissionChecker())
-	typers[ISessionStateManagerName] = newObjectTyper(ISessionStateManagerName, state.state.SessionStateManager())
-	typers[IPasswordSignerName] = newObjectTyper(IPasswordSignerName, state.state.PasswordSigner())
-	typers[IUserManagerName] = newObjectTyper(IUserManagerName, state.state.UserManager())
-	typers[IdentifierGeneratorName] = newObjectTyper(IdentifierGeneratorName, state.state.IDGenerator())
-	typers[ContextStateName] = newObjectTyper(ContextStateName, state)
-	typers[HostServerName] = newObjectTyper(HostServerName, state.state.s)
-	typers[ServerStateName] = newObjectTyper(HostServerName, state.state)
-	return typers
 }
 
 func (c *Context) RequestId() string {
 	return c.requestId
 }
 
-func (c Context) User() User {
+func (c *Context) User() User {
 	return c.user
 }
 
-func (c Context) Store() IStore {
-	return c.state.store
-}
-
-func (c Context) CryptoHash() ICryptoHash {
-	return c.state.state.CryptoHash()
-}
-
-func (c Context) CryptoProtect() ICryptoProtect {
-	return c.state.state.CryptoProtect()
-}
-
-func (c Context) PasswordSigner() IPasswordSigner {
-	return c.state.state.PasswordSigner()
-}
-
-func (c Context) AuthManager() IAuthManager {
-	return c.state.state.AuthManager()
-}
-
-func (c Context) SessionStateManager() ISessionStateManager {
-	return c.state.state.SessionStateManager()
-}
-
-func (c Context) PermissionManager() IPermissionManager {
-	return c.state.state.PermissionManager()
-}
-
-func (c Context) PermissionChecker() IPermissionChecker {
-	return c.PermissionManager().Checker()
-}
-
-func (c Context) UserManager() IUserManager {
-	return c.state.state.UserManager()
-}
-
-func (c Context) IDGenerator() IdentifierGenerator {
-	return c.state.state.IDGenerator()
-}
-
-func (c Context) Resolve(typerName string) interface{} {
-	return c.state.state.s.DIProvider.ResolveWithState(c.state, typerName)
-}
-
-func (c Context) ResolveByTyper(typer reflect.Type) interface{} {
-	return c.state.state.s.DIProvider.ResolveByTyperWithState(c.state, typer)
-}
-
-func (c Context) RespBodyBuildFunc() RespBodyBuildFunc {
-	return c.state.state.RespBodyBuildFunc()
+func (c *Context) ResolveByTyper(typer reflect.Type) interface{} {
+	return c.HostServer().DIProvider.ResolveByTyperWithState(c.store, typer)
 }
 
 // Router represents a gw's Router info.
@@ -233,13 +152,8 @@ func getHandlerFullName(handler Handler) string {
 	return fmt.Sprintf("%s(ctx *Context)", val)
 }
 
-// Gw framework's APIs.
-func (c Context) GetHostServer() HostServer {
-	return *c.server
-}
-
 // StartTime returns the Context start *time.Time
-func (c Context) StartTime() *time.Time {
+func (c *Context) StartTime() *time.Time {
 	return &c.startTime
 }
 
@@ -318,7 +232,7 @@ func (router *Router) Group(relativePath string, handler Handler, decorators ...
 }
 
 // Config returns a snapshot of the current Context's conf.Config object.
-func (c *Context) Config() conf.ApplicationConfig {
+func (c *Context) Config() *conf.ApplicationConfig {
 	return config(c.Context)
 }
 
@@ -388,6 +302,14 @@ func (c *Context) BindQuery(out interface{}) error {
 	return nil
 }
 
+func (c *Context) HostServer() *HostServer {
+	return getHostServer(c.Context)
+}
+
+func (c *Context) AppConfig() *conf.ApplicationConfig {
+	return getHostServer(c.Context).conf
+}
+
 // handle code APIs.
 func handle(c *gin.Context) {
 	var router, ok = c.MustGet(gwRouterInfoKey).(RouterInfo)
@@ -400,8 +322,8 @@ func handle(c *gin.Context) {
 	var shouldStop bool = false
 	var payload interface{}
 	// action before Decorators
-	var s = *hostServer(c)
-	var requestID = getRequestID(s, c)
+	var s = getHostServer(c)
+	var requestID = getRequestId(s, c)
 	var ctx = makeCtx(c, requestID)
 	for _, d := range router.beforeDecorators {
 		status, err, payload = d.Before(ctx)
@@ -444,7 +366,7 @@ func handle(c *gin.Context) {
 	}
 }
 
-func parseErrToRespBody(s HostServer, requestID string, msgBody interface{}, err error) (int, interface{}) {
+func parseErrToRespBody(s *HostServer, requestID string, msgBody interface{}, err error) (int, interface{}) {
 	var status = http.StatusBadRequest
 	if err == ErrPermissionDenied {
 		status = http.StatusForbidden
@@ -457,19 +379,15 @@ func parseErrToRespBody(s HostServer, requestID string, msgBody interface{}, err
 }
 
 func makeCtx(c *gin.Context, requestID string) *Context {
-	s := hostServer(c)
+	s := getHostServer(c)
 	user := getUser(c)
-	serverState := ServerState{s: s}
+	serverState := s.State()
 	ctx := &Context{
-		server:    s,
-		Context:   c,
-		user:      user,
-		requestId: requestID,
-		startTime: time.Now(),
-		logger:    getLogger(c),
-		state: ContextState{
-			state: serverState,
-		},
+		Context:    c,
+		user:       user,
+		requestId:  requestID,
+		startTime:  time.Now(),
+		logger:     getLogger(c),
 		queries:    make(map[string][]string),
 		params:     make(map[string]interface{}),
 		bindModels: make(map[string]interface{}),
@@ -485,8 +403,7 @@ func makeCtx(c *gin.Context, requestID string) *Context {
 		storeCacheSetupHandlers: cacheSetups,
 		store:                   serverState.Store(),
 	}
-	// FIXME(Ocean): has circular reference?
-	ctx.state.store = store
+	ctx.store = store
 	return ctx
 }
 

@@ -162,7 +162,7 @@ func NewPermissionDecorator(perms ...Permission) Decorator {
 	return Decorator{
 		MetaData: perms,
 		Before: func(c *Context) (status int, err error, payload interface{}) {
-			s := GetHostServer(c)
+			s := c.HostServer()
 			if s.PermissionManager.Checker().Check(c.User(), perms...) {
 				return 0, nil, nil
 			}

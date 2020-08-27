@@ -14,7 +14,7 @@ import (
 )
 
 type UserManager struct {
-	gw.ServerState
+	*gw.ServerState
 	cachePrefix      string
 	cacheStoreName   string
 	backendStoreName string
@@ -155,7 +155,7 @@ func (u UserManager) QueryList(tenantId uint64, expr gw.PagerExpr, total int64, 
 	panic("implement me")
 }
 
-func DefaultUserManager(state gw.ServerState) UserManager {
+func DefaultUserManager(state *gw.ServerState) UserManager {
 	var cnf = conf.GetUAP(state.ApplicationConfig())
 	return UserManager{
 		ServerState:      state,

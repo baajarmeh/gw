@@ -16,6 +16,40 @@ type ObjectTyper struct {
 	IsPtr       bool
 }
 
+const (
+	IStoreName               = "github.com/oceanho/gw.IStore"
+	IPasswordSignerName      = "github.com/oceanho/gw.IPasswordSigner"
+	IPermissionManagerName   = "github.com/oceanho/gw.IPermissionManager"
+	IPermissionCheckerName   = "github.com/oceanho/gw.IPermissionChecker"
+	ISessionStateManagerName = "github.com/oceanho/gw.ISessionStateManager"
+	IdentifierGeneratorName  = "github.com/oceanho/gw.IdentifierGenerator"
+	IAuthManagerName         = "github.com/oceanho/gw.IAuthManager"
+	IUserManagerName         = "github.com/oceanho/gw.IUserManager"
+	ContextStateName         = "github.com/oceanho/gw.ContextState"
+	ServerStateName          = "github.com/oceanho/gw.ServerState"
+	HostServerName           = "github.com/oceanho/gw.HostServer"
+	IAuthParameterResolver   = "github.com/oceanho/gw.HostServer"
+)
+
+var nullReflectValue = reflect.ValueOf(nil)
+
+func (ss ServerState) objectTypers() map[string]ObjectTyper {
+	var typers = make(map[string]ObjectTyper)
+	typers[IStoreName] = newObjectTyper(IStoreName, ss.Store())
+	typers[IPermissionManagerName] = newObjectTyper(IPermissionManagerName, ss.PermissionManager())
+	typers[IAuthManagerName] = newObjectTyper(IAuthManagerName, ss.AuthManager())
+	typers[IAuthParameterResolver] = newObjectTyper(IAuthParameterResolver, ss.s)
+	typers[IPermissionCheckerName] = newObjectTyper(IPermissionCheckerName, ss.PermissionChecker())
+	typers[ISessionStateManagerName] = newObjectTyper(ISessionStateManagerName, ss.SessionStateManager())
+	typers[IPasswordSignerName] = newObjectTyper(IPasswordSignerName, ss.PasswordSigner())
+	typers[IUserManagerName] = newObjectTyper(IUserManagerName, ss.UserManager())
+	typers[IdentifierGeneratorName] = newObjectTyper(IdentifierGeneratorName, ss.IDGenerator())
+	typers[ContextStateName] = newObjectTyper(ContextStateName, ss)
+	typers[ServerStateName] = newObjectTyper(ServerStateName, ss)
+	typers[HostServerName] = newObjectTyper(HostServerName, ss.s)
+	return typers
+}
+
 func newObjectTyper(name string, value interface{}) ObjectTyper {
 	return ObjectTyper{
 		Name:        name,
@@ -33,14 +67,14 @@ type TyperDependency struct {
 
 type DIConfig struct {
 	NewFuncName string
-	ResolveFunc func(typers map[string]ObjectTyper, state interface{}, typerName string) interface{}
+	ResolveFunc func(typers *map[string]ObjectTyper, state interface{}, typerName string) interface{}
 }
 
 var defaultDIConfig = DIConfig{
 	NewFuncName: "New",
-	ResolveFunc: func(typers map[string]ObjectTyper, state interface{}, typerName string) interface{} {
+	ResolveFunc: func(typers *map[string]ObjectTyper, state interface{}, typerName string) interface{} {
 		var store = state.(IStore)
-		var objectTyper, ok = typers[typerName]
+		var objectTyper, ok = (*typers)[typerName]
 		if !ok {
 			panic(fmt.Sprintf("object typer(%s) not found", typerName))
 		}
@@ -50,7 +84,7 @@ var defaultDIConfig = DIConfig{
 		} else {
 			var values []reflect.Value
 			for _, typerDp := range objectTyper.DependOn {
-				if typerDp.Name == IStoreName {
+				if typerDp.Name == IStoreName && store != nil {
 					values = append(values, reflect.ValueOf(store))
 				} else {
 					values = append(values, resolver(typers, typerDp, store))
@@ -75,24 +109,17 @@ type IDIProvider interface {
 type DefaultDIProviderImpl struct {
 	locker       sync.Mutex
 	config       DIConfig
-	state        ServerState
+	state        *ServerState
 	objectTypers map[string]ObjectTyper
 }
 
-func DefaultDIProvider(state ServerState) IDIProvider {
-	_state := ContextState{
-		state: state,
-		store: state.Store(),
-	}
-	var typers = make(map[string]ObjectTyper)
-	for k, v := range _state.objectTypers() {
-		typers[k] = v
-	}
-	return &DefaultDIProviderImpl{
+func DefaultDIProvider(state *ServerState) IDIProvider {
+	var di = &DefaultDIProviderImpl{
 		state:        state,
-		objectTypers: typers,
+		objectTypers: state.objectTypers(),
 		config:       defaultDIConfig,
 	}
+	return di
 }
 
 func (d *DefaultDIProviderImpl) Register(actual ...interface{}) bool {
@@ -161,13 +188,13 @@ func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state interface{}, typer
 }
 
 func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName string) interface{} {
-	return d.config.ResolveFunc(d.objectTypers, state, typerName)
+	return d.config.ResolveFunc(&d.objectTypers, state, typerName)
 }
 
 // helpers
-func resolver(typers map[string]ObjectTyper, typerDependency TyperDependency, store IStore) reflect.Value {
+func resolver(typers *map[string]ObjectTyper, typerDependency TyperDependency, store IStore) reflect.Value {
 	var values []reflect.Value
-	var objectTyper, ok = typers[typerDependency.Name]
+	var objectTyper, ok = (*typers)[typerDependency.Name]
 	if !ok {
 		panic(fmt.Sprintf("missing typer(%s)", typerDependency.Name))
 	}
@@ -176,7 +203,7 @@ func resolver(typers map[string]ObjectTyper, typerDependency TyperDependency, st
 	}
 	for _, dp := range objectTyper.DependOn {
 		dp := dp
-		if _, ok := typers[dp.Name]; ok {
+		if _, ok := (*typers)[dp.Name]; ok {
 			values = append(values, resolver(typers, dp, store))
 		} else if dp.Name == IStoreName {
 			values = append(values, reflect.ValueOf(store))

@@ -11,14 +11,14 @@ import (
 
 type PermissionManagerImpl struct {
 	_state            int
-	state             gw.ServerState
-	store             gw.IStore
-	conf              conf.ApplicationConfig
 	locker            sync.Mutex
+	store             gw.IStore
+	state             *gw.ServerState
+	permissionChecker gw.IPermissionChecker
 	queryPermSQL      string
 	delPermMapSQL     string
 	queryPermMapSQL   string
-	permissionChecker gw.IPermissionChecker
+	conf              *conf.ApplicationConfig
 }
 
 func (pm *PermissionManagerImpl) Store() *gorm.DB {
@@ -192,14 +192,14 @@ func (pm *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...gw.Permi
 	return tx.Commit().Error
 }
 
-func DefaultPermissionManager(state gw.ServerState) gw.IPermissionManager {
+func DefaultPermissionManager(state *gw.ServerState) gw.IPermissionManager {
 	cnf := state.ApplicationConfig()
 	ptn := dbModel.Permission{}.TableName()
 	pmtn := dbModel.PermissionMapping{}.TableName()
 	queryPermSQL := fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id", ptn, pmtn)
 	queryPermSQL = queryPermSQL + " where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d"
 	return &PermissionManagerImpl{
-		conf:            *cnf,
+		conf:            cnf,
 		state:           state,
 		store:           state.Store(),
 		queryPermSQL:    queryPermSQL,

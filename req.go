@@ -1,20 +1,18 @@
 package gw
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"time"
 )
 
-var requestIdStateKey = "gwState-X-Request-Id"
+var requestIdStateKey = "gw-req-id"
 
-func getRequestID(s HostServer, c *gin.Context) string {
+func getRequestId(s *HostServer, c *gin.Context) string {
 	shouldSave := true
 	requestID := c.GetHeader(s.conf.Settings.HeaderKey.RequestIDKey)
 	if requestID == "" {
 		requestID = c.GetString(requestIdStateKey)
 		if requestID == "" {
-			requestID = internalGenRequestID()
+			requestID = s.IDGenerator.NewStrID()
 		} else {
 			shouldSave = false
 		}
@@ -23,10 +21,6 @@ func getRequestID(s HostServer, c *gin.Context) string {
 		c.Set(requestIdStateKey, requestID)
 	}
 	return requestID
-}
-
-func internalGenRequestID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
 
 // PagerExpr represents a general pager query request model for gw framework.

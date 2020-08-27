@@ -31,7 +31,7 @@ func (a App) Register(router *gw.RouterGroup) {
 	// your app routers
 }
 
-func (a App) Migrate(state gw.ServerState) {
+func (a App) Migrate(state *gw.ServerState) {
 	// your database migrations
 }
 

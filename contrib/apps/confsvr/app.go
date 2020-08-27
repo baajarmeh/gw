@@ -41,7 +41,7 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("ns/destroy", api.DestroyNS)
 }
 
-func (a App) Migrate(state gw.ServerState) {
+func (a App) Migrate(state *gw.ServerState) {
 	db := state.Store().GetDbStore()
 	d, _ := db.DB()
 	d.Ping()
@@ -53,10 +53,10 @@ func (a App) Use(opt *gw.ServerOption) {
 	}
 }
 
-func (a App) OnStart(state gw.ServerState) {
+func (a App) OnStart(state *gw.ServerState) {
 
 }
 
-func (a App) OnShutDown(state gw.ServerState) {
+func (a App) OnShutDown(state *gw.ServerState) {
 
 }

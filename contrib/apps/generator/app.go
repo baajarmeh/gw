@@ -20,16 +20,16 @@ func (a App) Register(router *gw.RouterGroup) {
 	router.GET("create-js", services.CreateJS)
 }
 
-func (a App) Migrate(state gw.ServerState) {
+func (a App) Migrate(state *gw.ServerState) {
 }
 
 func (a App) Use(option *gw.ServerOption) {
 }
 
-func (a App) OnStart(state gw.ServerState) {
+func (a App) OnStart(state *gw.ServerState) {
 
 }
 
-func (a App) OnShutDown(state gw.ServerState) {
+func (a App) OnShutDown(state *gw.ServerState) {
 
 }

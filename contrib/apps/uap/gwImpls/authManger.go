@@ -13,7 +13,7 @@ import (
 )
 
 type AuthManager struct {
-	gw.ServerState
+	*gw.ServerState
 	cachePrefix      string
 	cacheStoreName   string
 	backendStoreName string
@@ -62,17 +62,17 @@ func (a AuthManager) SaveAuthUserToCache(user gw.User) {
 //
 // Impl APIs
 //
-func (a AuthManager) Login(tenantId uint64, passport, secret, verifyCode string, credType gw.CredentialType) (gw.User, error) {
+func (a AuthManager) Login(param gw.AuthParameter) (gw.User, error) {
 	var err error = nil
-	var user = a.GetAuthUserFromCache(passport)
-	var password = a.PasswordSigner().Sign(secret)
+	var user = a.GetAuthUserFromCache(param.Passport)
+	var password = a.PasswordSigner().Sign(param.Password)
 	if user.IsEmpty() {
-		if credType == gw.UserPassword {
-			user, err = a.UserManager().QueryByUser(tenantId, passport, password)
-		} else if credType == gw.AccessKeySecret {
-			user, err = a.UserManager().QueryByAKS(tenantId, passport, password)
+		if param.CredentialType == gw.UserPassword {
+			user, err = a.UserManager().QueryByUser(param.TenantId, password, password)
+		} else if param.CredentialType == gw.AccessKeySecret {
+			user, err = a.UserManager().QueryByAKS(param.TenantId, param.Passport, password)
 		} else {
-			logger.Error("Un-support cred type: %s", credType)
+			logger.Error("Un-support cred type: %s", param.CredentialType)
 			return gw.EmptyUser, err
 		}
 	}
@@ -95,7 +95,7 @@ func (a AuthManager) Logout(user gw.User) bool {
 	return true
 }
 
-func DefaultAuthManager(state gw.ServerState) AuthManager {
+func DefaultAuthManager(state *gw.ServerState) AuthManager {
 	var cnf = conf.GetUAP(state.ApplicationConfig())
 	return AuthManager{
 		ServerState:      state,

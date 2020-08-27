@@ -49,42 +49,42 @@ func (a App) Use(opt *gw.ServerOption) {
 	use(opt)
 }
 
-func (a App) Migrate(state gw.ServerState) {
+func (a App) Migrate(state *gw.ServerState) {
 	dbModel.Migrate(state)
 	uapdi.Register(state.DI())
 }
 
-func (a App) OnStart(state gw.ServerState) {
+func (a App) OnStart(state *gw.ServerState) {
 	initial(state)
 }
 
-func (a App) OnShutDown(state gw.ServerState) {
+func (a App) OnShutDown(state *gw.ServerState) {
 
 }
 
 // helpers
 func use(opt *gw.ServerOption) {
-	opt.AuthManagerHandler = func(state gw.ServerState) gw.IAuthManager {
+	opt.AuthManagerHandler = func(state *gw.ServerState) gw.IAuthManager {
 		return gwImpls.DefaultAuthManager(state)
 	}
-	opt.UserManagerHandler = func(state gw.ServerState) gw.IUserManager {
+	opt.UserManagerHandler = func(state *gw.ServerState) gw.IUserManager {
 		return gwImpls.DefaultUserManager(state)
 	}
-	opt.PermissionManagerHandler = func(state gw.ServerState) gw.IPermissionManager {
+	opt.PermissionManagerHandler = func(state *gw.ServerState) gw.IPermissionManager {
 		return gwImpls.DefaultPermissionManager(state)
 	}
-	opt.SessionStateManager = func(state gw.ServerState) gw.ISessionStateManager {
+	opt.SessionStateManager = func(state *gw.ServerState) gw.ISessionStateManager {
 		return gwImpls.DefaultSessionManager(state)
 	}
 }
 
-func initial(state gw.ServerState) {
+func initial(state *gw.ServerState) {
 	initPerms(state)
 	initUsers(state)
 }
 
 // initial permission
-func initPerms(state gw.ServerState) {
+func initPerms(state *gw.ServerState) {
 	var perms []gw.Permission
 	perms = append(perms, UserDecorator.Permissions()...)
 	perms = append(perms, TenancyDecorator.Permissions()...)
@@ -98,7 +98,7 @@ func initPerms(state gw.ServerState) {
 }
 
 // initial users
-func initUsers(state gw.ServerState) {
+func initUsers(state *gw.ServerState) {
 	var uapCnf = conf.GetUAP(state.ApplicationConfig())
 	var userManager = state.UserManager()
 	var passwordSigner = state.PasswordSigner()

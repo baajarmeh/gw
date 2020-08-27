@@ -40,8 +40,8 @@ func gwState(serverName string) gin.HandlerFunc {
 		// 2. process request, try got User from the http requests.
 		//
 		c.Set(gwAppKey, serverName)
-		s := *hostServer(c)
-		requestId := getRequestID(s, c)
+		s := getHostServer(c)
+		requestId := getRequestId(s, c)
 		defer func() {
 			var stacks []byte
 			var httpRequest []byte
@@ -131,10 +131,10 @@ func gwState(serverName string) gin.HandlerFunc {
 	}
 }
 
-func encryptSid(s HostServer, passport string) (sid, credential string, ok bool) {
+func encryptSid(s *HostServer, authParam AuthParameter) (sid, credential string, ok bool) {
 
 	// Create a sid.
-	sid = s.SessionSidCreationFunc(passport)
+	sid = s.SessionSidCreationFunc(authParam)
 
 	// sid protect password keys
 	rdnKey := secure.RandomStr(32)
@@ -169,7 +169,7 @@ func encryptSid(s HostServer, passport string) (sid, credential string, ok bool)
 	return sid, secure.EncodeBase64URL(dst), true
 }
 
-func decryptSid(s HostServer, secureSid string, client string) (passport string, ok bool) {
+func decryptSid(s *HostServer, secureSid string, client string) (passport string, ok bool) {
 	sid, err := secure.DecodeBase64URL(secureSid)
 	if err != nil {
 		logger.Error("decryptSid() -> security.DecodeBase64URL(_sid) fail, err:%v . sid=%s", err, sid)
@@ -217,7 +217,7 @@ func getClient(c *gin.Context) string {
 	return c.Request.RemoteAddr
 }
 
-func getSid(s HostServer, c *gin.Context) (string, bool) {
+func getSid(s *HostServer, c *gin.Context) (string, bool) {
 	sid, ok := c.Get(gwSidKey)
 	if ok {
 		return sid.(string), true
@@ -245,17 +245,13 @@ func getSid(s HostServer, c *gin.Context) (string, bool) {
 	return decryptSid(s, _sid, client)
 }
 
-func hostServer(c *gin.Context) *HostServer {
+func config(c *gin.Context) *conf.ApplicationConfig {
+	return getHostServer(c).conf
+}
+
+func getHostServer(c *gin.Context) *HostServer {
 	serverName := c.MustGet(gwAppKey).(string)
 	return servers[serverName].Server
-}
-
-func config(c *gin.Context) conf.ApplicationConfig {
-	return *hostServer(c).conf
-}
-
-func GetHostServer(c *Context) HostServer {
-	return *hostServer(c.Context)
 }
 
 //
