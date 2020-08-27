@@ -184,7 +184,13 @@ func (d *DefaultDIProviderImpl) ResolveByTyper(typer reflect.Type) interface{} {
 }
 
 func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state interface{}, typer reflect.Type) interface{} {
-	return d.ResolveWithState(state, gwreflect.GetPkgFullName(typer))
+	var typerName = ""
+	if method, ok := typer.MethodByName(d.config.NewFuncName); ok {
+		typerName = gwreflect.GetPkgFullName(method.Func.Type().Out(0))
+	} else {
+		typerName = gwreflect.GetPkgFullName(typer)
+	}
+	return d.ResolveWithState(state, typerName)
 }
 
 func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName string) interface{} {

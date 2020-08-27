@@ -14,13 +14,19 @@ import (
 func gwLogin(c *gin.Context) {
 	s := getHostServer(c)
 	reqId := getRequestId(s, c)
-	// pKey := s.conf.Security.Auth.ParamKey
-	// supports
-	// 1. User/Password
-	// 2. X-Access-Key/X-Access-Secret
-	// 3. Realm auth (Basic auth)
-	var authParam = s.AuthParamResolver.Resolve(c)
-	if err := s.AuthParamChecker.Check(authParam); err != nil {
+	var err error
+	var hasCheckPass = false
+	var checker = s.AuthParamChecker
+	var authParam AuthParameter
+	for _, resolver := range s.AuthParamResolvers {
+		authParam = resolver.Resolve(c)
+		if err = checker.Check(authParam); err == nil {
+			hasCheckPass = true
+			break
+		}
+	}
+
+	if !hasCheckPass {
 		c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(http.StatusBadRequest, reqId, err, nil))
 		c.Abort()
 		return

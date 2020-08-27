@@ -38,7 +38,7 @@ type ServerOption struct {
 	UserManagerHandler       func(state *ServerState) IUserManager
 	DIProviderHandler        func(state *ServerState) IDIProvider
 	AuthManagerHandler       AuthManagerHandler
-	AuthParamResolverHandler func(state *ServerState) IAuthParamResolver
+	AuthParamResolvers       []IAuthParamResolver
 	AuthParamCheckerHandler  func(state *ServerState) IAuthParamChecker
 	PermissionManagerHandler PermissionManagerHandler
 	StoreDbSetupHandler      StoreDbSetupHandler
@@ -61,7 +61,7 @@ type HostServer struct {
 	Protect                ICryptoProtect
 	PasswordSigner         IPasswordSigner
 	AuthManager            IAuthManager
-	AuthParamResolver      IAuthParamResolver
+	AuthParamResolvers     []IAuthParamResolver
 	AuthParamChecker       IAuthParamChecker
 	SessionStateManager    ISessionStateManager
 	SessionSidCreationFunc func(param AuthParameter) string
@@ -126,8 +126,8 @@ func (ss *ServerState) AuthManager() IAuthManager {
 	return ss.s.AuthManager
 }
 
-func (ss *ServerState) AuthParamResolver() IAuthParamResolver {
-	return ss.s.AuthParamResolver
+func (ss *ServerState) AuthParamResolvers() []IAuthParamResolver {
+	return ss.s.AuthParamResolvers
 }
 
 func (ss *ServerState) AuthParamChecker() IAuthParamChecker {
@@ -241,9 +241,7 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		AuthManagerHandler: func(state *ServerState) IAuthManager {
 			return DefaultAuthManager(state)
 		},
-		AuthParamResolverHandler: func(state *ServerState) IAuthParamResolver {
-			return DefaultAuthParamResolver(state)
-		},
+		AuthParamResolvers: make([]IAuthParamResolver, 0, 3),
 		AuthParamCheckerHandler: func(state *ServerState) IAuthParamChecker {
 			return DefaultAuthParamChecker(state)
 		},
@@ -526,10 +524,8 @@ func initialServer(s *HostServer) *ServerState {
 	if s.storeCacheSetupHandler == nil {
 		s.storeCacheSetupHandler = s.options.StoreCacheSetupHandler
 	}
-	if s.options.AuthParamResolverHandler == nil {
-		s.options.AuthParamResolverHandler = func(state *ServerState) IAuthParamResolver {
-			return DefaultAuthParamResolver(state)
-		}
+	if len(s.options.AuthParamResolvers) == 0 {
+		s.options.AuthParamResolvers = DefaultAuthParamResolver()
 	}
 	if s.options.AuthParamCheckerHandler == nil {
 		s.options.AuthParamCheckerHandler = func(state *ServerState) IAuthParamChecker {
@@ -569,7 +565,7 @@ func initialServer(s *HostServer) *ServerState {
 
 	s.UserManager = s.options.UserManagerHandler(state)
 	s.AuthManager = s.options.AuthManagerHandler(state)
-	s.AuthParamResolver = s.options.AuthParamResolverHandler(state)
+	s.AuthParamResolvers = s.options.AuthParamResolvers
 	s.AuthParamChecker = s.options.AuthParamCheckerHandler(state)
 	s.SessionStateManager = s.options.SessionStateManager(state)
 	s.PermissionManager = s.options.PermissionManagerHandler(state)
@@ -711,10 +707,10 @@ func (s *HostServer) GetRouters() []RouterInfo {
 
 // DisplayRouterInfo ...
 func (s *HostServer) DisplayRouterInfo() {
-	rts := s.conf.Settings.GwFramework.PrintRouterInfo
-	if !rts.Disabled {
+	prtInfo := s.conf.Settings.GwFramework.PrintRouterInfo
+	if !prtInfo.Disabled {
 		logger.NewLine(2)
-		logger.Info("%s ", rts.Title)
+		logger.Info("%s ", prtInfo.Title)
 		logger.Info("=======================")
 		var routers = s.GetRouters()
 		for _, r := range routers {
@@ -755,7 +751,6 @@ func (s *HostServer) Serve() {
 	logger.Info(" Remarks: %s", s.conf.Service.Remarks)
 	logger.NewLine(2)
 	logger.Info(" Serving HTTP on: %s", s.options.Addr)
-
 	logger.ResetLogFormatter()
 	var err error
 	go func() {

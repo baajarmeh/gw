@@ -6,9 +6,7 @@ import (
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/libs/gwjsoner"
 	"gorm.io/gorm"
-	"strconv"
 	"sync"
-	"time"
 )
 
 type Permission struct {
@@ -90,11 +88,11 @@ type IUserManager interface {
 }
 
 type AuthParameter struct {
-	Passport       string
-	Password       string
-	TenantId       uint64
-	VerifyCode     string
-	CredentialType CredentialType
+	Passport   string
+	Password   string
+	TenantId   uint64
+	VerifyCode string
+	CredType   CredentialType
 }
 
 type IAuthManager interface {
@@ -145,8 +143,9 @@ var (
 type CredentialType string
 
 const (
-	UserPassword    CredentialType = "user"
-	AccessKeySecret CredentialType = "aks"
+	AksAuth          CredentialType = "aks"
+	BasicAuth        CredentialType = "basic"
+	UserPasswordAuth CredentialType = "user"
 )
 
 type DefaultPermissionManagerImpl struct {
@@ -284,79 +283,6 @@ func (d EmptyUserManagerImpl) QueryList(tenantId uint64, expr PagerExpr, total i
 
 var DefaultPageExpr = DefaultPagerExpr(1024, 1)
 
-// helpers
-func parseCredentials(s *HostServer, c *gin.Context) (tenantId uint64,
-	passport, secret string, verifyCode string, credType CredentialType, result bool) {
-	//
-	// Auth Param configuration.
-	param := s.conf.Security.Auth.ParamKey
-	//
-	// supports
-	// 1. User/Password
-	// 2. X-Access-Key/X-Access-Secret
-	// 3. Realm auth
-	// ===============================
-	//
-
-	tenantId = 0
-	var tenantIdStr = ""
-
-	// 1. User/Password
-	credType = UserPassword
-	passport, _ = c.GetPostForm(param.Passport)
-	secret, _ = c.GetPostForm(param.Secret)
-	tenantIdStr, _ = c.GetPostForm(param.TenantId)
-	verifyCode, _ = c.GetPostForm(param.VerifyCode)
-	result = passport != "" && secret != ""
-	if result {
-		tenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
-		return
-	}
-
-	// JSON
-	if c.ContentType() == "application/json" {
-		// json decode
-		cred := gin.H{
-			param.Passport:   "",
-			param.Secret:     "",
-			param.VerifyCode: "",
-			param.TenantId:   "",
-		}
-		err := c.Bind(&cred)
-		if err != nil {
-			return
-		}
-		passport = cred[param.Passport].(string)
-		secret = cred[param.Secret].(string)
-		verifyCode = cred[param.VerifyCode].(string)
-		result = passport != "" && secret != ""
-		if result {
-			return
-		}
-	}
-
-	tenantIdStr = c.GetHeader("X-GW-Tenant-ID")
-	// 2. Basic auth
-	credType = UserPassword
-	passport, secret, result = c.Request.BasicAuth()
-	if verifyCode == "" {
-		verifyCode = c.Query(param.VerifyCode)
-	}
-	result = passport != "" && secret != ""
-	if result {
-		tenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
-		return
-	}
-
-	credType = AccessKeySecret
-	// 3. X-Aks-Key/X-Aks-Secret
-	passport = c.GetHeader("X-Aks-Key")
-	secret = c.GetHeader("X-Aks-Secret")
-	verifyCode = c.GetHeader("X-Aks-VerifyCode")
-	tenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
-	return
-}
-
 type UserType uint8
 
 const (
@@ -390,18 +316,6 @@ type User struct {
 	Roles       []string              `gorm:"-"`
 	Permissions []Permission          `gorm:"-"`
 	PermMaps    map[string]Permission `gorm:"-"`
-}
-
-//
-// Gw Session
-//
-type Session struct {
-	User
-	AccessKey    string
-	AccessSecret string
-	SessionID    string
-	CreatedAt    *time.Time
-	LastActive   *time.Time
 }
 
 func (user User) MarshalBinary() (data []byte, err error) {

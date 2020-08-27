@@ -10,5 +10,5 @@ func main() {
 			"payload": "welcome.",
 		})
 	})
-	r.Run(":9000")
+	_ = r.Run(":9000")
 }
