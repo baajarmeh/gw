@@ -19,15 +19,20 @@ func (u User) Name() string {
 //
 // var userDto dto.UserDto
 func (u User) Get(ctx *gw.Context) {
+}
+
+//
+//
+func (u User) Detail(ctx *gw.Context) {
 	var id uint64
-	if ctx.GetUint64IdParam(&id) != nil {
+	if ctx.MustGetParamIDUint64(&id) != nil {
 		// If binding fail, error message has sent by GW framework.
 		// Here returns then done.
 		return
 	}
 	var services = uapdi.Services(ctx)
-	err := services.UserService.GetById(id)
-	ctx.JSON(err, nil)
+	dto, err := services.UserService.GetById(id)
+	ctx.JSON(err, dto)
 }
 
 //func (u User) OnGetBefore() gw.Decorator {

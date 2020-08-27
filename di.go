@@ -25,32 +25,30 @@ const (
 	IdentifierGeneratorName  = "github.com/oceanho/gw.IdentifierGenerator"
 	IAuthManagerName         = "github.com/oceanho/gw.IAuthManager"
 	IUserManagerName         = "github.com/oceanho/gw.IUserManager"
-	ContextStateName         = "github.com/oceanho/gw.ContextState"
 	ServerStateName          = "github.com/oceanho/gw.ServerState"
 	HostServerName           = "github.com/oceanho/gw.HostServer"
-	IAuthParameterResolver   = "github.com/oceanho/gw.HostServer"
+	IEventManagerName        = "github.com/oceanho/gw.IEventManager"
 )
 
 var nullReflectValue = reflect.ValueOf(nil)
 
 func (ss ServerState) objectTypers() map[string]ObjectTyper {
 	var typers = make(map[string]ObjectTyper)
-	typers[IStoreName] = newObjectTyper(IStoreName, ss.Store())
-	typers[IPermissionManagerName] = newObjectTyper(IPermissionManagerName, ss.PermissionManager())
-	typers[IAuthManagerName] = newObjectTyper(IAuthManagerName, ss.AuthManager())
-	typers[IAuthParameterResolver] = newObjectTyper(IAuthParameterResolver, ss.s)
-	typers[IPermissionCheckerName] = newObjectTyper(IPermissionCheckerName, ss.PermissionChecker())
-	typers[ISessionStateManagerName] = newObjectTyper(ISessionStateManagerName, ss.SessionStateManager())
-	typers[IPasswordSignerName] = newObjectTyper(IPasswordSignerName, ss.PasswordSigner())
-	typers[IUserManagerName] = newObjectTyper(IUserManagerName, ss.UserManager())
-	typers[IdentifierGeneratorName] = newObjectTyper(IdentifierGeneratorName, ss.IDGenerator())
-	typers[ContextStateName] = newObjectTyper(ContextStateName, ss)
-	typers[ServerStateName] = newObjectTyper(ServerStateName, ss)
-	typers[HostServerName] = newObjectTyper(HostServerName, ss.s)
+	typers[IStoreName] = newNilApiObjectTyper(IStoreName, ss.Store())
+	typers[HostServerName] = newNilApiObjectTyper(HostServerName, ss.s)
+	typers[ServerStateName] = newNilApiObjectTyper(ServerStateName, ss)
+	typers[IUserManagerName] = newNilApiObjectTyper(IUserManagerName, ss.UserManager())
+	typers[IAuthManagerName] = newNilApiObjectTyper(IAuthManagerName, ss.AuthManager())
+	typers[IEventManagerName] = newNilApiObjectTyper(IEventManagerName, ss.EventManager())
+	typers[IPasswordSignerName] = newNilApiObjectTyper(IPasswordSignerName, ss.PasswordSigner())
+	typers[IdentifierGeneratorName] = newNilApiObjectTyper(IdentifierGeneratorName, ss.IDGenerator())
+	typers[IPermissionManagerName] = newNilApiObjectTyper(IPermissionManagerName, ss.PermissionManager())
+	typers[IPermissionCheckerName] = newNilApiObjectTyper(IPermissionCheckerName, ss.PermissionChecker())
+	typers[ISessionStateManagerName] = newNilApiObjectTyper(ISessionStateManagerName, ss.SessionStateManager())
 	return typers
 }
 
-func newObjectTyper(name string, value interface{}) ObjectTyper {
+func newNilApiObjectTyper(name string, value interface{}) ObjectTyper {
 	return ObjectTyper{
 		Name:        name,
 		IsPtr:       false,
@@ -63,6 +61,7 @@ func newObjectTyper(name string, value interface{}) ObjectTyper {
 type TyperDependency struct {
 	Name  string
 	IsPtr bool
+	Typer reflect.Type
 }
 
 type DIConfig struct {
@@ -209,10 +208,10 @@ func resolver(typers *map[string]ObjectTyper, typerDependency TyperDependency, s
 	}
 	for _, dp := range objectTyper.DependOn {
 		dp := dp
-		if _, ok := (*typers)[dp.Name]; ok {
-			values = append(values, resolver(typers, dp, store))
-		} else if dp.Name == IStoreName {
+		if dp.Name == IStoreName && store != nil {
 			values = append(values, reflect.ValueOf(store))
+		} else if _, ok := (*typers)[dp.Name]; ok {
+			values = append(values, resolver(typers, dp, store))
 		} else {
 			panic(fmt.Sprintf("object typer(%s) not found", dp.Name))
 		}
@@ -236,9 +235,10 @@ func resolver(typers *map[string]ObjectTyper, typerDependency TyperDependency, s
 	}
 }
 
-func typeToObjectTyperName(typ reflect.Type) TyperDependency {
+func typeToObjectTyperName(typer reflect.Type) TyperDependency {
 	return TyperDependency{
-		Name:  gwreflect.GetPkgFullName(typ),
-		IsPtr: typ.Kind() == reflect.Ptr,
+		Typer: typer,
+		Name:  gwreflect.GetPkgFullName(typer),
+		IsPtr: typer.Kind() == reflect.Ptr,
 	}
 }

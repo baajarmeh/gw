@@ -261,7 +261,7 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		EventManagerHandler: func(state *ServerState) IEventManager {
 			return DefaultEventManager(state)
 		},
-		RespBodyBuildFunc: defaultRespBodyBuildFunc,
+		RespBodyBuildFunc: DefaultRespBodyBuildFunc,
 		bcs:               bcs,
 		isTester:          false,
 	}

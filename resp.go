@@ -1,6 +1,7 @@
 package gw
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/logger"
 	"net/http"
@@ -159,10 +160,14 @@ func (c *Context) StatusJSON(code int, status int, errMsg interface{}, payload i
 	c.Context.JSON(code, s.RespBodyBuildFunc(status, c.RequestId(), errMsg, payload))
 }
 
-func defaultRespBodyBuildFunc(status int, requestID string, errMsg interface{}, payload interface{}) interface{} {
+func DefaultRespBodyBuildFunc(status int, requestID string, errMsg interface{}, payload interface{}) interface{} {
+	var errMsgStr interface{} = nil
+	if errMsg != nil {
+		errMsgStr = fmt.Sprintf("%s", errMsg)
+	}
 	return gin.H{
 		"Status":    status,
-		"Error":     errMsg,
+		"Error":     errMsgStr,
 		"RequestId": requestID,
 		"Payload":   payload,
 	}

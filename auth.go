@@ -136,6 +136,7 @@ var (
 	EmptyUser            = User{ID: 0}
 	ErrorEmptyInput      = fmt.Errorf("empty input")
 	ErrorUserNotFound    = fmt.Errorf("user not found")
+	ErrorInvalidParamID  = fmt.Errorf("invalid param id")
 	ErrorSessionNotFound = fmt.Errorf("session not found")
 	ErrorUserHasExists   = fmt.Errorf("user object has exists")
 )

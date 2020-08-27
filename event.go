@@ -2,6 +2,7 @@ package gw
 
 import (
 	"fmt"
+	"github.com/oceanho/gw/libs/gwjsoner"
 	"github.com/oceanho/gw/logger"
 	"sync"
 	"time"
@@ -15,6 +16,15 @@ type EventMetaInfo struct {
 	Name     string
 	Category string
 	Data     interface{}
+}
+
+func (metaInfo EventMetaInfo) String() string {
+	b, _ := metaInfo.Marshal()
+	return string(b)
+}
+
+func (metaInfo EventMetaInfo) Marshal() ([]byte, error) {
+	return gwjsoner.Marshal(metaInfo)
 }
 
 type EventHandler func(event IEvent) error

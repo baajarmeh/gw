@@ -10,19 +10,23 @@ import (
 
 type IUserService interface {
 	Create(dto dto.UserDto) error
-	GetById(id uint64) dto.UserDto
+	GetById(id uint64) (dto.UserDto, error)
 }
 
 type UserService struct {
 	store          gw.IStore
 	primaryDb      *gorm.DB
 	passwordSigner gw.IPasswordSigner
+	eventManager   gw.IEventManager
 	UserRepo       reposities.UserRepository
 }
 
-func (u UserService) New(store gw.IStore, passwordSigner gw.IPasswordSigner, userRepo reposities.UserRepository) IUserService {
+func (u UserService) New(store gw.IStore,
+	eventManager gw.IEventManager,
+	passwordSigner gw.IPasswordSigner, userRepo reposities.UserRepository) IUserService {
 	u.store = store
 	u.UserRepo = userRepo
+	u.eventManager = eventManager
 	u.passwordSigner = passwordSigner
 	u.primaryDb = store.GetDbStore()
 	return u
@@ -39,10 +43,10 @@ func (u UserService) Create(dto dto.UserDto) error {
 	return u.UserRepo.Create(&model)
 }
 
-func (u UserService) GetById(id uint64) dto.UserDto {
+func (u UserService) GetById(id uint64) (dto.UserDto, error) {
 	var model dbModel.User
-	var dto dto.UserDto
+	var dtoModel dto.UserDto
 	model.ID = id
-	u.primaryDb.First(model).Scan(&dto)
-	return dto
+	err := u.primaryDb.First(&model).Scan(&dtoModel).Error
+	return dtoModel, err
 }

@@ -254,19 +254,24 @@ func (c *Context) QueryArray(key string) []string {
 	return val
 }
 
-// GetIdParam returns a string from c.Params
-func (c *Context) GetUint64IdParam(out *uint64) (err error) {
+// MustGetParamIDUint64 returns a string from c.Params
+func (c *Context) MustGetParamIDUint64(out *uint64) (err error) {
 	var _out string
-	if err := c.GetIdParam(&_out); err != nil {
+	if err := c.MustGetParamID(&_out); err != nil {
+		c.JSON400Msg(400, err)
 		return err
 	}
 	var _outUint, err1 = strconv.ParseUint(_out, 10, 64)
+	if _outUint < 1 {
+		c.JSON400Msg(400, ErrorInvalidParamID)
+		return ErrorInvalidParamID
+	}
 	*out = _outUint
 	return err1
 }
 
-// GetIdParam returns a string from c.Params
-func (c *Context) GetIdParam(out *string) error {
+// MustGetParamID returns a string from c.Params
+func (c *Context) MustGetParamID(out *string) error {
 	return c.MustParam("id", out)
 }
 
