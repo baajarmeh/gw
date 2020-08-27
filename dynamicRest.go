@@ -9,9 +9,7 @@ import (
 )
 
 var (
-	restApiRegister                 map[string]restHandler
-	errorDynamicCallerBeforeHandler = fmt.Errorf("dnamic Caller Before Handler fail")
-	errorDynamicCallerAfterHandler  = fmt.Errorf("dnamic Caller After Handler fail")
+	restApiRegister map[string]restHandler
 )
 
 func init() {
