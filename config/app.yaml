@@ -22,9 +22,12 @@ service:
   name: "My App"
   prefix: "/api/v1"
   version: "Version 1.0"
-  remarks: "User Account Platform  Services."
+  remarks: "Gw framework services"
+  pprof:
+    enabled: True
+    router: gw/debug
   serviceDiscovery:
-    disabled: True
+    enabled: True
     registryCenter:
       addr: ""
       configration:

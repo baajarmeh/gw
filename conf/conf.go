@@ -217,12 +217,16 @@ type Security struct {
 // Service
 //
 type Service struct {
-	Name             string `yaml:"name" toml:"name" json:"name"`
-	Prefix           string `yaml:"prefix" toml:"prefix" json:"prefix"`
-	Version          string `yaml:"version" toml:"version" json:"version"`
-	Remarks          string `yaml:"remarks" toml:"remarks" json:"remarks"`
+	Name    string `yaml:"name" toml:"name" json:"name"`
+	Prefix  string `yaml:"prefix" toml:"prefix" json:"prefix"`
+	Version string `yaml:"version" toml:"version" json:"version"`
+	Remarks string `yaml:"remarks" toml:"remarks" json:"remarks"`
+	PProf   struct {
+		Enabled bool   `yaml:"enabled" toml:"enabled" json:"enabled"`
+		Router  string `yaml:"router" toml:"router" json:"router"`
+	} `yaml:"pprof" toml:"pprof" json:"pprof"`
 	ServiceDiscovery struct {
-		Disabled       bool `yaml:"disabled" toml:"disabled" json:"disabled"`
+		Enabled        bool `yaml:"enabled" toml:"enabled" json:"enabled"`
 		RegistryCenter struct {
 			Addr string `yaml:"addr" toml:"addr" json:"addr"`
 		} `yaml:"registryCenter" toml:"registryCenter" json:"registryCenter"`

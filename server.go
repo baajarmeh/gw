@@ -2,6 +2,7 @@ package gw
 
 import (
 	"fmt"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/oceanho/gw/conf"
@@ -581,7 +582,7 @@ func initialServer(s *HostServer) *ServerState {
 		g.Use(gwState(s.options.Name))
 
 		// Auth(login/logout) API routers.
-		registerAuthRouter(s.conf, g)
+		registerBuiltinRouter(s.conf, g)
 
 		// global Auth middleware.
 		g.Use(gwAuthChecker(s.options.cnf.Security.Auth.AllowUrls))
@@ -610,7 +611,11 @@ func initialServer(s *HostServer) *ServerState {
 	return state
 }
 
-func registerAuthRouter(cnf *conf.ApplicationConfig, router *gin.Engine) {
+func registerBuiltinRouter(cnf *conf.ApplicationConfig, router *gin.Engine) {
+	_pprof := cnf.Service.PProf
+	if _pprof.Enabled {
+		pprof.Register(router, _pprof.Router)
+	}
 	authServer := cnf.Security.AuthServer
 	if authServer.EnableAuthServe {
 		for _, m := range authServer.LogIn.Methods {

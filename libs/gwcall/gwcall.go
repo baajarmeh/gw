@@ -9,8 +9,8 @@ var ErrorTimeout = fmt.Errorf("timeout")
 
 func Call(f func(), timeout time.Duration) error {
 	var ch = make(chan bool, 1)
-	defer close(ch)
 	go func() {
+		defer close(ch)
 		f()
 		ch <- true
 	}()

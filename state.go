@@ -108,14 +108,12 @@ func gwState(serverName string) gin.HandlerFunc {
 				}
 			}
 		}()
-		//
 		// before handlers
 		for _, hook := range s.beforeHooks {
 			if hook.OnBefore != nil {
 				hook.OnBefore(c)
 			}
 		}
-
 		// gw framework handler.
 		sid, ok := getSid(s, c)
 		if ok {
@@ -126,7 +124,6 @@ func gwState(serverName string) gin.HandlerFunc {
 				c.Set(gwUserKey, user)
 			}
 		}
-
 		c.Next()
 	}
 }
