@@ -13,6 +13,9 @@ dylib:
 dylibsvr:
 	@go build -ldflags $(commonLdFlags) -o build/cmd/dylibsvr cmd/dylibsvr/main.go
 
+uapsvr:
+	@go build -ldflags $(commonLdFlags) -o build/cmd/uap cmd/uap/main.go
+
 gw-cli:
 	@go build -ldflags $(commonLdFlags) -o build/cmd/gw-cli cmd/gwcli/main.go
 	@chmod +x build/cmd/gw-cli
