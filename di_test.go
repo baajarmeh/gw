@@ -2,6 +2,7 @@ package gw
 
 import (
 	"github.com/go-playground/assert/v2"
+	assert2 "github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 	"reflect"
 	"testing"
@@ -122,13 +123,12 @@ func (s MyServices) New(service IMyService, service2 MyService2,
 
 var diTester IDIProvider
 var diTesterStore IStore
+var diTesterBuiltinComponent BuiltinComponent
 var myServicesTyper reflect.Type
 
 func init() {
-	var server = NewTesterServer()
-	var state = NewServerState(server)
-	diTesterStore = state.Store()
-	diTester = DefaultDIProvider(state)
+	var server = NewTesterServer("default-tester")
+	diTester = server.DIProvider
 	var myS1Impl MyService
 	var myS2Impl MyService2
 	var myS3Impl MyService3
@@ -136,12 +136,18 @@ func init() {
 	var myServices MyServices
 	myServicesTyper = reflect.TypeOf(myServices)
 	diTester.Register(myS1Impl, myS2Impl, myS3Impl, myS4Impl, myServices)
+	diTesterBuiltinComponent = diTester.ResolveByTyper(BuiltinComponentTyper).(BuiltinComponent)
 }
 
 func BenchmarkDefaultDIProviderImpl_ResolveByTyperWithState(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = diTester.ResolveByTyperWithState(diTesterStore, myServicesTyper).(MyServices)
+		_ = diTester.ResolveByTyperWithState(diTesterStore, myServicesTyper)
 	}
+}
+
+func TestDefaultDIProviderImpl_BuiltinComponent(t *testing.T) {
+	assert2.True(t, diTesterBuiltinComponent.Store != nil)
+	assert2.True(t, diTesterBuiltinComponent.IDGenerator != nil)
 }
 
 // FIXME(OceanHo): go test ./*.go can not pass ?

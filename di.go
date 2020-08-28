@@ -22,6 +22,8 @@ const (
 	IPermissionManagerName   = "github.com/oceanho/gw.IPermissionManager"
 	IPermissionCheckerName   = "github.com/oceanho/gw.IPermissionChecker"
 	ISessionStateManagerName = "github.com/oceanho/gw.ISessionStateManager"
+	ICryptoHashName          = "github.com/oceanho/gw.ICryptoHash"
+	ICryptoProtectName       = "github.com/oceanho/gw.ICryptoProtect"
 	IdentifierGeneratorName  = "github.com/oceanho/gw.IdentifierGenerator"
 	IAuthManagerName         = "github.com/oceanho/gw.IAuthManager"
 	IUserManagerName         = "github.com/oceanho/gw.IUserManager"
@@ -30,7 +32,10 @@ const (
 	IEventManagerName        = "github.com/oceanho/gw.IEventManager"
 )
 
-var nullReflectValue = reflect.ValueOf(nil)
+var (
+	NullReflectValue      = reflect.ValueOf(nil)
+	BuiltinComponentTyper = reflect.TypeOf(BuiltinComponent{})
+)
 
 func (ss ServerState) objectTypers() map[string]ObjectTyper {
 	var typers = make(map[string]ObjectTyper)
@@ -39,6 +44,8 @@ func (ss ServerState) objectTypers() map[string]ObjectTyper {
 	typers[ServerStateName] = newNilApiObjectTyper(ServerStateName, ss)
 	typers[IUserManagerName] = newNilApiObjectTyper(IUserManagerName, ss.UserManager())
 	typers[IAuthManagerName] = newNilApiObjectTyper(IAuthManagerName, ss.AuthManager())
+	typers[ICryptoHashName] = newNilApiObjectTyper(ICryptoHashName, ss.CryptoHash())
+	typers[ICryptoProtectName] = newNilApiObjectTyper(ICryptoProtectName, ss.CryptoProtect())
 	typers[IEventManagerName] = newNilApiObjectTyper(IEventManagerName, ss.EventManager())
 	typers[IPasswordSignerName] = newNilApiObjectTyper(IPasswordSignerName, ss.PasswordSigner())
 	typers[IdentifierGeneratorName] = newNilApiObjectTyper(IdentifierGeneratorName, ss.IDGenerator())
@@ -52,10 +59,48 @@ func newNilApiObjectTyper(name string, value interface{}) ObjectTyper {
 	return ObjectTyper{
 		Name:        name,
 		IsPtr:       false,
-		newAPI:      nullReflectValue,
+		newAPI:      NullReflectValue,
 		Typer:       reflect.TypeOf(value),
 		ActualValue: reflect.ValueOf(value),
 	}
+}
+
+type BuiltinComponent struct {
+	Store               IStore
+	UserManager         IUserManager
+	AuthManager         IAuthManager
+	SessionStateManager ISessionStateManager
+	PermissionManager   IPermissionManager
+	PermissionChecker   IPermissionChecker
+	CryptoHash          ICryptoHash
+	CryptoProtect       ICryptoProtect
+	PasswordSigner      IPasswordSigner
+	IDGenerator         IdentifierGenerator
+}
+
+func (bc BuiltinComponent) New(
+	Store IStore,
+	UserManager IUserManager,
+	AuthManager IAuthManager,
+	SessionStateManager ISessionStateManager,
+	PermissionManager IPermissionManager,
+	PermissionChecker IPermissionChecker,
+	CryptoHash ICryptoHash,
+	CryptoProtect ICryptoProtect,
+	PasswordSigner IPasswordSigner,
+	IDGenerator IdentifierGenerator,
+) BuiltinComponent {
+	bc.Store = Store
+	bc.UserManager = UserManager
+	bc.AuthManager = AuthManager
+	bc.SessionStateManager = SessionStateManager
+	bc.PermissionManager = PermissionManager
+	bc.PermissionChecker = PermissionChecker
+	bc.CryptoHash = CryptoHash
+	bc.CryptoProtect = CryptoProtect
+	bc.PasswordSigner = PasswordSigner
+	bc.IDGenerator = IDGenerator
+	return bc
 }
 
 type TyperDependency struct {
@@ -66,19 +111,26 @@ type TyperDependency struct {
 
 type DIConfig struct {
 	NewFuncName string
-	ResolveFunc func(typers *map[string]ObjectTyper, state interface{}, typerName string) interface{}
+	ResolveFunc func(di interface{}, state interface{}, typerName string) interface{}
 }
 
 var defaultDIConfig = DIConfig{
 	NewFuncName: "New",
-	ResolveFunc: func(typers *map[string]ObjectTyper, state interface{}, typerName string) interface{} {
-		var store = state.(IStore)
-		var objectTyper, ok = (*typers)[typerName]
+	ResolveFunc: func(diImpl interface{}, state interface{}, typerName string) interface{} {
+		var di = diImpl.(*DefaultDIProviderImpl)
+		if di == nil {
+			panic("diImpl not are DefaultDIProviderImpl")
+		}
+		var store interface{}
+		if state != nil {
+			store = state.(IStore)
+		}
+		var objectTyper, ok = di.objectTypers[typerName]
 		if !ok {
 			panic(fmt.Sprintf("object typer(%s) not found", typerName))
 		}
 		var result reflect.Value
-		if objectTyper.newAPI == nullReflectValue {
+		if objectTyper.newAPI == NullReflectValue {
 			result = objectTyper.ActualValue
 		} else {
 			var values []reflect.Value
@@ -86,7 +138,7 @@ var defaultDIConfig = DIConfig{
 				if typerDp.Name == IStoreName && store != nil {
 					values = append(values, reflect.ValueOf(store))
 				} else {
-					values = append(values, resolver(typers, typerDp, store))
+					values = append(values, resolver(di, typerDp, store))
 				}
 			}
 			result = objectTyper.newAPI.Call(values)[0]
@@ -110,14 +162,22 @@ type DefaultDIProviderImpl struct {
 	config       DIConfig
 	state        *ServerState
 	objectTypers map[string]ObjectTyper
+	typerMappers map[reflect.Type]string
 }
 
 func DefaultDIProvider(state *ServerState) IDIProvider {
+	stateTypers := state.objectTypers()
+	var registeredTypers = make(map[reflect.Type]string)
+	for _, d := range stateTypers {
+		registeredTypers[d.Typer] = d.Name
+	}
 	var di = &DefaultDIProviderImpl{
 		state:        state,
-		objectTypers: state.objectTypers(),
+		objectTypers: stateTypers,
+		typerMappers: registeredTypers,
 		config:       defaultDIConfig,
 	}
+	di.Register(BuiltinComponent{})
 	return di
 }
 
@@ -171,6 +231,7 @@ func (d *DefaultDIProviderImpl) RegisterWithName(name string, actual interface{}
 	d.locker.Lock()
 	defer d.locker.Unlock()
 	d.objectTypers[virtualName] = objectTyper
+	d.typerMappers[outTyper] = virtualName
 	return true
 }
 
@@ -183,35 +244,37 @@ func (d *DefaultDIProviderImpl) ResolveByTyper(typer reflect.Type) interface{} {
 }
 
 func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state interface{}, typer reflect.Type) interface{} {
-	var typerName = ""
-	if method, ok := typer.MethodByName(d.config.NewFuncName); ok {
-		typerName = gwreflect.GetPkgFullName(method.Func.Type().Out(0))
-	} else {
+	var typerName, ok = d.typerMappers[typer]
+	if !ok {
 		typerName = gwreflect.GetPkgFullName(typer)
 	}
 	return d.ResolveWithState(state, typerName)
 }
 
 func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName string) interface{} {
-	return d.config.ResolveFunc(&d.objectTypers, state, typerName)
+	return d.config.ResolveFunc(d, state, typerName)
 }
 
 // helpers
-func resolver(typers *map[string]ObjectTyper, typerDependency TyperDependency, store IStore) reflect.Value {
+func resolver(defaultDiImpl *DefaultDIProviderImpl, typerDependency TyperDependency, state interface{}) reflect.Value {
+	var store interface{}
+	if state != nil {
+		store = state.(IStore)
+	}
 	var values []reflect.Value
-	var objectTyper, ok = (*typers)[typerDependency.Name]
+	var objectTyper, ok = defaultDiImpl.objectTypers[typerDependency.Name]
 	if !ok {
 		panic(fmt.Sprintf("missing typer(%s)", typerDependency.Name))
 	}
-	if objectTyper.newAPI == nullReflectValue {
+	if objectTyper.newAPI == NullReflectValue {
 		return objectTyper.ActualValue
 	}
 	for _, dp := range objectTyper.DependOn {
 		dp := dp
 		if dp.Name == IStoreName && store != nil {
 			values = append(values, reflect.ValueOf(store))
-		} else if _, ok := (*typers)[dp.Name]; ok {
-			values = append(values, resolver(typers, dp, store))
+		} else if _, ok := defaultDiImpl.objectTypers[dp.Name]; ok {
+			values = append(values, resolver(defaultDiImpl, dp, store))
 		} else {
 			panic(fmt.Sprintf("object typer(%s) not found", dp.Name))
 		}

@@ -275,11 +275,14 @@ func DefaultServer() *HostServer {
 }
 
 // NewTesterServer returns a default HostServer(the server instance's bcs,svr are default config items.)
-func NewTesterServer() *HostServer {
+func NewTesterServer(name string) *HostServer {
 	bcs := conf.DefaultBootConfig()
 	opts := NewServerOption(bcs)
+	opts.Name = name
 	opts.isTester = true
-	return NewServerWithOption(opts)
+	server := NewServerWithOption(opts)
+	server.compile()
+	return server
 }
 
 // NewServerWithName returns a specifies name, other use default HostServer(the server instance's bcs,svr are default config items.)

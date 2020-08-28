@@ -3,7 +3,6 @@ package gw
 import (
 	"github.com/oceanho/gw/libs/gwjsoner"
 	"testing"
-	"time"
 )
 
 type TesterEvent struct {
@@ -18,7 +17,7 @@ func (t TesterEvent) MetaInfo() EventMetaInfo {
 }
 
 func TestDefaultEventManager(t *testing.T) {
-	var server = NewTesterServer()
+	var server = NewTesterServer("event-tester")
 	var state = NewServerState(server)
 	var eventManager = DefaultEventManager(state)
 	var subscriberId = eventManager.Subscribe("tester", func(event IEvent) error {
@@ -31,5 +30,4 @@ func TestDefaultEventManager(t *testing.T) {
 	eventManager.Unsubscribe(subscriberId)
 	_ = eventManager.Publish(event)
 	server.ShutDown()
-	time.Sleep(time.Second * 5)
 }
