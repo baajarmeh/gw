@@ -1,23 +1,32 @@
 package gwcall
 
 import (
-	"fmt"
 	"time"
 )
 
-var ErrorTimeout = fmt.Errorf("timeout")
-
-func Call(f func(), timeout time.Duration) error {
+// Call represents a API that can be supports timeout control
+// returns true if call f has done (not timeout) else false.
+func Call(f func(), timeout time.Duration) bool {
 	var done = make(chan bool, 1)
-	defer close(done)
-	go func(ch chan bool) {
-		f()
-		ch <- true
-	}(done)
+	var cancel = make(chan bool, 1)
+	defer close(cancel)
+	go func() {
+		defer close(done)
+		for {
+			select {
+			case _, _ = <-cancel:
+				return
+			default:
+				f()
+				done <- true
+			}
+		}
+	}()
 	select {
 	case <-done:
-		return nil
+		return true
 	case <-time.After(timeout):
-		return ErrorTimeout
+		cancel <- true
+		return false
 	}
 }

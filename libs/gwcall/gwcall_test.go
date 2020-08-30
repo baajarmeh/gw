@@ -8,18 +8,18 @@ import (
 
 func TestExec_Normal(t *testing.T) {
 	var f = func() {
-		time.Sleep(50 * time.Microsecond)
+		time.Sleep(1 * time.Second)
 	}
-	err := Call(f, 100*time.Microsecond)
-	assert2.True(t, err == nil)
+	ok := Call(f, 5*time.Second)
+	assert2.True(t, ok)
 }
 
 func TestExec_Timeout(t *testing.T) {
 	var f = func() {
-		time.Sleep(500 * time.Microsecond)
+		time.Sleep(5 * time.Second)
 	}
-	err := Call(f, 100*time.Microsecond)
-	assert2.True(t, err != nil)
+	ok := Call(f, 1*time.Second)
+	assert2.False(t, ok)
 }
 
 func BenchmarkExec_Normal(b *testing.B) {
@@ -27,7 +27,7 @@ func BenchmarkExec_Normal(b *testing.B) {
 		time.Sleep(1 * time.Nanosecond)
 	}
 	for i := 0; i < b.N; i++ {
-		_ = Call(f, 5*time.Nanosecond)
+		_ = Call(f, 1*time.Nanosecond)
 	}
 }
 
