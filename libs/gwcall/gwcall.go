@@ -17,6 +17,7 @@ func Call(f func(), timeout time.Duration) bool {
 			case _, _ = <-cancel:
 				return
 			default:
+				// FIXME(OceanHo): can not really kill a Goroutines
 				f()
 				done <- true
 			}
