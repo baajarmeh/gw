@@ -59,7 +59,7 @@ func (u BasicAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	var param AuthParameter
 	// 2. Basic auth
 	var ok = false
-	param.CredType = UserPasswordAuth
+	param.CredType = BasicAuth
 	param.Passport, param.Password, ok = c.Request.BasicAuth()
 	if param.VerifyCode == "" {
 		param.VerifyCode = c.Query(paramKey.VerifyCode)
