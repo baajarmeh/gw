@@ -15,7 +15,8 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli/v2 v2.2.0
-	golang.org/x/net v0.0.0-20190923162816-aa69164e4478
+	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/tools v0.0.0-20200831203904-5a2aa26beb65 // indirect
 	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03
 	gopkg.in/yaml.v2 v2.2.8
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776

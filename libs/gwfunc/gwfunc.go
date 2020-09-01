@@ -29,13 +29,14 @@ type execution struct {
 
 func (e *execution) exec() <-chan bool {
 	var isTimeout = make(chan bool, 1)
-	go func() {
+	go func(e *execution) {
+		defer e.release()
 		e.f()
 		if e.hasTimeout {
 			return
 		}
 		e.hasDone <- true
-	}()
+	}(e)
 	select {
 	case <-time.After(e.timeout):
 		e.hasTimeout = true
@@ -43,7 +44,6 @@ func (e *execution) exec() <-chan bool {
 	case <-e.hasDone:
 		isTimeout <- false
 	}
-	e.release()
 	return isTimeout
 }
 
@@ -59,7 +59,7 @@ func Timeout(f func(), timeout time.Duration) bool {
 		timeout: timeout,
 		hasDone: make(chan bool, 1),
 	}
-	return <- executor.exec()
+	return <-executor.exec()
 }
 
 //func WaitAll(timeout time.Duration, funcList ...func()) bool {

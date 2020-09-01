@@ -3,84 +3,103 @@ package uap
 import (
 	"fmt"
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/contrib/apps/uap/conf"
-	"github.com/oceanho/gw/contrib/apps/uap/dbModel"
-	"github.com/oceanho/gw/contrib/apps/uap/gwImpls"
-	"github.com/oceanho/gw/contrib/apps/uap/restAPIs"
-	"github.com/oceanho/gw/contrib/apps/uap/uapdi"
+	"github.com/oceanho/gw/contrib/apps/uap/Api"
+	"github.com/oceanho/gw/contrib/apps/uap/Config"
+	"github.com/oceanho/gw/contrib/apps/uap/Db"
+	"github.com/oceanho/gw/contrib/apps/uap/Impl"
+	"github.com/oceanho/gw/contrib/apps/uap/RestAPI"
+	"github.com/oceanho/gw/contrib/apps/uap/Service"
 	"github.com/oceanho/gw/logger"
+	"gorm.io/gorm"
 )
 
 var (
-	AksDecorator     = gw.NewPermAllDecorator("Aks")
-	RoleDecorator    = gw.NewPermAllDecorator("Role")
-	UserDecorator    = gw.NewPermAllDecorator("User")
-	TenancyDecorator = gw.NewPermAllDecorator("Tenant")
+	AksDecorator        = gw.NewPermAllDecorator("Aks")
+	RoleDecorator       = gw.NewPermAllDecorator("Role")
+	UserDecorator       = gw.NewPermAllDecorator("User")
+	TenancyDecorator    = gw.NewPermAllDecorator("Tenant")
+	CredentialDecorator = gw.NewPermAllDecorator("Credential")
 )
 
 type App struct {
-	uap   conf.Uap
-	store gw.IStore
+	name            string
+	router          string
+	registerFunc    func(router *gw.RouterGroup)
+	useFunc         func(option *gw.ServerOption)
+	migrateFunc     func(state *gw.ServerState)
+	onStartFunc     func(state *gw.ServerState)
+	onShoutDownFunc func(state *gw.ServerState)
 }
 
 func New() App {
-	return App{}
-}
-
-func (App) New(store gw.IStore) App {
 	return App{
-		store: store,
+		name:   "gw.uap",
+		router: "uap",
+		registerFunc: func(router *gw.RouterGroup) {
+			router.RegisterRestAPIs(&RestAPI.User{})
+			router.GET("credential/:id", Api.QueryCredentialById, Api.QueryCredentialByIdDecorators())
+		},
+		useFunc: func(option *gw.ServerOption) {
+			option.AuthManagerHandler = func(state *gw.ServerState) gw.IAuthManager {
+				return Impl.DefaultAuthManager(state)
+			}
+			option.UserManagerHandler = func(state *gw.ServerState) gw.IUserManager {
+				return Impl.DefaultUserManager(state)
+			}
+			option.PermissionManagerHandler = func(state *gw.ServerState) gw.IPermissionManager {
+				return Impl.DefaultPermissionManager(state)
+			}
+			option.SessionStateManager = func(state *gw.ServerState) gw.ISessionStateManager {
+				return Impl.DefaultSessionManager(state)
+			}
+		},
+		migrateFunc: func(state *gw.ServerState) {
+			dbProcessor := state.DbOpProcessor()
+			dbProcessor.OnQueryBefore(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
+				return nil
+			}, Db.Credential{})
+		},
+		onStartFunc: func(state *gw.ServerState) {
+			// Services dependency injection
+			Service.Register(state.DI())
+
+			// TODO(OceanHo): there are may be consider initial by other tool
+			//  Because of initialization with this way has some problem on a distributed Cluster.
+			initPerms(state)
+			initUsers(state)
+		},
+		onShoutDownFunc: func(state *gw.ServerState) {
+
+		},
 	}
 }
 
 func (a App) Name() string {
-	return "gw.uap"
+	return a.name
 }
 
 func (a App) Router() string {
-	return "uap"
+	return a.router
 }
 
 func (a App) Register(router *gw.RouterGroup) {
-	router.RegisterRestAPIs(&restAPIs.User{})
+	a.registerFunc(router)
 }
 
 func (a App) Use(opt *gw.ServerOption) {
-	use(opt)
+	a.useFunc(opt)
 }
 
 func (a App) Migrate(state *gw.ServerState) {
-	dbModel.Migrate(state)
-	uapdi.Register(state.DI())
+	a.migrateFunc(state)
 }
 
 func (a App) OnStart(state *gw.ServerState) {
-	initial(state)
+	a.onStartFunc(state)
 }
 
 func (a App) OnShutDown(state *gw.ServerState) {
 
-}
-
-// helpers
-func use(opt *gw.ServerOption) {
-	opt.AuthManagerHandler = func(state *gw.ServerState) gw.IAuthManager {
-		return gwImpls.DefaultAuthManager(state)
-	}
-	opt.UserManagerHandler = func(state *gw.ServerState) gw.IUserManager {
-		return gwImpls.DefaultUserManager(state)
-	}
-	opt.PermissionManagerHandler = func(state *gw.ServerState) gw.IPermissionManager {
-		return gwImpls.DefaultPermissionManager(state)
-	}
-	opt.SessionStateManager = func(state *gw.ServerState) gw.ISessionStateManager {
-		return gwImpls.DefaultSessionManager(state)
-	}
-}
-
-func initial(state *gw.ServerState) {
-	initPerms(state)
-	initUsers(state)
 }
 
 // initial permission
@@ -99,7 +118,7 @@ func initPerms(state *gw.ServerState) {
 
 // initial users
 func initUsers(state *gw.ServerState) {
-	var uapCnf = conf.GetUAP(state.ApplicationConfig())
+	var uapCnf = Config.GetUAP(state.ApplicationConfig())
 	var userManager = state.UserManager()
 	var passwordSigner = state.PasswordSigner()
 	for _, u := range uapCnf.User.Users {

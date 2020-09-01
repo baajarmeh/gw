@@ -181,7 +181,21 @@ func createDb(db conf.Db) *gorm.DB {
 }
 
 func setupDb(db *gorm.DB) {
-	err := db.Callback().Query().Before("gorm:query").Register("gw:query_global_filter", func(db *gorm.DB) {
+	err := db.Callback().Create().Before("gorm:create").Register("gw:create_global_handler", func(db *gorm.DB) {
+		var obj, ok = db.Get(gwDbContextKey)
+		if !ok {
+			return
+		}
+		if ctx, ok := obj.(Context); ok {
+			//ctx.server.DbOpProcessor.fns
+			_ = ctx.server.DbOpProcessor
+		}
+	})
+	if err != nil {
+		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
+	}
+
+	err = db.Callback().Query().Before("gorm:query").Register("gw:query_global_filter", func(db *gorm.DB) {
 		var obj, ok = db.Get(gwDbContextKey)
 		if !ok {
 			return

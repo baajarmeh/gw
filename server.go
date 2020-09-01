@@ -45,6 +45,7 @@ type ServerOption struct {
 	StoreDbSetupHandler      StoreDbSetupHandler
 	SessionStateManager      SessionStateHandler
 	StoreCacheSetupHandler   StoreCacheSetupHandler
+	DbOpProcessor            *DbOpProcessor
 	EventManagerHandler      func(state *ServerState) IEventManager
 	RespBodyBuildFunc        RespBodyBuildFunc
 	isTester                 bool
@@ -71,6 +72,7 @@ type HostServer struct {
 	IDGenerator            IdentifierGenerator
 	DIProvider             IDIProvider
 	EventManager           IEventManager
+	DbOpProcessor          *DbOpProcessor
 	RespBodyBuildFunc      RespBodyBuildFunc
 	state                  int
 	locker                 sync.Mutex
@@ -129,6 +131,10 @@ func (ss *ServerState) AuthManager() IAuthManager {
 
 func (ss *ServerState) AuthParamResolvers() []IAuthParamResolver {
 	return ss.s.AuthParamResolvers
+}
+
+func (ss *ServerState) DbOpProcessor() *DbOpProcessor {
+	return ss.s.DbOpProcessor
 }
 
 func (ss *ServerState) AuthParamChecker() IAuthParamChecker {
@@ -261,6 +267,9 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		},
 		EventManagerHandler: func(state *ServerState) IEventManager {
 			return DefaultEventManager(state)
+		},
+		DbOpProcessor: &DbOpProcessor{
+			fns: DbOpActionMap{},
 		},
 		RespBodyBuildFunc: DefaultRespBodyBuildFunc,
 		bcs:               bcs,
@@ -574,6 +583,7 @@ func initialServer(s *HostServer) *ServerState {
 	s.SessionStateManager = s.options.SessionStateManager(state)
 	s.PermissionManager = s.options.PermissionManagerHandler(state)
 	s.EventManager = s.options.EventManagerHandler(state)
+	s.DbOpProcessor = s.options.DbOpProcessor
 	s.DIProvider = s.options.DIProviderHandler(state)
 	if !s.options.isTester {
 		// gin engine.

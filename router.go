@@ -55,6 +55,10 @@ func (c *Context) User() User {
 	return c.user
 }
 
+func (c *Context) Store() IStore {
+	return c.store
+}
+
 func (c *Context) ResolveByTyper(typer reflect.Type) interface{} {
 	return c.server.DIProvider.ResolveByTyperWithState(c.store, typer)
 }
@@ -255,10 +259,10 @@ func (c *Context) QueryArray(key string) []string {
 	return val
 }
 
-// MustGetParamIDUint64 returns a string from c.Params
-func (c *Context) MustGetParamIDUint64(out *uint64) (err error) {
+// MustGetIdUint64FromParam returns a string from c.Params
+func (c *Context) MustGetIdUint64FromParam(out *uint64) (err error) {
 	var _out string
-	if err := c.MustGetParamID(&_out); err != nil {
+	if err := c.MustGetIdStrFromParam(&_out); err != nil {
 		c.JSON400Msg(400, err)
 		return err
 	}
@@ -271,8 +275,8 @@ func (c *Context) MustGetParamIDUint64(out *uint64) (err error) {
 	return err1
 }
 
-// MustGetParamID returns a string from c.Params
-func (c *Context) MustGetParamID(out *string) error {
+// MustGetIdStrFromParam returns a string from c.Params
+func (c *Context) MustGetIdStrFromParam(out *string) error {
 	return c.MustParam("id", out)
 }
 
