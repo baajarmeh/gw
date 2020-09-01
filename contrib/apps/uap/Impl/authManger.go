@@ -67,11 +67,12 @@ func (a AuthManager) Login(param gw.AuthParameter) (gw.User, error) {
 	var user = a.GetAuthUserFromCache(param.Passport)
 	var password = a.PasswordSigner().Sign(param.Password)
 	if user.IsEmpty() {
-		if param.CredType == gw.UserPasswordAuth {
-			user, err = a.UserManager().QueryByUser(param.TenantId, password, password)
-		} else if param.CredType == gw.AksAuth {
+		switch param.CredType {
+		case gw.UserPasswordAuth, gw.BasicAuth:
+			user, err = a.UserManager().QueryByUser(param.TenantId, param.Passport, password)
+		case gw.AksAuth:
 			user, err = a.UserManager().QueryByAKS(param.TenantId, param.Passport, password)
-		} else {
+		default:
 			logger.Error("Un-support cred type: %s", param.CredType)
 			return gw.EmptyUser, err
 		}

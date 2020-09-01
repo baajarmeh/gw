@@ -54,8 +54,19 @@ func New() App {
 			}
 		},
 		migrateFunc: func(state *gw.ServerState) {
-			dbProcessor := state.DbOpProcessor()
-			dbProcessor.OnQueryBefore(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
+			state.Store().GetDbStore().AutoMigrate(
+				Db.User{},
+				Db.UserProfile{},
+				Db.Role{},
+				Db.UserRoleMapping{},
+				Db.Permission{},
+				Db.ObjectPermission{},
+				Db.Credential{},
+			)
+			state.DbOpProcessor().QueryBefore().Register(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
+				return nil
+			}, Db.Credential{})
+			state.DbOpProcessor().QueryAfter().Register(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
 				return nil
 			}, Db.Credential{})
 		},

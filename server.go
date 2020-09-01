@@ -182,25 +182,23 @@ func (ss *ServerState) RespBodyBuildFunc() RespBodyBuildFunc {
 }
 
 var (
-	appDefaultAddr                  = ":8080"
-	appDefaultName                  = "gw.app"
-	appDefaultRestart               = "always"
-	appDefaultPrefix                = "/api/v1"
-	appDefaultPluginSymbolName      = "AppPlugin"
-	appDefaultPluginSymbolSuffix    = ".so"
-	appDefaultStartBeforeHandler    = func(server *HostServer) error { return nil }
-	appDefaultShutdownBeforeHandler = func(server *HostServer) error { return nil }
-	appDefaultBackendHandler        = func(cnf *conf.ApplicationConfig) IStore {
+	appDefaultAddr               = ":8080"
+	appDefaultName               = "gw.app"
+	appDefaultRestart            = "always"
+	appDefaultPrefix             = "/api/v1"
+	appDefaultPluginSymbolName   = "AppPlugin"
+	appDefaultPluginSymbolSuffix = ".so"
+	appDefaultBackendHandler     = func(cnf *conf.ApplicationConfig) IStore {
 		return DefaultBackend(cnf)
 	}
 	appDefaultAppConfigHandler = func(cnf *conf.BootConfig) *conf.ApplicationConfig {
 		return conf.NewConfigWithBootConfig(cnf)
 	}
-	appDefaultStoreDbSetupHandler = func(c Context, db *gorm.DB) *gorm.DB {
+	appDefaultStoreDbSetupHandler = func(c *Context, db *gorm.DB) *gorm.DB {
 		// TODO(Ocean): consider new a context.ContextTimeout
 		return db.Set(gwDbContextKey, c)
 	}
-	appDefaultStoreCacheSetupHandler = func(c Context, client *redis.Client, user User) *redis.Client {
+	appDefaultStoreCacheSetupHandler = func(c *Context, client *redis.Client, user User) *redis.Client {
 		return client
 	}
 	internLogFormatter = "[$prefix-$level] $msg\n"
@@ -268,9 +266,7 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		EventManagerHandler: func(state *ServerState) IEventManager {
 			return DefaultEventManager(state)
 		},
-		DbOpProcessor: &DbOpProcessor{
-			fns: DbOpActionMap{},
-		},
+		DbOpProcessor:     NewDbOpProcessor(),
 		RespBodyBuildFunc: DefaultRespBodyBuildFunc,
 		bcs:               bcs,
 		isTester:          false,

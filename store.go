@@ -20,10 +20,10 @@ type IStore interface {
 }
 
 // StoreDbSetupHandler represents a database ORM object handler that can be replace A *gorm.DB instances features.
-type StoreDbSetupHandler func(ctx Context, db *gorm.DB) *gorm.DB
+type StoreDbSetupHandler func(ctx *Context, db *gorm.DB) *gorm.DB
 
 // StoreCacheSetupHandler represents a redis Client object handler that can be replace A *redis.Client instances features.
-type StoreCacheSetupHandler func(ctx Context, client *redis.Client, user User) *redis.Client
+type StoreCacheSetupHandler func(ctx *Context, client *redis.Client, user User) *redis.Client
 
 // SessionStateHandler represents a Session state manager handler.
 type SessionStateHandler func(state *ServerState) ISessionStateManager
@@ -45,7 +45,7 @@ type backendWrapper struct {
 	storeCacheSetupHandlers []StoreCacheSetupHandler
 }
 
-func (b backendWrapper) GetDbStore() *gorm.DB {
+func (b *backendWrapper) GetDbStore() *gorm.DB {
 	db := b.store.GetDbStore()
 	if db == nil {
 		panic("got db store fail, ret is nil.")
@@ -53,7 +53,7 @@ func (b backendWrapper) GetDbStore() *gorm.DB {
 	return b.globalDbStep(db)
 }
 
-func (b backendWrapper) GetDbStoreByName(name string) *gorm.DB {
+func (b *backendWrapper) GetDbStoreByName(name string) *gorm.DB {
 	db := b.store.GetDbStoreByName(name)
 	if db == nil {
 		panic("got db store by name fail, ret is nil.")
@@ -61,23 +61,21 @@ func (b backendWrapper) GetDbStoreByName(name string) *gorm.DB {
 	return b.globalDbStep(db)
 }
 
-func (b backendWrapper) globalDbStep(db *gorm.DB) *gorm.DB {
-	ctx := *b.ctx
+func (b *backendWrapper) globalDbStep(db *gorm.DB) *gorm.DB {
 	for _, h := range b.storeDbSetupHandlers {
-		db = h(ctx, db)
+		db = h(b.ctx, db)
 	}
 	return db
 }
 
-func (b backendWrapper) globalCacheSetup(db *redis.Client) *redis.Client {
-	ctx := *b.ctx
+func (b *backendWrapper) globalCacheSetup(db *redis.Client) *redis.Client {
 	for _, h := range b.storeCacheSetupHandlers {
-		db = h(ctx, db, b.user)
+		db = h(b.ctx, db, b.user)
 	}
 	return db
 }
 
-func (b backendWrapper) GetCacheStore() *redis.Client {
+func (b *backendWrapper) GetCacheStore() *redis.Client {
 	db := b.store.GetCacheStore()
 	if db == nil {
 		panic("got cache store fail, ret is nil.")
@@ -85,7 +83,7 @@ func (b backendWrapper) GetCacheStore() *redis.Client {
 	return b.globalCacheSetup(db)
 }
 
-func (b backendWrapper) GetCacheStoreByName(name string) *redis.Client {
+func (b *backendWrapper) GetCacheStoreByName(name string) *redis.Client {
 	db := b.store.GetCacheStoreByName(name)
 	if db == nil {
 		panic("got cache store by name fail, ret is nil.")
@@ -181,13 +179,38 @@ func createDb(db conf.Db) *gorm.DB {
 }
 
 func setupDb(db *gorm.DB) {
-	err := db.Callback().Create().Before("gorm:create").Register("gw:create_global_handler", func(db *gorm.DB) {
+	err := db.Callback().Query().Before("gorm:query").Register("gw:query_global_before", func(db *gorm.DB) {
+
 		var obj, ok = db.Get(gwDbContextKey)
 		if !ok {
 			return
 		}
-		if ctx, ok := obj.(Context); ok {
-			//ctx.server.DbOpProcessor.fns
+		if ctx, ok := obj.(*Context); ok {
+			fns, ok := ctx.server.DbOpProcessor.QueryBefore().handlers[db.Statement.Schema.ModelType]
+			if ok {
+				for _, f := range fns {
+					_ = f(db, ctx, db.Statement.Model)
+				}
+			}
+			_ = ctx.server.DbOpProcessor
+		}
+	})
+	if err != nil {
+		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
+	}
+
+	err = db.Callback().Query().After("gorm:query").Register("gw:query_global_after", func(db *gorm.DB) {
+		var obj, ok = db.Get(gwDbContextKey)
+		if !ok {
+			return
+		}
+		if ctx, ok := obj.(*Context); ok {
+			fns, ok := ctx.server.DbOpProcessor.QueryAfter().handlers[db.Statement.Schema.ModelType]
+			if ok {
+				for _, f := range fns {
+					_ = f(db, ctx, db.Statement.Dest)
+				}
+			}
 			_ = ctx.server.DbOpProcessor
 		}
 	})

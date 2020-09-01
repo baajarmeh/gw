@@ -54,5 +54,7 @@ func (dcs DefaultCredentialServiceImpl) New(
 }
 
 func (dcs DefaultCredentialServiceImpl) QueryById(id uint64) (Db.Credential, error) {
-	panic("implement me")
+	var model Db.Credential
+	err := dcs.store.GetDbStore().First(&model, "id = ?", id).Error
+	return model, err
 }
