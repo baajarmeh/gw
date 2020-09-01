@@ -52,7 +52,7 @@ func (e *execution) release() {
 }
 
 // WithTimeout represents a API that can be supports timeout control
-// returns true if call f has done (not timeout) else false.
+// returns false if call f has done (not timeout) else true.
 func Timeout(f func(), timeout time.Duration) bool {
 	var executor = execution{
 		f:       f,
