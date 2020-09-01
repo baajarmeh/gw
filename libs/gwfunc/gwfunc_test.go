@@ -1,4 +1,4 @@
-package gwcall
+package gwfunc
 
 import (
 	assert2 "github.com/stretchr/testify/assert"
@@ -10,16 +10,16 @@ func TestExec_Normal(t *testing.T) {
 	var f = func() {
 		time.Sleep(1 * time.Second)
 	}
-	ok := Call(f, 5*time.Second)
-	assert2.True(t, ok)
+	ok := Timeout(f, 5*time.Second)
+	assert2.False(t, ok)
 }
 
 func TestExec_Timeout(t *testing.T) {
 	var f = func() {
 		time.Sleep(5 * time.Second)
 	}
-	ok := Call(f, 1*time.Second)
-	assert2.False(t, ok)
+	ok := Timeout(f, 1*time.Second)
+	assert2.True(t, ok)
 }
 
 func BenchmarkExec_Normal(b *testing.B) {
@@ -27,7 +27,7 @@ func BenchmarkExec_Normal(b *testing.B) {
 		time.Sleep(1 * time.Nanosecond)
 	}
 	for i := 0; i < b.N; i++ {
-		_ = Call(f, 1*time.Nanosecond)
+		_ = Timeout(f, 1*time.Nanosecond)
 	}
 }
 
@@ -36,6 +36,6 @@ func BenchmarkExec_Timeout(b *testing.B) {
 		time.Sleep(5 * time.Nanosecond)
 	}
 	for i := 0; i < b.N; i++ {
-		_ = Call(f, 1*time.Nanosecond)
+		_ = Timeout(f, 1*time.Nanosecond)
 	}
 }

@@ -37,6 +37,7 @@ type Context struct {
 	queries    map[string][]string
 	params     map[string]interface{}
 	bindModels map[string]interface{}
+	server     *HostServer
 }
 
 // ServerState represents a Server state context object.
@@ -55,7 +56,7 @@ func (c *Context) User() User {
 }
 
 func (c *Context) ResolveByTyper(typer reflect.Type) interface{} {
-	return c.HostServer().DIProvider.ResolveByTyperWithState(c.store, typer)
+	return c.server.DIProvider.ResolveByTyperWithState(c.store, typer)
 }
 
 // Router represents a gw's Router info.
@@ -308,11 +309,11 @@ func (c *Context) BindQuery(out interface{}) error {
 }
 
 func (c *Context) HostServer() *HostServer {
-	return getHostServer(c.Context)
+	return c.server
 }
 
 func (c *Context) AppConfig() *conf.ApplicationConfig {
-	return getHostServer(c.Context).conf
+	return c.server.conf
 }
 
 // handle code APIs.
@@ -390,6 +391,7 @@ func makeCtx(c *gin.Context, requestID string) *Context {
 	ctx := &Context{
 		Context:    c,
 		user:       user,
+		server:     s,
 		requestId:  requestID,
 		startTime:  time.Now(),
 		logger:     getLogger(c),
