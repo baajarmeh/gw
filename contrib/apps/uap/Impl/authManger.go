@@ -93,6 +93,7 @@ func (a AuthManager) Login(param gw.AuthParameter) (gw.User, error) {
 }
 
 func (a AuthManager) Logout(user gw.User) bool {
+	a.RemoveAuthUserFromCache(user.Passport)
 	return true
 }
 
