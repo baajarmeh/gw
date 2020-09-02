@@ -19,10 +19,16 @@ type DbOpProcessor struct {
 
 func NewDbOpProcessor() *DbOpProcessor {
 	var maps = make(map[string]*DbOpTyperHandlers)
-	maps["gw:on_save_before"] = &DbOpTyperHandlers{
+	maps["gw:on_create_before"] = &DbOpTyperHandlers{
 		handlers: make(map[reflect.Type][]DbOpHandler),
 	}
-	maps["gw:on_save_after"] = &DbOpTyperHandlers{
+	maps["gw:on_create_after"] = &DbOpTyperHandlers{
+		handlers: make(map[reflect.Type][]DbOpHandler),
+	}
+	maps["gw:on_update_before"] = &DbOpTyperHandlers{
+		handlers: make(map[reflect.Type][]DbOpHandler),
+	}
+	maps["gw:on_update_after"] = &DbOpTyperHandlers{
 		handlers: make(map[reflect.Type][]DbOpHandler),
 	}
 	maps["gw:on_query_before"] = &DbOpTyperHandlers{
@@ -42,12 +48,20 @@ func NewDbOpProcessor() *DbOpProcessor {
 	}
 }
 
-func (processor *DbOpProcessor) SaveBefore() *DbOpTyperHandlers {
-	return processor.fns["gw:on_save_before"]
+func (processor *DbOpProcessor) CreateBefore() *DbOpTyperHandlers {
+	return processor.fns["gw:on_create_before"]
 }
 
-func (processor *DbOpProcessor) SaveAfter() *DbOpTyperHandlers {
-	return processor.fns["gw:on_save_after"]
+func (processor *DbOpProcessor) CreateAfter() *DbOpTyperHandlers {
+	return processor.fns["gw:on_create_after"]
+}
+
+func (processor *DbOpProcessor) UpdateBefore() *DbOpTyperHandlers {
+	return processor.fns["gw:on_update_before"]
+}
+
+func (processor *DbOpProcessor) UpdateAfter() *DbOpTyperHandlers {
+	return processor.fns["gw:on_update_after"]
 }
 
 func (processor *DbOpProcessor) QueryBefore() *DbOpTyperHandlers {

@@ -63,10 +63,7 @@ func New() App {
 				Db.ObjectPermission{},
 				Db.Credential{},
 			)
-			state.DbOpProcessor().QueryBefore().Register(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
-				return nil
-			}, Db.Credential{})
-			state.DbOpProcessor().QueryAfter().Register(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
+			state.DbOpProcessor().CreateBefore().Register(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
 				return nil
 			}, Db.Credential{})
 		},

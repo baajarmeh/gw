@@ -179,13 +179,13 @@ func createDb(db conf.Db) *gorm.DB {
 }
 
 func setupDb(db *gorm.DB) {
-	err := db.Callback().Query().Before("gorm:query").Register("gw:query_global_before", func(db *gorm.DB) {
+	err := db.Callback().Create().Before("gorm:create").Register("gw:create_before", func(db *gorm.DB) {
 		var obj, ok = db.Get(gwDbContextKey)
 		if !ok {
 			return
 		}
 		if ctx, ok := obj.(*Context); ok {
-			fns, ok := ctx.server.DbOpProcessor.QueryBefore().handlers[db.Statement.Schema.ModelType]
+			fns, ok := ctx.server.DbOpProcessor.CreateBefore().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
 					_ = f(db, ctx, db.Statement.Model)
@@ -196,20 +196,16 @@ func setupDb(db *gorm.DB) {
 	if err != nil {
 		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
 	}
-	err = db.Callback().Query().Before("gorm:update").Register("gw:update_global_handler", func(db *gorm.DB) {
+	err = db.Callback().Create().After("gorm:create").Register("gw:create_after", func(db *gorm.DB) {
 		var obj, ok = db.Get(gwDbContextKey)
 		if !ok {
 			return
 		}
 		if ctx, ok := obj.(*Context); ok {
-			user := ctx.User()
-			if user.IsEmpty() {
-				return
-			}
-			fns, ok := ctx.server.DbOpProcessor.SaveBefore().handlers[db.Statement.Schema.ModelType]
+			fns, ok := ctx.server.DbOpProcessor.CreateAfter().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Dest)
+					_ = f(db, ctx, db.Statement.Model)
 				}
 			}
 		}
@@ -217,18 +213,92 @@ func setupDb(db *gorm.DB) {
 	if err != nil {
 		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
 	}
-
-	err = db.Callback().Query().Before("gorm:query").Register("gw:query_global_filter", func(db *gorm.DB) {
+	err = db.Callback().Update().Before("gorm:update").Register("gw:update_before", func(db *gorm.DB) {
 		var obj, ok = db.Get(gwDbContextKey)
 		if !ok {
 			return
 		}
 		if ctx, ok := obj.(*Context); ok {
+			fns, ok := ctx.server.DbOpProcessor.UpdateBefore().handlers[db.Statement.Schema.ModelType]
+			if ok {
+				for _, f := range fns {
+					_ = f(db, ctx, db.Statement.Model)
+				}
+			}
+		}
+	})
+	if err != nil {
+		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
+	}
+	err = db.Callback().Update().After("gorm:update").Register("gw:update_after", func(db *gorm.DB) {
+		var obj, ok = db.Get(gwDbContextKey)
+		if !ok {
+			return
+		}
+		if ctx, ok := obj.(*Context); ok {
+			fns, ok := ctx.server.DbOpProcessor.UpdateAfter().handlers[db.Statement.Schema.ModelType]
+			if ok {
+				for _, f := range fns {
+					_ = f(db, ctx, db.Statement.Model)
+				}
+			}
+		}
+	})
+	if err != nil {
+		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
+	}
+	err = db.Callback().Delete().Before("gorm:delete").Register("gw:update_before", func(db *gorm.DB) {
+		var obj, ok = db.Get(gwDbContextKey)
+		if !ok {
+			return
+		}
+		if ctx, ok := obj.(*Context); ok {
+			fns, ok := ctx.server.DbOpProcessor.DeleteBefore().handlers[db.Statement.Schema.ModelType]
+			if ok {
+				for _, f := range fns {
+					_ = f(db, ctx, db.Statement.Model)
+				}
+			}
+		}
+	})
+	if err != nil {
+		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
+	}
+	err = db.Callback().Delete().After("gorm:delete").Register("gw:delete_after", func(db *gorm.DB) {
+		var obj, ok = db.Get(gwDbContextKey)
+		if !ok {
+			return
+		}
+		if ctx, ok := obj.(*Context); ok {
+			fns, ok := ctx.server.DbOpProcessor.DeleteAfter().handlers[db.Statement.Schema.ModelType]
+			if ok {
+				for _, f := range fns {
+					_ = f(db, ctx, db.Statement.Model)
+				}
+			}
+		}
+	})
+	if err != nil {
+		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
+	}
+	err = db.Callback().Query().Before("gorm:query").Register("gw:query_before", func(db *gorm.DB) {
+		var obj, ok = db.Get(gwDbContextKey)
+		if !ok {
+			return
+		}
+		if ctx, ok := obj.(*Context); ok {
+			fns, ok := ctx.server.DbOpProcessor.QueryBefore().handlers[db.Statement.Schema.ModelType]
+			if ok {
+				for _, f := range fns {
+					_ = f(db, ctx, db.Statement.Dest)
+				}
+			}
+
 			user := ctx.User()
 			if user.IsEmpty() {
 				return
 			}
-			_, ok := db.Statement.Schema.FieldsByName["TenantId"]
+			_, ok = db.Statement.Schema.FieldsByName["TenantId"]
 			if ok {
 				if user.IsTenancy() {
 					db = db.Where("id = ? or tenant_id = ?", user.ID, user.ID)
@@ -240,7 +310,18 @@ func setupDb(db *gorm.DB) {
 					}
 				}
 			}
-			fns, ok := ctx.server.DbOpProcessor.QueryBefore().handlers[db.Statement.Schema.ModelType]
+		}
+	})
+	if err != nil {
+		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
+	}
+	err = db.Callback().Query().After("gorm:query").Register("gw:query_after", func(db *gorm.DB) {
+		var obj, ok = db.Get(gwDbContextKey)
+		if !ok {
+			return
+		}
+		if ctx, ok := obj.(*Context); ok {
+			fns, ok := ctx.server.DbOpProcessor.QueryAfter().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
 					_ = f(db, ctx, db.Statement.Dest)
