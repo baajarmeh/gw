@@ -14,7 +14,7 @@ type DbOpTyperHandlers struct {
 }
 
 type DbOpProcessor struct {
-	fns *map[string]*DbOpTyperHandlers
+	fns map[string]*DbOpTyperHandlers
 }
 
 func NewDbOpProcessor() *DbOpProcessor {
@@ -38,32 +38,32 @@ func NewDbOpProcessor() *DbOpProcessor {
 		handlers: make(map[reflect.Type][]DbOpHandler),
 	}
 	return &DbOpProcessor{
-		fns: &maps,
+		fns: maps,
 	}
 }
 
 func (processor *DbOpProcessor) SaveBefore() *DbOpTyperHandlers {
-	return (*(processor.fns))["gw:on_save_before"]
+	return processor.fns["gw:on_save_before"]
 }
 
 func (processor *DbOpProcessor) SaveAfter() *DbOpTyperHandlers {
-	return (*(processor.fns))["gw:on_save_after"]
+	return processor.fns["gw:on_save_after"]
 }
 
 func (processor *DbOpProcessor) QueryBefore() *DbOpTyperHandlers {
-	return (*(processor.fns))["gw:on_query_before"]
+	return processor.fns["gw:on_query_before"]
 }
 
 func (processor *DbOpProcessor) QueryAfter() *DbOpTyperHandlers {
-	return (*(processor.fns))["gw:on_query_after"]
+	return processor.fns["gw:on_query_after"]
 }
 
 func (processor *DbOpProcessor) DeleteBefore() *DbOpTyperHandlers {
-	return (*(processor.fns))["gw:on_delete_before"]
+	return processor.fns["gw:on_delete_before"]
 }
 
 func (processor *DbOpProcessor) DeleteAfter() *DbOpTyperHandlers {
-	return (*(processor.fns))["gw:on_delete_after"]
+	return processor.fns["gw:on_delete_after"]
 }
 
 func (h *DbOpTyperHandlers) Register(handler DbOpHandler, models ...interface{}) *DbOpTyperHandlers {

@@ -180,7 +180,6 @@ func createDb(db conf.Db) *gorm.DB {
 
 func setupDb(db *gorm.DB) {
 	err := db.Callback().Query().Before("gorm:query").Register("gw:query_global_before", func(db *gorm.DB) {
-
 		var obj, ok = db.Get(gwDbContextKey)
 		if !ok {
 			return
@@ -192,26 +191,27 @@ func setupDb(db *gorm.DB) {
 					_ = f(db, ctx, db.Statement.Model)
 				}
 			}
-			_ = ctx.server.DbOpProcessor
 		}
 	})
 	if err != nil {
 		panic(fmt.Sprintf("setup db hooks fail, err: %v", err))
 	}
-
-	err = db.Callback().Query().After("gorm:query").Register("gw:query_global_after", func(db *gorm.DB) {
+	err = db.Callback().Query().Before("gorm:update").Register("gw:update_global_handler", func(db *gorm.DB) {
 		var obj, ok = db.Get(gwDbContextKey)
 		if !ok {
 			return
 		}
 		if ctx, ok := obj.(*Context); ok {
-			fns, ok := ctx.server.DbOpProcessor.QueryAfter().handlers[db.Statement.Schema.ModelType]
+			user := ctx.User()
+			if user.IsEmpty() {
+				return
+			}
+			fns, ok := ctx.server.DbOpProcessor.SaveBefore().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
 					_ = f(db, ctx, db.Statement.Dest)
 				}
 			}
-			_ = ctx.server.DbOpProcessor
 		}
 	})
 	if err != nil {
@@ -223,7 +223,7 @@ func setupDb(db *gorm.DB) {
 		if !ok {
 			return
 		}
-		if ctx, ok := obj.(Context); ok {
+		if ctx, ok := obj.(*Context); ok {
 			user := ctx.User()
 			if user.IsEmpty() {
 				return
@@ -238,6 +238,12 @@ func setupDb(db *gorm.DB) {
 					} else {
 						db = db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantId)
 					}
+				}
+			}
+			fns, ok := ctx.server.DbOpProcessor.QueryBefore().handlers[db.Statement.Schema.ModelType]
+			if ok {
+				for _, f := range fns {
+					_ = f(db, ctx, db.Statement.Dest)
 				}
 			}
 		}

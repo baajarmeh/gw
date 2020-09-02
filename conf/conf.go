@@ -323,7 +323,7 @@ var (
 //
 // <Your ApplicationConfig>.ParseCustomPathTo("gwpro", &gwPro)
 //
-func (cnf ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
+func (cnf *ApplicationConfig) ParseCustomPathTo(path string, out interface{}) error {
 	str, ok := cnf.customJsonStrMaps[path]
 	if !ok {
 		return ErrNoPathSection
@@ -331,7 +331,7 @@ func (cnf ApplicationConfig) ParseCustomPathTo(path string, out interface{}) err
 	return json.Unmarshal([]byte(str), out)
 }
 
-func (cnf ApplicationConfig) ParseCustomTo(out interface{}) error {
+func (cnf *ApplicationConfig) ParseCustomTo(out interface{}) error {
 	return json.Unmarshal([]byte(cnf.customJson), out)
 }
 
