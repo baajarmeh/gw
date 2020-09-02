@@ -66,18 +66,18 @@ func (processor *DbOpProcessor) DeleteAfter() *DbOpTyperHandlers {
 	return (*(processor.fns))["gw:on_delete_after"]
 }
 
-func (handlers *DbOpTyperHandlers) Register(handler DbOpHandler, models ...interface{}) *DbOpTyperHandlers {
-	handlers.locker.Lock()
-	defer handlers.locker.Unlock()
+func (h *DbOpTyperHandlers) Register(handler DbOpHandler, models ...interface{}) *DbOpTyperHandlers {
+	h.locker.Lock()
+	defer h.locker.Unlock()
 	for _, m := range models {
 		_model := m
 		typer := reflect.TypeOf(_model)
-		if handlers.handlers[typer] == nil {
-			if len(handlers.handlers[typer]) == 0 {
-				handlers.handlers[typer] = make([]DbOpHandler, 0, 8)
+		if h.handlers[typer] == nil {
+			if len(h.handlers[typer]) == 0 {
+				h.handlers[typer] = make([]DbOpHandler, 0, 8)
 			}
-			handlers.handlers[typer] = append(handlers.handlers[typer], handler)
+			h.handlers[typer] = append(h.handlers[typer], handler)
 		}
 	}
-	return handlers
+	return h
 }
