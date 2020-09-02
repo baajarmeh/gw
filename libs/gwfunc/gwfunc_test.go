@@ -35,7 +35,7 @@ func TestTimeSpent_Timeout(t *testing.T) {
 		time.Sleep(5 * time.Second)
 	}, time.Second*1)
 	assert2.True(t, tsr.IsTimeout())
-	assert2.Equal(t, 0, tsr.Spent.Seconds())
+	assert2.Equal(t, 0.0, tsr.Spent.Seconds())
 	t.Logf("spent seconds, %f", tsr.Spent.Seconds())
 }
 
