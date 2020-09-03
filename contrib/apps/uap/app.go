@@ -70,7 +70,7 @@ func New() App {
 				Db.UserRole{},
 				Db.Credential{},
 				Db.Permission{},
-				Db.PermissionMapping{},
+				Db.PermissionToObject{},
 				Db.UserAccessKeySecret{},
 			)
 			if err != nil {
