@@ -6,11 +6,23 @@ import (
 	"sync"
 )
 
-type DbOpHandler func(db *gorm.DB, ctx *Context, model interface{}) error
+type DbOpHandler func(db *gorm.DB, ctx *Context) error
+
+type DbHandlerShadowModel struct {
+}
+
+var dbHandlerShadowModelTyper = reflect.TypeOf(DbHandlerShadowModel{})
 
 type DbOpTyperHandlers struct {
 	locker   sync.Mutex
 	handlers map[reflect.Type][]DbOpHandler
+}
+
+func (h *DbOpTyperHandlers) Handlers(typer reflect.Type) []DbOpHandler {
+	var handlers = make([]DbOpHandler, 0, 8)
+	handlers = append(handlers, h.handlers[typer]...)
+	handlers = append(handlers, h.handlers[dbHandlerShadowModelTyper]...)
+	return handlers
 }
 
 type DbOpProcessor struct {

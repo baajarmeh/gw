@@ -2,6 +2,7 @@ package RestAPI
 
 import (
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/uap/Service"
 )
 
 type User struct {
@@ -22,7 +23,8 @@ func (u User) Get(ctx *gw.Context) {
 //
 //
 func (u User) Detail(ctx *gw.Context) {
-
+	userManager := Service.Services(ctx).UserManager
+	_,_ = userManager.QueryByUser(0,"admin","admin@123456")
 }
 
 //func (u User) OnGetBefore() gw.Decorator {

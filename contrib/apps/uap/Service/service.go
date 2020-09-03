@@ -6,11 +6,15 @@ import (
 )
 
 type Service struct {
+	UserManager       gw.IUserManager
 	CredentialService ICredentialService
 }
 
-func (s Service) New(service ICredentialService) Service {
+func (s Service) New(
+	userManager gw.IUserManager,
+	service ICredentialService) Service {
 	s.CredentialService = service
+	s.UserManager = userManager
 	return s
 }
 

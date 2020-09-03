@@ -203,7 +203,6 @@ var (
 		return conf.NewConfigWithBootConfig(cnf)
 	}
 	appDefaultStoreDbSetupHandler = func(c *Context, db *gorm.DB) *gorm.DB {
-		// TODO(Ocean): consider new a context.ContextTimeout
 		return db.Set(gwDbContextKey, c)
 	}
 	appDefaultStoreCacheSetupHandler = func(c *Context, client *redis.Client, user User) *redis.Client {
@@ -595,7 +594,6 @@ func initialServer(s *HostServer) *ServerState {
 			return EmptyAppManager(state)
 		}
 	}
-
 	s.AppManager = s.options.AppManagerHandler(state)
 	s.UserManager = s.options.UserManagerHandler(state)
 	s.AuthManager = s.options.AuthManagerHandler(state)

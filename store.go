@@ -197,7 +197,7 @@ func setupDb(db *gorm.DB) {
 			fns, ok := ctx.server.DbOpProcessor.CreateBefore().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Model)
+					_ = f(db, ctx)
 				}
 			}
 		}
@@ -214,7 +214,7 @@ func setupDb(db *gorm.DB) {
 			fns, ok := ctx.server.DbOpProcessor.CreateAfter().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Model)
+					_ = f(db, ctx)
 				}
 			}
 		}
@@ -231,7 +231,7 @@ func setupDb(db *gorm.DB) {
 			fns, ok := ctx.server.DbOpProcessor.UpdateBefore().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Model)
+					_ = f(db, ctx)
 				}
 			}
 		}
@@ -246,9 +246,12 @@ func setupDb(db *gorm.DB) {
 		}
 		if ctx, ok := obj.(*Context); ok {
 			fns, ok := ctx.server.DbOpProcessor.UpdateAfter().handlers[db.Statement.Schema.ModelType]
+			if !ok {
+				fns, ok = ctx.server.DbOpProcessor.UpdateBefore().handlers[dbHandlerShadowModelTyper]
+			}
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Model)
+					_ = f(db, ctx)
 				}
 			}
 		}
@@ -262,10 +265,13 @@ func setupDb(db *gorm.DB) {
 			return
 		}
 		if ctx, ok := obj.(*Context); ok {
-			fns, ok := ctx.server.DbOpProcessor.DeleteBefore().handlers[db.Statement.Schema.ModelType]
 			if ok {
-				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Model)
+				handlers := ctx.server.DbOpProcessor.DeleteBefore().Handlers(db.Statement.Schema.ModelType)
+				for _, f := range handlers {
+					err := f(db, ctx)
+					if err != nil {
+						_ = db.AddError(err)
+					}
 				}
 			}
 		}
@@ -279,10 +285,11 @@ func setupDb(db *gorm.DB) {
 			return
 		}
 		if ctx, ok := obj.(*Context); ok {
-			fns, ok := ctx.server.DbOpProcessor.DeleteAfter().handlers[db.Statement.Schema.ModelType]
-			if ok {
-				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Model)
+			handlers := ctx.server.DbOpProcessor.DeleteAfter().Handlers(db.Statement.Schema.ModelType)
+			for _, f := range handlers {
+				err := f(db, ctx)
+				if err != nil {
+					_ = db.AddError(err)
 				}
 			}
 		}
@@ -296,27 +303,11 @@ func setupDb(db *gorm.DB) {
 			return
 		}
 		if ctx, ok := obj.(*Context); ok {
-			fns, ok := ctx.server.DbOpProcessor.QueryBefore().handlers[db.Statement.Schema.ModelType]
-			if ok {
-				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Dest)
-				}
-			}
-
-			user := ctx.User()
-			if user.IsEmpty() {
-				return
-			}
-			_, ok = db.Statement.Schema.FieldsByName["TenantID"]
-			if ok {
-				if user.IsTenancy() {
-					db = db.Where("tenant_id = ?", user.ID)
-				} else if user.IsUser() {
-					if _, ok := db.Statement.Schema.FieldsByName["UserID"]; !ok {
-						db = db.Where("tenant_id = ? and user_id = ?", user.TenantID, user.ID)
-					} else {
-						db = db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantID)
-					}
+			handlers := ctx.server.DbOpProcessor.QueryBefore().Handlers(db.Statement.Schema.ModelType)
+			for _, f := range handlers {
+				err := f(db, ctx)
+				if err != nil {
+					_ = db.AddError(err)
 				}
 			}
 		}
@@ -333,7 +324,7 @@ func setupDb(db *gorm.DB) {
 			fns, ok := ctx.server.DbOpProcessor.QueryAfter().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx, db.Statement.Dest)
+					_ = f(db, ctx)
 				}
 			}
 		}

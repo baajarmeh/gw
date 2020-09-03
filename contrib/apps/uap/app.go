@@ -10,6 +10,8 @@ import (
 	"github.com/oceanho/gw/contrib/apps/uap/RestAPI"
 	"github.com/oceanho/gw/contrib/apps/uap/Service"
 	"github.com/oceanho/gw/logger"
+	"gorm.io/gorm"
+	"reflect"
 )
 
 var (
@@ -34,6 +36,8 @@ type App struct {
 	onStartFunc    func(state *gw.ServerState)
 	onShutDownFunc func(state *gw.ServerState)
 }
+
+var dbUserTableTyper = reflect.TypeOf(Db.User{})
 
 func New() App {
 	return App{
@@ -77,6 +81,29 @@ func New() App {
 			if err != nil {
 				panic("migrate uap fail")
 			}
+			state.DbOpProcessor().QueryBefore().Register(func(db *gorm.DB, ctx *gw.Context) error {
+				user := ctx.User()
+				if user.IsEmpty() {
+					return nil
+				}
+				_, ok := db.Statement.Schema.FieldsByName["TenantID"]
+				if ok {
+					if user.IsTenancy() {
+						if db.Statement.Schema.ModelType == dbUserTableTyper {
+							db = db.Where("id = ?", user.ID)
+						} else {
+							db = db.Where("tenant_id = ?", user.ID)
+						}
+					} else if user.IsUser() {
+						if _, ok := db.Statement.Schema.FieldsByName["UserID"]; !ok {
+							db = db.Where("tenant_id = ? and user_id = ?", user.TenantID, user.ID)
+						} else {
+							db = db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantID)
+						}
+					}
+				}
+				return nil
+			}, gw.DbHandlerShadowModel{})
 		},
 		onStartFunc: func(state *gw.ServerState) {
 			// Services dependency injection
