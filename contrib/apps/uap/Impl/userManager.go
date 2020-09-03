@@ -138,7 +138,7 @@ func (u UserManager) QueryByUser(tenantId uint64, passport, password string) (gw
 	if err != nil {
 		return gw.EmptyUser, err
 	}
-	user.Permissions = make([]gw.Permission, len(perms))
+	user.Permissions = make([]*gw.Permission, len(perms))
 	copy(user.Permissions, perms)
 	return user, nil
 }

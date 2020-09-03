@@ -72,11 +72,16 @@ func (a AppManager) Create(app gw.AppInfo) error {
 }
 
 func (a AppManager) QueryByName(name string) *gw.AppInfo {
-	var app *gw.AppInfo
-	if err := a.Backend().First(Db.App{}, "name = ?", name).Scan(app).Error; err != nil {
+	var model Db.App
+	if err := a.Backend().First(&model, "name = ?", name).Error; err != nil {
 		return nil
 	}
-	return app
+	var app gw.AppInfo
+	app.ID = model.ID
+	app.Name = model.Name
+	app.Router = model.Router
+	app.Descriptor = model.Descriptor
+	return &app
 }
 
 func DefaultAppManager(state *gw.ServerState) gw.IAppManager {

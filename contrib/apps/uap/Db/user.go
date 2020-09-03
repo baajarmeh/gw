@@ -3,7 +3,6 @@ package Db
 import (
 	"fmt"
 	"github.com/oceanho/gw/backend/gwdb"
-	"time"
 )
 
 var tablePrefix = "gw_uap"
@@ -29,38 +28,4 @@ type User struct {
 
 func (User) TableName() string {
 	return getTableName("user")
-}
-
-type UserProfile struct {
-	gwdb.Model
-	gwdb.HasTenantState
-	Gender   uint8  `gorm:"default:4"` // 1.man, 2.woman, 3.custom, 4.unknown
-	UserID   uint64 `gorm:"index"`
-	Name     string `gorm:"type:varchar(64);index"`
-	Email    string `gorm:"type:varchar(128);index"`
-	Phone    string `gorm:"type:varchar(16);index"`
-	Avatar   string `gorm:"type:varchar(256)"`
-	Address  string `gorm:"type:varchar(256)"`
-	PostCode string `gorm:"type:varchar(16)"`
-	BirthDay *time.Time
-	gwdb.HasCreationState
-	gwdb.HasModificationState
-}
-
-func (UserProfile) TableName() string {
-	return getTableName("user_profile")
-}
-
-type UserAccessKeySecret struct {
-	gwdb.Model
-	gwdb.HasTenantState
-	Key    string
-	Secret string
-	gwdb.HasCreationState
-	gwdb.HasActivationState
-	gwdb.HasModificationState
-}
-
-func (UserAccessKeySecret) TableName() string {
-	return getTableName("user_aks")
 }

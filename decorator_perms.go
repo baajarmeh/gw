@@ -61,11 +61,11 @@ func (p *PermissionDecorator) Merge(decorators ...*PermissionDecorator) {
 	}
 }
 
-func (p *PermissionDecorator) Permissions() []Permission {
-	var perms []Permission
+func (p *PermissionDecorator) Permissions() []*Permission {
+	var perms []*Permission
 	for _, item := range p.permDecorators {
 		item := item
-		if perm, ok := item.MetaData.([]Permission); ok {
+		if perm, ok := item.MetaData.([]*Permission); ok {
 			perms = append(perms, perm...)
 		}
 	}
@@ -153,7 +153,7 @@ func NewCrudPermDecorator(resource string) *PermissionDecorator {
 	return pdList
 }
 
-func NewPermissionDecorator(perms ...Permission) Decorator {
+func NewPermissionDecorator(perms ...*Permission) Decorator {
 	names := make([]string, len(perms))
 	for idx := 0; idx < len(perms); idx++ {
 		names[idx] = perms[idx].Name

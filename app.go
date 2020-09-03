@@ -6,6 +6,7 @@ import (
 
 // AppInfo ...
 type AppInfo struct {
+	ID         uint64
 	Name       string
 	Router     string
 	Descriptor string

@@ -26,26 +26,13 @@ func (pm *PermissionManagerImpl) Store() *gorm.DB {
 }
 
 func (pm *PermissionManagerImpl) Initial() {
-	pm.locker.Lock()
-	defer pm.locker.Unlock()
-	if pm._state > 0 {
-		return
-	}
-	store := pm.Store()
-	var tables []interface{}
-	tables = append(tables, &Db.Permission{})
-	tables = append(tables, &Db.ObjectPermission{})
-	err := store.AutoMigrate(tables...)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (pm *PermissionManagerImpl) Checker() gw.IPermissionChecker {
 	return pm.permissionChecker
 }
 
-func (pm *PermissionManagerImpl) Create(category string, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) Create(perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
@@ -57,22 +44,19 @@ func (pm *PermissionManagerImpl) Create(category string, perms ...gw.Permission)
 	for i := 0; i < len(perms); i++ {
 		p := perms[i]
 		var model Db.Permission
-		uk := fmt.Sprintf("%d-%s-%s", p.TenantId, p.Category, p.Key)
+		uk := fmt.Sprintf("%d-%d-%s", p.TenantId, p.AppID, p.Key)
 		if registered[uk] {
 			continue
 		}
-		if p.Category == "" {
-			p.Category = category
-		}
-		err := db.Model(Db.Permission{}).Where(pm.queryPermMapSQL, p.TenantId, p.Category, p.Key).Take(&model).Error
+		err := db.Model(Db.Permission{}).Where(pm.queryPermMapSQL, p.TenantId, p.AppID, p.Key).Take(&model).Error
 		if err != nil && err.Error() != "record not found" {
 			panic(fmt.Sprintf("check perms has exist fail, err: %v", err))
 		}
 		if model.ID == 0 {
 			model.Key = p.Key
 			model.Name = p.Name
-			model.TenantId = p.TenantId
-			model.Category = p.Category
+			model.TenantID = p.TenantId
+			model.AppID = p.AppID
 			model.Descriptor = p.Descriptor
 			tx.Create(&model)
 			perms[i].ID = model.ID
@@ -83,7 +67,7 @@ func (pm *PermissionManagerImpl) Create(category string, perms ...gw.Permission)
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) Modify(perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) Modify(perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
@@ -96,7 +80,7 @@ func (pm *PermissionManagerImpl) Modify(perms ...gw.Permission) error {
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) Drop(perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) Drop(perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
@@ -107,15 +91,15 @@ func (pm *PermissionManagerImpl) Drop(perms ...gw.Permission) error {
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) Query(tenantId uint64, category string, expr gw.PagerExpr) (
-	total int64, result []gw.Permission, error error) {
-	error = pm.Store().Where("tenant_id = ? and category = ?",
-		tenantId, category).Count(&total).Offset(expr.PageOffset()).Limit(expr.PageSize).Scan(result).Error
+func (pm *PermissionManagerImpl) Query(tenantId, appId uint64, expr gw.PagerExpr) (
+	total int64, result []*gw.Permission, error error) {
+	error = pm.Store().Where("tenant_id = ? and app_id = ?",
+		tenantId, appId).Count(&total).Offset(expr.PageOffset()).Limit(expr.PageSize).Scan(result).Error
 	return
 }
 
 func (pm *PermissionManagerImpl) QueryByUser(tenantId,
-	userId uint64, expr gw.PagerExpr) (total int64, result []gw.Permission, error error) {
+	userId uint64, expr gw.PagerExpr) (total int64, result []*gw.Permission, error error) {
 	var sql = fmt.Sprintf(pm.queryPermSQL, tenantId, userId, Db.UserPermission)
 	var countSql = fmt.Sprintf("select t1.id as total %s", sql)
 	var dataSql = fmt.Sprintf("select t1.* %s limit %d offset %d", sql, expr.PageSize, expr.PageOffset())
@@ -134,16 +118,16 @@ func (pm *PermissionManagerImpl) QueryByUser(tenantId,
 	return total, result, err
 }
 
-func (pm *PermissionManagerImpl) GrantToUser(uid uint64, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) GrantToUser(uid uint64, perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		var pm Db.ObjectPermission
+		var pm Db.PermissionMapping
 		pm.PermissionID = p.ID
-		pm.TenantId = p.TenantId
+		pm.TenantID = p.TenantId
 		pm.Type = Db.UserPermission
 		pm.ObjectID = uid
 		tx.Create(&pm)
@@ -151,16 +135,16 @@ func (pm *PermissionManagerImpl) GrantToUser(uid uint64, perms ...gw.Permission)
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		var pm Db.ObjectPermission
+		var pm Db.PermissionMapping
 		pm.PermissionID = p.ID
-		pm.TenantId = p.TenantId
+		pm.TenantID = p.TenantId
 		pm.Type = Db.RolePermission
 		pm.ObjectID = roleId
 		tx.Create(&pm)
@@ -168,26 +152,26 @@ func (pm *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...gw.Permissi
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		tx.Delete(Db.ObjectPermission{}, pm.delPermMapSQL, uid, p.TenantId, p.ID, Db.UserPermission)
+		tx.Delete(Db.PermissionMapping{}, pm.delPermMapSQL, uid, p.TenantId, p.ID, Db.UserPermission)
 	}
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...gw.Permission) error {
+func (pm *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		tx.Delete(Db.ObjectPermission{}, pm.delPermMapSQL, roleId, p.TenantId, p.ID, Db.RolePermission)
+		tx.Delete(Db.PermissionMapping{}, pm.delPermMapSQL, roleId, p.TenantId, p.ID, Db.RolePermission)
 	}
 	return tx.Commit().Error
 }
@@ -195,7 +179,7 @@ func (pm *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...gw.Permi
 func DefaultPermissionManager(state *gw.ServerState) gw.IPermissionManager {
 	cnf := state.ApplicationConfig()
 	ptn := Db.Permission{}.TableName()
-	pmtn := Db.ObjectPermission{}.TableName()
+	pmtn := Db.PermissionMapping{}.TableName()
 	queryPermSQL := fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id", ptn, pmtn)
 	queryPermSQL = queryPermSQL + " where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d"
 	return &PermissionManagerImpl{
@@ -204,7 +188,7 @@ func DefaultPermissionManager(state *gw.ServerState) gw.IPermissionManager {
 		store:             state.Store(),
 		queryPermSQL:      queryPermSQL,
 		delPermMapSQL:     " object_id = ? and tenant_id = ? and permission_id = ? and type = ? ",
-		queryPermMapSQL:   " tenant_id = ? and category = ? and `key` = ? ",
+		queryPermMapSQL:   " tenant_id = ? and app_id = ? and `key` = ? ",
 		permissionChecker: state.PermissionChecker(),
 	}
 }

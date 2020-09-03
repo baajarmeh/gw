@@ -12,29 +12,37 @@ import (
 type Permission struct {
 	ID         uint64
 	TenantId   uint64
-	Category   string
+	AppID      uint64
+	AppName    string
 	Key        string
 	Name       string
 	Descriptor string
 }
 
-func (p Permission) String() string {
+func (p *Permission) String() string {
 	b, _ := gwjsoner.Marshal(p)
 	return string(b)
 }
 
-func (p Permission) IdStr() string {
+func (p *Permission) IdStr() string {
 	if p.TenantId > 0 {
-		return fmt.Sprintf("%d.%s.%s", p.TenantId, p.Category, p.Key)
+		return fmt.Sprintf("%d.%d.%s", p.TenantId, p.AppID, p.Key)
 	}
-	return fmt.Sprintf("%s.%s", p.Category, p.Key)
+	return fmt.Sprintf("%d.%s", p.AppID, p.Key)
 }
 
-func NewPerm(key, name, descriptor string) Permission {
-	return Permission{
+func NewPerm(key, name, descriptor string) *Permission {
+	return &Permission{
 		Key:        key,
 		Name:       name,
 		Descriptor: descriptor,
+	}
+}
+
+func Visit(perms []*Permission, app *AppInfo) {
+	for i := 0; i < len(perms); i++ {
+		perms[i].AppID = app.ID
+		perms[i].AppName = app.Name
 	}
 }
 
@@ -73,7 +81,7 @@ func NewPermByNames(resource string, permNames ...string) []Permission {
 	return perms
 }
 
-func NewPermSameKeyName(kn, descriptor string) Permission {
+func NewPermSameKeyName(kn, descriptor string) *Permission {
 	return NewPerm(kn, kn, descriptor)
 }
 
@@ -115,21 +123,21 @@ type ISessionStateManager interface {
 }
 
 type IPermissionChecker interface {
-	Check(user User, perms ...Permission) bool
+	Check(user User, perms ...*Permission) bool
 }
 
 type IPermissionManager interface {
 	Initial()
 	Checker() IPermissionChecker
-	Create(category string, perms ...Permission) error
-	Modify(perms ...Permission) error
-	Drop(perms ...Permission) error
-	Query(tenantId uint64, category string, expr PagerExpr) (total int64, result []Permission, error error)
-	QueryByUser(tenantId, userId uint64, expr PagerExpr) (total int64, result []Permission, error error)
-	GrantToUser(uid uint64, perms ...Permission) error
-	GrantToRole(roleId uint64, perms ...Permission) error
-	RevokeFromUser(uid uint64, perms ...Permission) error
-	RevokeFromRole(roleId uint64, perms ...Permission) error
+	Create(perms ...*Permission) error
+	Modify(perms ...*Permission) error
+	Drop(perms ...*Permission) error
+	Query(tenantId uint64, appId uint64, expr PagerExpr) (total int64, result []*Permission, error error)
+	QueryByUser(tenantId, userId uint64, expr PagerExpr) (total int64, result []*Permission, error error)
+	GrantToUser(uid uint64, perms ...*Permission) error
+	GrantToRole(roleId uint64, perms ...*Permission) error
+	RevokeFromUser(uid uint64, perms ...*Permission) error
+	RevokeFromRole(roleId uint64, perms ...*Permission) error
 }
 
 var (
@@ -170,7 +178,7 @@ func DefaultPermissionManager(state *ServerState) *DefaultPermissionManagerImpl 
 
 type DefaultPassPermissionCheckerImpl struct {
 	State           *ServerState
-	CustomCheckFunc func(user User, perms ...Permission) bool
+	CustomCheckFunc func(user User, perms ...*Permission) bool
 }
 
 func DefaultPassPermissionChecker(state *ServerState) IPermissionChecker {
@@ -180,7 +188,7 @@ func DefaultPassPermissionChecker(state *ServerState) IPermissionChecker {
 	}
 }
 
-func (a DefaultPassPermissionCheckerImpl) Check(user User, perms ...Permission) bool {
+func (a DefaultPassPermissionCheckerImpl) Check(user User, perms ...*Permission) bool {
 	if a.CustomCheckFunc != nil {
 		return a.CustomCheckFunc(user, perms...)
 	}
@@ -209,41 +217,41 @@ func (p *DefaultPermissionManagerImpl) Checker() IPermissionChecker {
 	return p.permissionChecker
 }
 
-func (p *DefaultPermissionManagerImpl) Create(category string, perms ...Permission) error {
+func (p *DefaultPermissionManagerImpl) Create(perms ...*Permission) error {
 	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) Modify(perms ...Permission) error {
+func (p *DefaultPermissionManagerImpl) Modify(perms ...*Permission) error {
 	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) Drop(perms ...Permission) error {
+func (p *DefaultPermissionManagerImpl) Drop(perms ...*Permission) error {
 	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) Query(tenantId uint64, category string, expr PagerExpr) (
-	total int64, result []Permission, error error) {
+func (p *DefaultPermissionManagerImpl) Query(tenantId uint64, appId uint64, expr PagerExpr) (
+	total int64, result []*Permission, error error) {
 	return 0, nil, nil
 }
 
 func (p *DefaultPermissionManagerImpl) QueryByUser(tenantId, userId uint64, expr PagerExpr) (
-	total int64, result []Permission, error error) {
+	total int64, result []*Permission, error error) {
 	return 0, nil, nil
 }
 
-func (p *DefaultPermissionManagerImpl) GrantToUser(uid uint64, perms ...Permission) error {
+func (p *DefaultPermissionManagerImpl) GrantToUser(uid uint64, perms ...*Permission) error {
 	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) GrantToRole(roleId uint64, perms ...Permission) error {
+func (p *DefaultPermissionManagerImpl) GrantToRole(roleId uint64, perms ...*Permission) error {
 	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) RevokeFromUser(uid uint64, perms ...Permission) error {
+func (p *DefaultPermissionManagerImpl) RevokeFromUser(uid uint64, perms ...*Permission) error {
 	return nil
 }
 
-func (p *DefaultPermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...Permission) error {
+func (p *DefaultPermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...*Permission) error {
 	return nil
 }
 
@@ -316,12 +324,12 @@ type User struct {
 	ID          uint64
 	TenantId    uint64
 	Passport    string
-	Secret      string                `gorm:"-"`
-	Password    string                `gorm:"-"` // Hash string
-	UserType    UserType              `gorm:"-"` // gw.AuthUserType
-	Roles       []string              `gorm:"-"`
-	Permissions []Permission          `gorm:"-"`
-	PermMaps    map[string]Permission `gorm:"-"`
+	Secret      string                 `gorm:"-"`
+	Password    string                 `gorm:"-"` // Hash string
+	UserType    UserType               `gorm:"-"` // gw.AuthUserType
+	Roles       []string               `gorm:"-"`
+	Permissions []*Permission          `gorm:"-"`
+	PermMaps    map[string]*Permission `gorm:"-"`
 }
 
 func (user User) MarshalBinary() (data []byte, err error) {

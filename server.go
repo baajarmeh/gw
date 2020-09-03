@@ -169,6 +169,10 @@ func (ss *ServerState) ServerOptions() *ServerOption {
 	return ss.s.options
 }
 
+func (ss *ServerState) AppManager() IAppManager {
+	return ss.s.AppManager
+}
+
 func (ss *ServerState) ApplicationConfig() *conf.ApplicationConfig {
 	return ss.s.conf
 }
@@ -663,8 +667,8 @@ func useApps(s *HostServer) {
 
 func onStarts(s *HostServer, state *ServerState) {
 	for _, app := range s.apps {
-		app.instance.OnStart(state)
 		_ = s.AppManager.Create(app.instance.Meta())
+		app.instance.OnStart(state)
 	}
 }
 

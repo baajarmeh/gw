@@ -1,6 +1,7 @@
 package Db
 
 import (
+	"fmt"
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/backend/gwdb"
 	"gorm.io/gorm"
@@ -32,10 +33,18 @@ type Credential struct {
 	gwdb.HasSoftDeletionState
 }
 
+var (
+	ErrorCredentialKeyIsEmpty = fmt.Errorf("credential key is empty")
+)
+
 func (cred *Credential) BeforeCreate(tx *gorm.DB) error {
-	ctx, ok := gw.GetContextFromDB(tx)
-	if ok {
-		cred.Key = ctx.Server().IDGenerator.NewStrID(32)
+	if cred.Key == "" {
+		ctx, ok := gw.GetContextFromDB(tx)
+		if ok {
+			cred.Key = ctx.Server().IDGenerator.NewStrID(32)
+		} else {
+			return ErrorCredentialKeyIsEmpty
+		}
 	}
 	return nil
 }

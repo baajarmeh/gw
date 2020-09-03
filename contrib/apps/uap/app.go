@@ -21,6 +21,8 @@ var (
 	CredentialDecorator = gw.NewPermAllDecorator("Credential")
 )
 
+const appName = "gw.uap"
+
 type App struct {
 	name            string
 	router          string
@@ -33,7 +35,7 @@ type App struct {
 
 func New() App {
 	return App{
-		name:   "gw.uap",
+		name:   appName,
 		router: "uap",
 		registerFunc: func(router *gw.RouterGroup) {
 			router.RegisterRestAPIs(&RestAPI.User{})
@@ -64,9 +66,10 @@ func New() App {
 				Db.UserProfile{},
 				Db.Role{},
 				Db.UserRole{},
-				Db.Permission{},
-				Db.ObjectPermission{},
 				Db.Credential{},
+				Db.Permission{},
+				Db.PermissionMapping{},
+				Db.UserAccessKeySecret{},
 			)
 			if err != nil {
 				panic("migrate uap fail")
@@ -92,8 +95,9 @@ func New() App {
 
 func (a App) Meta() gw.AppInfo {
 	return gw.AppInfo{
-		Name:   a.name,
-		Router: a.router,
+		Name:       a.name,
+		Router:     a.router,
+		Descriptor: "gw user account platform",
 	}
 }
 
@@ -119,12 +123,14 @@ func (a App) OnShutDown(state *gw.ServerState) {
 
 // initial permission
 func initPerms(state *gw.ServerState) {
-	var perms []gw.Permission
+	var perms []*gw.Permission
+	var appInfo = state.AppManager().QueryByName(appName)
 	perms = append(perms, UserDecorator.Permissions()...)
 	perms = append(perms, TenancyDecorator.Permissions()...)
 	perms = append(perms, AksDecorator.Permissions()...)
 	perms = append(perms, RoleDecorator.Permissions()...)
-	err := state.PermissionManager().Create("uap", perms...)
+	gw.Visit(perms, appInfo)
+	err := state.PermissionManager().Create(perms...)
 	if err != nil {
 		logger.Error("initial permissions fail, err: %v", err)
 		return
