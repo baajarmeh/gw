@@ -1,15 +1,8 @@
 package Db
 
 import (
-	"fmt"
 	"github.com/oceanho/gw/backend/gwdb"
 )
-
-var tablePrefix = "gw_uap"
-
-func getTableName(name string) string {
-	return fmt.Sprintf("%s_%s", tablePrefix, name)
-}
 
 type User struct {
 	gwdb.Model
