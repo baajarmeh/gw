@@ -6,8 +6,8 @@ import (
 )
 
 func TestNewAllPermDecorator(t *testing.T) {
-	resource := "User"
-	permList := NewPermAllDecorator(resource)
+	resName := "User"
+	permList := NewPermAllDecorator(resName)
 	assert.True(t, permList.Has("Creation"))
 	assert.True(t, permList.Has("Deletion"))
 	assert.True(t, permList.Has("Modification"))
@@ -17,8 +17,8 @@ func TestNewAllPermDecorator(t *testing.T) {
 }
 
 func TestNewCrudPermDecorator(t *testing.T) {
-	resource := "User"
-	permList := NewPermAllDecorator(resource)
+	resName := "User"
+	permList := NewPermAllDecorator(resName)
 	assert.True(t, permList.Has("Creation"))
 	assert.True(t, permList.Has("Deletion"))
 	assert.True(t, permList.Has("Modification"))

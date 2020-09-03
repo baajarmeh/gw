@@ -53,25 +53,25 @@ var DefaultPermNames = []string{
 
 //
 // NewPermAll ...
-// resource like: AuthUser, Role, Order etc.
+// resName like: AuthUser, Role, Order etc.
 // returns as
 //  ReadAllUserPermission, CreationUserPermission,
 //  ModificationUserPermission, DeletionUserPermission, DisableUserPermission, ReadDetailUserPermission etc.
 //
-func NewPermAll(resource string) []Permission {
-	return NewPermByNames(resource, DefaultPermNames...)
+func NewPermAll(resName string) []Permission {
+	return NewPermByNames(resName, DefaultPermNames...)
 }
 
 //
 // NewPermByNames ...
-// resource like: AuthUser, Role, Order etc.
+// resName like: AuthUser, Role, Order etc.
 // permNames like: ReadAll, Creation, Modification,Deletion, Disable, ReadDetail etc.
 //
-func NewPermByNames(resource string, permNames ...string) []Permission {
+func NewPermByNames(resName string, permNames ...string) []Permission {
 	var perms []Permission
 	for _, p := range permNames {
-		kn := fmt.Sprintf("%s%sPermission", p, resource)
-		desc := fmt.Sprintf("Define A %s %s permission", p, resource)
+		kn := fmt.Sprintf("%s%sPermission", p, resName)
+		desc := fmt.Sprintf("Define A %s %s permission", p, resName)
 		perms = append(perms, Permission{
 			Key:        kn,
 			Name:       kn,

@@ -5,24 +5,29 @@ import "github.com/oceanho/gw"
 type App struct {
 	name            string
 	router          string
-	registerFunc    func(router *gw.RouterGroup)
-	useFunc         func(option *gw.ServerOption)
-	migrateFunc     func(state *gw.ServerState)
+	onPrepareFunc   func(state *gw.ServerState)
 	onStartFunc     func(state *gw.ServerState)
 	onShoutDownFunc func(state *gw.ServerState)
+	registerFunc    func(router *gw.RouterGroup)
+	useFunc         func(option *gw.ServerOption)
 }
+
+const (
+	appName   = "gw.pvm"
+	appRouter = "oceanho/gw-pvm"
+)
 
 func New() gw.App {
 	var app = &App{
-		name:   "pvm",
-		router: "oceanho/gw-pvm",
+		name:   appName,
+		router: appRouter,
 		registerFunc: func(router *gw.RouterGroup) {
 
 		},
 		useFunc: func(option *gw.ServerOption) {
 
 		},
-		migrateFunc: func(state *gw.ServerState) {
+		onPrepareFunc: func(state *gw.ServerState) {
 
 		},
 		onStartFunc: func(state *gw.ServerState) {
@@ -35,12 +40,12 @@ func New() gw.App {
 	return app
 }
 
-func (a App) Name() string {
-	return a.name
-}
-
-func (a App) Router() string {
-	return a.router
+func (a App) Meta() gw.AppInfo {
+	return gw.AppInfo{
+		Name:       a.name,
+		Router:     a.router,
+		Descriptor: "Gw Product Version Manager System.",
+	}
 }
 
 func (a App) Register(router *gw.RouterGroup) {
@@ -51,8 +56,8 @@ func (a App) Use(option *gw.ServerOption) {
 	a.useFunc(option)
 }
 
-func (a App) Migrate(state *gw.ServerState) {
-	a.migrateFunc(state)
+func (a App) OnPrepare(state *gw.ServerState) {
+	a.onPrepareFunc(state)
 }
 
 func (a App) OnStart(state *gw.ServerState) {

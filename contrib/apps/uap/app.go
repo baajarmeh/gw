@@ -21,7 +21,10 @@ var (
 	CredentialDecorator = gw.NewPermAllDecorator("Credential")
 )
 
-const appName = "gw.uap"
+const (
+	appName   = "gw.uap"
+	appRouter = "oceanho/gw-uap"
+)
 
 type App struct {
 	name            string
@@ -36,7 +39,7 @@ type App struct {
 func New() App {
 	return App{
 		name:   appName,
-		router: "uap",
+		router: appRouter,
 		registerFunc: func(router *gw.RouterGroup) {
 			router.RegisterRestAPIs(&RestAPI.User{})
 			router.GET("credential/:id", Api.QueryCredentialById, Api.QueryCredentialByIdDecorators())
@@ -129,6 +132,7 @@ func initPerms(state *gw.ServerState) {
 	perms = append(perms, TenancyDecorator.Permissions()...)
 	perms = append(perms, AksDecorator.Permissions()...)
 	perms = append(perms, RoleDecorator.Permissions()...)
+	perms = append(perms, CredentialDecorator.Permissions()...)
 	gw.Visit(perms, appInfo)
 	err := state.PermissionManager().Create(perms...)
 	if err != nil {

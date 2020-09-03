@@ -78,7 +78,7 @@ type internalApp struct {
 
 // IDynamicRestAPI represents a Dynamic Rest Style API interface.
 type IDynamicRestAPI interface {
-	// Name define a API that returns Your RestAPI name(such as resource name)
+	// Name define a API that returns Your RestAPI name(such as resName name)
 	// It's will be used as router prefix.
 	Name() string
 }

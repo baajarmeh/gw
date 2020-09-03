@@ -18,6 +18,7 @@ var (
 )
 
 type PermissionDecorator struct {
+	resName        string
 	locker         sync.Mutex
 	permDecorators map[string]Decorator
 }
@@ -49,6 +50,14 @@ func (p *PermissionDecorator) ReadDetail() Decorator {
 func (p *PermissionDecorator) Has(name string) bool {
 	var _, ok = p.permDecorators[name]
 	return ok
+}
+
+func (p *PermissionDecorator) Extend(op string) *PermissionDecorator {
+	if p.Has(op) {
+		return p
+	}
+	p.permDecorators[op] = NewPermDecorator(op, p.resName)
+	return p
 }
 
 func (p *PermissionDecorator) Merge(decorators ...*PermissionDecorator) {
@@ -84,72 +93,62 @@ func (p *PermissionDecorator) All() []Decorator {
 
 // NewPermAllDecorator returns a PermissionDecoratorList, that has
 // Administration,Creation,Deletion,Modification,RealAll,ReadDetail Permission
-func NewPermAllDecorator(resource string) *PermissionDecorator {
-	var pdList = NewCrudPermDecorator(resource)
-	pdList.permDecorators["Administration"] = NewAdministrationPermDecorator(resource)
+func NewPermAllDecorator(resName string) *PermissionDecorator {
+	var pdList = NewCrudPermDecorator(resName)
+	pdList.permDecorators["All"] = NewAdministrationPermDecorator(resName)
 	return pdList
 }
 
-// NewPermDecorator returns a resources of has perm Permission Decorator.
-func NewPermDecorator(perm, resource string) Decorator {
-	return NewPermDecoratorWithSuffix(perm, resource, "")
-}
-
-// NewPermDecoratorWithSuffix returns a resources of has perm Permission Decorator.
-func NewPermDecoratorWithSuffix(perm, resource string, suffix string) Decorator {
-	kn := fmt.Sprintf("%s%s%sPermission", perm, resource, suffix)
-	desc := fmt.Sprintf("A %s%s permssion for %s", perm, suffix, resource)
+// NewPermDecorator returns a resNames of has perm Permission Decorator.
+func NewPermDecorator(op, resName string) Decorator {
+	kn := fmt.Sprintf("%s.%s", resName, op)
+	desc := fmt.Sprintf("represents has %s permssion on resource %s", op, resName)
 	return NewPermissionDecorator(NewPermSameKeyName(kn, desc))
 }
 
-// NewPermDecoratorWithPrefix returns a resources of has perm Permission Decorator.
-func NewPermDecoratorWithPrefix(perm, resource string, prefix string) Decorator {
-	kn := fmt.Sprintf("%s%s%sPermission", perm, prefix, resource)
-	desc := fmt.Sprintf("A %s%s permssion for %s", perm, prefix, resource)
-	return NewPermissionDecorator(NewPermSameKeyName(kn, desc))
+// NewAdministrationPermDecorator returns a resNames of has full(administration) Permission object.
+func NewAdministrationPermDecorator(resName string) Decorator {
+	return NewPermDecorator("All", resName)
 }
 
-// NewAdministrationPermDecorator returns a resources of has full(administration) Permission object.
-func NewAdministrationPermDecorator(resource string) Decorator {
-	return NewPermDecorator("Administration", resource)
+// NewCreationPermDecorator returns a resNames of has Creation Permission object.
+func NewCreationPermDecorator(resName string) Decorator {
+	return NewPermDecorator("Create", resName)
 }
 
-// NewCreationPermDecorator returns a resources of has Creation Permission object.
-func NewCreationPermDecorator(resource string) Decorator {
-	return NewPermDecorator("Creation", resource)
+// NewModificationPermDecorator returns a resNames of has Modification Permission object.
+func NewModificationPermDecorator(resName string) Decorator {
+	return NewPermDecorator("Modify", resName)
 }
 
-// NewModificationPermDecorator returns a resources of has Modification Permission object.
-func NewModificationPermDecorator(resource string) Decorator {
-	return NewPermDecorator("Modification", resource)
+// NewDeletionPermDecorator returns a has Deletion Permission of resNames.
+func NewDeletionPermDecorator(resName string) Decorator {
+	return NewPermDecorator("Delete", resName)
 }
 
-// NewDeletionPermDecorator returns a has Deletion Permission of resources.
-func NewDeletionPermDecorator(resource string) Decorator {
-	return NewPermDecorator("Deletion", resource)
+// NewReadPermDecorator returns a has Read detail Permission of resNames.
+func NewReadPermDecorator(resName string) Decorator {
+	return NewPermDecorator("Read", resName)
 }
 
-// NewReadDetailPermDecorator returns a has Read detail Permission of resources.
-func NewReadDetailPermDecorator(resource string) Decorator {
-	return NewPermDecoratorWithSuffix("Read", resource, "Detail")
-}
+// NewQueryPermDecorator returns a has Read all/pager List Permission of resNames.
+func NewQueryPermDecorator(resName string) Decorator {
+	return NewPermDecorator("Query", resName)
 
-// NewReadAllPermDecorator returns a has Read all/pager List Permission of resources.
-func NewReadAllPermDecorator(resource string) Decorator {
-	return NewPermDecoratorWithPrefix("Read", resource, "All")
 }
 
 // NewCrudPermDecorator returns
-// A resources Create, Delete,
-func NewCrudPermDecorator(resource string) *PermissionDecorator {
+// A resNames Create, Delete,
+func NewCrudPermDecorator(resName string) *PermissionDecorator {
 	var pdList = &PermissionDecorator{
+		resName:        resName,
 		permDecorators: make(map[string]Decorator),
 	}
-	pdList.permDecorators["ReadAll"] = NewReadAllPermDecorator(resource)
-	pdList.permDecorators["Creation"] = NewCreationPermDecorator(resource)
-	pdList.permDecorators["Deletion"] = NewDeletionPermDecorator(resource)
-	pdList.permDecorators["Modification"] = NewModificationPermDecorator(resource)
-	pdList.permDecorators["ReadDetail"] = NewReadDetailPermDecorator(resource)
+	pdList.permDecorators["Query"] = NewQueryPermDecorator(resName)
+	pdList.permDecorators["Create"] = NewCreationPermDecorator(resName)
+	pdList.permDecorators["Delete"] = NewDeletionPermDecorator(resName)
+	pdList.permDecorators["Modify"] = NewModificationPermDecorator(resName)
+	pdList.permDecorators["Read"] = NewReadPermDecorator(resName)
 	return pdList
 }
 

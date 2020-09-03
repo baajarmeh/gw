@@ -2,4 +2,4 @@ package infra
 
 import "github.com/oceanho/gw"
 
-var PermissionCreateTestData = gw.NewPermSameKeyName("create-tester-permission", "Create a tester resource permission.")
+var PermissionCreateTestData = gw.NewPermSameKeyName("create-tester-permission", "Create a tester resName permission.")
