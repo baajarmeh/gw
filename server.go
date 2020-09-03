@@ -38,6 +38,7 @@ type ServerOption struct {
 	IDGeneratorHandler       func(conf *conf.ApplicationConfig) IdentifierGenerator
 	UserManagerHandler       func(state *ServerState) IUserManager
 	DIProviderHandler        func(state *ServerState) IDIProvider
+	AppManagerHandler        func(state *ServerState) IAppManager
 	AuthManagerHandler       AuthManagerHandler
 	AuthParamResolvers       []IAuthParamResolver
 	AuthParamCheckerHandler  func(state *ServerState) IAuthParamChecker
@@ -71,6 +72,7 @@ type HostServer struct {
 	PermissionChecker      IPermissionChecker
 	PermissionManager      IPermissionManager
 	UserManager            IUserManager
+	AppManager             IAppManager
 	IDGenerator            IdentifierGenerator
 	DIProvider             IDIProvider
 	EventManager           IEventManager
@@ -241,6 +243,9 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		StoreCacheSetupHandler: appDefaultStoreCacheSetupHandler,
 		IDGeneratorHandler: func(conf *conf.ApplicationConfig) IdentifierGenerator {
 			return DefaultIdentifierGenerator()
+		},
+		AppManagerHandler: func(state *ServerState) IAppManager {
+			return EmptyAppManager(state)
 		},
 		UserManagerHandler: func(state *ServerState) IUserManager {
 			return DefaultUserManager(state)
@@ -414,7 +419,7 @@ func (s *HostServer) Register(apps ...App) {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	for _, app := range apps {
-		appName := app.Name()
+		appName := app.Meta().Name
 		if _, ok := s.apps[appName]; !ok {
 			s.apps[appName] = internalApp{
 				instance:    app,
@@ -446,7 +451,7 @@ func (s *HostServer) Patch(apps ...App) {
 	defer s.locker.Unlock()
 	for _, app := range apps {
 		app := app
-		appName := app.Name()
+		appName := app.Meta().Name
 		if _, ok := s.apps[appName]; !ok {
 			s.apps[appName] = internalApp{
 				instance:    app,
@@ -581,7 +586,13 @@ func initialServer(s *HostServer) *ServerState {
 			return DefaultPassPermissionChecker(state)
 		}
 	}
+	if s.options.AppConfigHandler == nil {
+		s.options.AppManagerHandler = func(state *ServerState) IAppManager {
+			return EmptyAppManager(state)
+		}
+	}
 
+	s.AppManager = s.options.AppManagerHandler(state)
 	s.UserManager = s.options.UserManagerHandler(state)
 	s.AuthManager = s.options.AuthManagerHandler(state)
 	s.AuthParamResolvers = s.options.AuthParamResolvers
@@ -653,20 +664,21 @@ func useApps(s *HostServer) {
 func onStarts(s *HostServer, state *ServerState) {
 	for _, app := range s.apps {
 		app.instance.OnStart(state)
+		_ = s.AppManager.Create(app.instance.Meta())
 	}
 }
 
 func registerApps(s *HostServer, state *ServerState) {
 	for _, app := range s.apps {
+		meta := app.instance.Meta()
 		if !app.isPatchOnly {
-			logger.Info("register app: %s", app.instance.Name())
-			rg := s.router.Group(app.instance.Router(), nil)
+			logger.Info("register app: %s", meta.Name)
+			rg := s.router.Group(meta.Router, nil)
 			app.instance.Register(rg)
-
 		}
 		// migrate
-		logger.Info("migrate app: %s", app.instance.Name())
-		app.instance.Migrate(state)
+		logger.Info("migrate app: %s", meta.Name)
+		app.instance.OnPrepare(state)
 	}
 }
 

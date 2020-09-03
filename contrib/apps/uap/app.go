@@ -26,7 +26,7 @@ type App struct {
 	router          string
 	registerFunc    func(router *gw.RouterGroup)
 	useFunc         func(option *gw.ServerOption)
-	migrateFunc     func(state *gw.ServerState)
+	onPrepareFunc   func(state *gw.ServerState)
 	onStartFunc     func(state *gw.ServerState)
 	onShoutDownFunc func(state *gw.ServerState)
 }
@@ -40,6 +40,9 @@ func New() App {
 			router.GET("credential/:id", Api.QueryCredentialById, Api.QueryCredentialByIdDecorators())
 		},
 		useFunc: func(option *gw.ServerOption) {
+			option.AppManagerHandler = func(state *gw.ServerState) gw.IAppManager {
+				return Impl.DefaultAppManager(state)
+			}
 			option.AuthManagerHandler = func(state *gw.ServerState) gw.IAuthManager {
 				return Impl.DefaultAuthManager(state)
 			}
@@ -53,9 +56,10 @@ func New() App {
 				return Impl.DefaultSessionManager(state)
 			}
 		},
-		migrateFunc: func(state *gw.ServerState) {
+		onPrepareFunc: func(state *gw.ServerState) {
 			var uapConf = Config.GetUAP(state.ApplicationConfig())
-			err := state.Store().GetDbStoreByName(uapConf.Auth.Backend.Name).AutoMigrate(
+			err := state.Store().GetDbStoreByName(uapConf.Backend.Name).AutoMigrate(
+				Db.App{},
 				Db.User{},
 				Db.UserProfile{},
 				Db.Role{},
@@ -86,12 +90,11 @@ func New() App {
 	}
 }
 
-func (a App) Name() string {
-	return a.name
-}
-
-func (a App) Router() string {
-	return a.router
+func (a App) Meta() gw.AppInfo {
+	return gw.AppInfo{
+		Name:   a.name,
+		Router: a.router,
+	}
 }
 
 func (a App) Register(router *gw.RouterGroup) {
@@ -102,8 +105,8 @@ func (a App) Use(opt *gw.ServerOption) {
 	a.useFunc(opt)
 }
 
-func (a App) Migrate(state *gw.ServerState) {
-	a.migrateFunc(state)
+func (a App) OnPrepare(state *gw.ServerState) {
+	a.onPrepareFunc(state)
 }
 
 func (a App) OnStart(state *gw.ServerState) {
@@ -136,8 +139,8 @@ func initUsers(state *gw.ServerState) {
 	for _, u := range uapCnf.User.Users {
 		usr := u
 		var user gw.User
+		user.Passport = usr.User
 		user.TenantId = usr.TenantId
-		user.Passport = usr.Passport
 		user.Secret = passwordSigner.Sign(usr.Secret)
 		user.UserType = usr.UserType
 		err := userManager.Create(&user)

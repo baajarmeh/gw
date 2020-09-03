@@ -166,29 +166,30 @@ settings:
 custom:
   gwcontrib:
     uap:
+      backend:
+        name: primary
       sessionManager:
         cache:
           name: primary
           prefix: gw-uap-ss
           expirationHours: "168"
       permissionManager:
-        backend:
-          name: primary
         cache:
           enable: True
           name: primary
           prefix: gw-uap-perm
           expirationHours: "168"
-      authManager:
-        backend:
+      appManager:
+        cache:
           name: primary
+          prefix: gw-uap-app
+          expirationHours: "168"
+      authManager:
         cache:
           name: primary
           prefix: gw-uap-auth
           expirationHours: "168"
       userManager:
-        backend:
-          name: primary
         cache:
           enable: True
           name: primary
@@ -196,13 +197,11 @@ custom:
           expirationHours: "168"
         initUsers:
         - user: admin
-          passport: admin
           tenantId: "0"
           desc: Administrator
           type: "1"
           secret: admin@123456 # go run cmd/gwcli/main.go gen-pass-hash <Plain Password>
         - user: lanhu
-          passport: lanhu
           tenantId: "0"
           desc: Tenancy
           type: "2"

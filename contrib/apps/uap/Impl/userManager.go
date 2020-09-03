@@ -159,8 +159,8 @@ func DefaultUserManager(state *gw.ServerState) UserManager {
 	var cnf = Config.GetUAP(state.ApplicationConfig())
 	return UserManager{
 		ServerState:      state,
-		cacheStoreName:   cnf.User.Backend.Name,
-		backendStoreName: cnf.User.Cache.Name,
+		cacheStoreName:   cnf.User.Cache.Name,
+		backendStoreName: cnf.Backend.Name,
 		cachePrefix:      cnf.User.Cache.Prefix,
 		cacheExpiration:  time.Hour * time.Duration(cnf.User.Cache.ExpirationHours), // One week.
 	}

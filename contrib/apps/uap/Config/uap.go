@@ -7,7 +7,12 @@ import (
 )
 
 type Uap struct {
+	Backend struct {
+		Name string `json:"name" yaml:"name" toml:"name"`
+		//Prefix string `json:"prefix" yaml:"prefix" toml:"prefix"`
+	} `json:"backend" yaml:"backend" toml:"backend"`
 	Auth       SectionConfig `json:"authManager" yaml:"authManager" toml:"authManager"`
+	AppManager SectionConfig `json:"appManager" yaml:"appManager" toml:"appManager"`
 	Session    SectionConfig `json:"sessionManager" yaml:"sessionManager" toml:"sessionManager"`
 	Permission SectionConfig `json:"permissionManager" yaml:"permissionManager" toml:"permissionManager"`
 	User       struct {
@@ -18,7 +23,6 @@ type Uap struct {
 
 type User struct {
 	User     string      `json:"user" yaml:"user" toml:"user"`
-	Passport string      `json:"passport" yaml:"passport" toml:"passport"`
 	Secret   string      `json:"secret" yaml:"secret" toml:"secret"`
 	UserType gw.UserType `json:"type,string" yaml:"type" toml:"type"`
 	TenantId uint64      `json:"tenantId,string" yaml:"tenantId" toml:"tenantId"`
@@ -26,10 +30,6 @@ type User struct {
 }
 
 type SectionConfig struct {
-	Backend struct {
-		Name string `json:"name" yaml:"name" toml:"name"`
-		//Prefix string `json:"prefix" yaml:"prefix" toml:"prefix"`
-	} `json:"backend" yaml:"backend" toml:"backend"`
 	Cache struct {
 		Enable          bool   `json:"enable" yaml:"enable" toml:"enable"`
 		Name            string `json:"name" yaml:"name" toml:"name"`

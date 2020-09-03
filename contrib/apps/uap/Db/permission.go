@@ -4,11 +4,14 @@ import "github.com/oceanho/gw/backend/gwdb"
 
 type Permission struct {
 	gwdb.Model
-	gwdb.HasTenantState
-	Category   string `json:"category" gorm:"type:varchar(32);not null"`
-	Key        string `json:"key" gorm:"type:varchar(64);not null"`
-	Name       string `json:"name" gorm:"type:varchar(128); not null"`
-	Descriptor string `json:"descriptor" gorm:"type:varchar(256)"`
+	TenantId   uint64 `gorm:"UNIQUEINDEX:idx_permission_tenant_id_app_id;not null"`
+	AppId      uint64 `gorm:"UNIQUEINDEX:idx_permission_tenant_id_app_id;not null"`
+	Module     string `gorm:"type:varchar(64);not null"`
+	Resource   string `gorm:"type:varchar(64);not null"`
+	Category   string `gorm:"type:varchar(128);not null"`
+	Key        string `gorm:"type:varchar(64);not null"`
+	Name       string `gorm:"type:varchar(128);not null"`
+	Descriptor string `gorm:"type:varchar(256)"`
 	gwdb.HasCreationState
 	gwdb.HasModificationState
 }

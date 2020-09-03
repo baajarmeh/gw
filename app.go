@@ -4,6 +4,37 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AppInfo ...
+type AppInfo struct {
+	Name       string
+	Router     string
+	Descriptor string
+}
+
+// IAppManager ...
+type IAppManager interface {
+	Create(app AppInfo) error
+	QueryByName(name string) *AppInfo
+}
+
+func EmptyAppManager(state *ServerState) IAppManager {
+	return EmptyAppManagerImpl{
+		state: state,
+	}
+}
+
+type EmptyAppManagerImpl struct {
+	state *ServerState
+}
+
+func (d EmptyAppManagerImpl) Create(app AppInfo) error {
+	return nil
+}
+
+func (d EmptyAppManagerImpl) QueryByName(name string) *AppInfo {
+	return nil
+}
+
 // App represents a application.
 //
 // The APIs called by gw framework order as
@@ -20,41 +51,28 @@ import (
 //
 type App interface {
 
-	// Name define a API that return as your app name.
-	Name() string
-
-	// Router define a API that should be return your app base route path.
-	// It's will be used to create a new *RouteGroup object and that used by Register(...) .
-	Router() string
+	// Register define a API that it returns your app meta info.
+	Meta() AppInfo
 
 	// Register define a API that for register your app router inside.
 	Register(router *RouterGroup)
 
-	// Use define a API that for modify Server Options capability AT your Application.
+	// Use define a API that for modify server options capability AT your Application.
 	Use(option *ServerOption)
 
-	// Migrate define a API that for create your app's database migrations and permission initialization inside.
-	Migrate(state *ServerState)
+	// OnPrepare define a API that for create your app's db migration,some initializations.
+	OnPrepare(state *ServerState)
 
 	// OnStart define a API that notify your Application when server starting before.
 	OnStart(state *ServerState)
 
 	// OnShutDown define a API that notify your Application when server shutdown before.
 	OnShutDown(state *ServerState)
-
-	// Fixme(OceanHo): need?
-	// Use define a API that tells gw framework, Your application Depend On apps.
-	//DependOn(registeredApps map[string]App) []string
 }
 
 type internalApp struct {
 	instance    App
 	isPatchOnly bool
-}
-
-// MigrationContext represents a Migration Context Object.
-type MigrationContext struct {
-	ServerState
 }
 
 // IDynamicRestAPI represents a Dynamic Rest Style API interface.

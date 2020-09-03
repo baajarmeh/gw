@@ -101,7 +101,7 @@ func DefaultAuthManager(state *gw.ServerState) AuthManager {
 	var cnf = Config.GetUAP(state.ApplicationConfig())
 	return AuthManager{
 		ServerState:      state,
-		backendStoreName: cnf.Auth.Backend.Name,
+		backendStoreName: cnf.Backend.Name,
 		cacheStoreName:   cnf.Auth.Cache.Name,
 		cachePrefix:      cnf.Auth.Cache.Prefix,
 		cacheExpiration:  time.Hour * time.Duration(cnf.Auth.Cache.ExpirationHours), // One week.
