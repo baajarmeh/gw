@@ -15,7 +15,7 @@ func (Role) TableName() string {
 	return getTableName("role")
 }
 
-type UserRoleMapping struct {
+type UserRole struct {
 	gwdb.Model
 	gwdb.HasTenantState
 	UserId uint64
@@ -23,6 +23,6 @@ type UserRoleMapping struct {
 	gwdb.HasCreationState
 }
 
-func (UserRoleMapping) TableName() string {
+func (UserRole) TableName() string {
 	return getTableName("user_roles")
 }

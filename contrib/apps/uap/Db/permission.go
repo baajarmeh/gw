@@ -30,9 +30,9 @@ const (
 type ObjectPermission struct {
 	gwdb.Model
 	gwdb.HasTenantState
+	ObjectID     uint64         `gorm:"index:idx_tenant_expr;not null"`
 	Type         PermissionType `gorm:"not null"` // 1. User Permission, 2. Role/Group Permission
-	ObjectID     uint64         `gorm:"index:idx_tenant_expr; not null"`
-	PermissionID uint64         `gorm:"not null"`
+	PermissionID uint64         `gorm:"index;not null"`
 	gwdb.HasCreationState
 	gwdb.HasModificationState
 }

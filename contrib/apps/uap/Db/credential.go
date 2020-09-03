@@ -21,7 +21,7 @@ const (
 type Credential struct {
 	gwdb.Model
 	gwdb.HasTenantState
-	UserId    uint64 `gorm:"default:0;not null"`
+	UserID    uint64 `gorm:"not null"`
 	Key       string `gorm:"type:varchar(32);unique;not null"`
 	Name      string `gorm:"type:varchar(32);"`
 	Value     string

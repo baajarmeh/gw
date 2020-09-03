@@ -63,7 +63,7 @@ func New() App {
 				Db.User{},
 				Db.UserProfile{},
 				Db.Role{},
-				Db.UserRoleMapping{},
+				Db.UserRole{},
 				Db.Permission{},
 				Db.ObjectPermission{},
 				Db.Credential{},
