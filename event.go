@@ -71,7 +71,7 @@ func (d *DefaultEventManagerImpl) Subscribe(eventName string, handler EventHandl
 		d.subscribers[eventName] = make([]*EventSubscriber, 0, 12)
 	}
 	es := &EventSubscriber{
-		SubscriberId: d.idGenerator.NewStrID(),
+		SubscriberId: d.idGenerator.NewStrID(32),
 		Handler:      handler,
 	}
 	d.subscribers[eventName] = append(d.subscribers[eventName], es)

@@ -29,7 +29,7 @@ type IPasswordSigner interface {
 
 type IdentifierGenerator interface {
 	NewID() int64
-	NewStrID() string
+	NewStrID(len int) string
 }
 
 var (
@@ -158,6 +158,6 @@ func (d DefaultIdentifierGeneratorImpl) NewID() int64 {
 	return time.Now().UnixNano()
 }
 
-func (d DefaultIdentifierGeneratorImpl) NewStrID() string {
-	return secure.Md5Str(secure.RandomStr(32))
+func (d DefaultIdentifierGeneratorImpl) NewStrID(len int) string {
+	return secure.Md5Str(secure.RandomStr(len))
 }

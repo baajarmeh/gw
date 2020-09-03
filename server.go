@@ -42,6 +42,7 @@ type ServerOption struct {
 	AuthParamResolvers       []IAuthParamResolver
 	AuthParamCheckerHandler  func(state *ServerState) IAuthParamChecker
 	PermissionManagerHandler PermissionManagerHandler
+	PermissionCheckerHandler func(state *ServerState) IPermissionChecker
 	StoreDbSetupHandler      StoreDbSetupHandler
 	SessionStateManager      SessionStateHandler
 	StoreCacheSetupHandler   StoreCacheSetupHandler
@@ -67,6 +68,7 @@ type HostServer struct {
 	AuthParamChecker       IAuthParamChecker
 	SessionStateManager    ISessionStateManager
 	SessionSidCreationFunc func(param AuthParameter) string
+	PermissionChecker      IPermissionChecker
 	PermissionManager      IPermissionManager
 	UserManager            IUserManager
 	IDGenerator            IdentifierGenerator
@@ -146,7 +148,7 @@ func (ss *ServerState) EventManager() IEventManager {
 }
 
 func (ss *ServerState) PermissionChecker() IPermissionChecker {
-	return ss.s.PermissionManager.Checker()
+	return ss.s.PermissionChecker
 }
 
 func (ss *ServerState) SessionStateManager() ISessionStateManager {
@@ -249,6 +251,9 @@ func NewServerOption(bcs *conf.BootConfig) *ServerOption {
 		AuthParamResolvers: make([]IAuthParamResolver, 0, 3),
 		AuthParamCheckerHandler: func(state *ServerState) IAuthParamChecker {
 			return DefaultAuthParamChecker(state)
+		},
+		PermissionCheckerHandler: func(state *ServerState) IPermissionChecker {
+			return DefaultPassPermissionChecker(state)
 		},
 		PermissionManagerHandler: func(state *ServerState) IPermissionManager {
 			return DefaultPermissionManager(state)
@@ -557,7 +562,7 @@ func initialServer(s *HostServer) *ServerState {
 			}
 		} else {
 			s.SessionSidCreationFunc = func(param AuthParameter) string {
-				return s.IDGenerator.NewStrID()
+				return s.IDGenerator.NewStrID(32)
 			}
 		}
 	}
@@ -571,12 +576,18 @@ func initialServer(s *HostServer) *ServerState {
 			return DefaultEventManager(state)
 		}
 	}
+	if s.options.PermissionCheckerHandler == nil {
+		s.options.PermissionCheckerHandler = func(state *ServerState) IPermissionChecker {
+			return DefaultPassPermissionChecker(state)
+		}
+	}
 
 	s.UserManager = s.options.UserManagerHandler(state)
 	s.AuthManager = s.options.AuthManagerHandler(state)
 	s.AuthParamResolvers = s.options.AuthParamResolvers
 	s.AuthParamChecker = s.options.AuthParamCheckerHandler(state)
 	s.SessionStateManager = s.options.SessionStateManager(state)
+	s.PermissionChecker = s.options.PermissionCheckerHandler(state)
 	s.PermissionManager = s.options.PermissionManagerHandler(state)
 	s.EventManager = s.options.EventManagerHandler(state)
 	s.DbOpProcessor = s.options.DbOpProcessor

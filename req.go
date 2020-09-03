@@ -12,7 +12,7 @@ func getRequestId(s *HostServer, c *gin.Context) string {
 	if requestID == "" {
 		requestID = c.GetString(requestIdStateKey)
 		if requestID == "" {
-			requestID = s.IDGenerator.NewStrID()
+			requestID = s.IDGenerator.NewStrID(32)
 		} else {
 			shouldSave = false
 		}

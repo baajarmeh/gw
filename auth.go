@@ -160,22 +160,27 @@ type DefaultPermissionManagerImpl struct {
 
 func DefaultPermissionManager(state *ServerState) *DefaultPermissionManagerImpl {
 	var defaultPm = &DefaultPermissionManagerImpl{
-		conf:  *state.ApplicationConfig(),
-		store: state.Store(),
-		perms: make(map[string]map[string]Permission),
-		permissionChecker: DefaultPassPermissionChecker{
-			State: state,
-		},
+		conf:              *state.ApplicationConfig(),
+		store:             state.Store(),
+		perms:             make(map[string]map[string]Permission),
+		permissionChecker: state.PermissionChecker(),
 	}
 	return defaultPm
 }
 
-type DefaultPassPermissionChecker struct {
+type DefaultPassPermissionCheckerImpl struct {
 	State           *ServerState
 	CustomCheckFunc func(user User, perms ...Permission) bool
 }
 
-func (a DefaultPassPermissionChecker) Check(user User, perms ...Permission) bool {
+func DefaultPassPermissionChecker(state *ServerState) IPermissionChecker {
+	return DefaultPassPermissionCheckerImpl{
+		State:           state,
+		CustomCheckFunc: nil,
+	}
+}
+
+func (a DefaultPassPermissionCheckerImpl) Check(user User, perms ...Permission) bool {
 	if a.CustomCheckFunc != nil {
 		return a.CustomCheckFunc(user, perms...)
 	}

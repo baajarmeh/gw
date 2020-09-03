@@ -180,6 +180,8 @@ custom:
           prefix: gw-uap-perm
           expirationHours: "168"
       authManager:
+        backend:
+          name: primary
         cache:
           name: primary
           prefix: gw-uap-auth

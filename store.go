@@ -122,6 +122,15 @@ func (d DefaultBackendImpl) GetCacheStoreByName(name string) *redis.Client {
 	return db
 }
 
+func GetContextFromDB(db *gorm.DB) (*Context, bool) {
+	var obj, ok = db.Get(gwDbContextKey)
+	if !ok {
+		return nil, false
+	}
+	ctx, ok := obj.(*Context)
+	return ctx, ok
+}
+
 func DefaultBackend(cnf *conf.ApplicationConfig) IStore {
 	storeBackend := DefaultBackendImpl{
 		dbs:    make(map[string]*gorm.DB),

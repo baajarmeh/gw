@@ -54,7 +54,8 @@ func New() App {
 			}
 		},
 		migrateFunc: func(state *gw.ServerState) {
-			state.Store().GetDbStore().AutoMigrate(
+			var uapConf = Config.GetUAP(state.ApplicationConfig())
+			err := state.Store().GetDbStoreByName(uapConf.Auth.Backend.Name).AutoMigrate(
 				Db.User{},
 				Db.UserProfile{},
 				Db.Role{},
@@ -63,6 +64,9 @@ func New() App {
 				Db.ObjectPermission{},
 				Db.Credential{},
 			)
+			if err != nil {
+				panic("migrate uap fail")
+			}
 			state.DbOpProcessor().CreateBefore().Register(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
 				return nil
 			}, Db.Credential{})

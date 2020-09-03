@@ -199,15 +199,12 @@ func DefaultPermissionManager(state *gw.ServerState) gw.IPermissionManager {
 	queryPermSQL := fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id", ptn, pmtn)
 	queryPermSQL = queryPermSQL + " where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d"
 	return &PermissionManagerImpl{
-		conf:            cnf,
-		state:           state,
-		store:           state.Store(),
-		queryPermSQL:    queryPermSQL,
-		delPermMapSQL:   " object_id = ? and tenant_id = ? and permission_id = ? and type = ? ",
-		queryPermMapSQL: " tenant_id = ? and category = ? and `key` = ? ",
-		permissionChecker: gw.DefaultPassPermissionChecker{
-			State:           state,
-			CustomCheckFunc: nil,
-		},
+		conf:              cnf,
+		state:             state,
+		store:             state.Store(),
+		queryPermSQL:      queryPermSQL,
+		delPermMapSQL:     " object_id = ? and tenant_id = ? and permission_id = ? and type = ? ",
+		queryPermMapSQL:   " tenant_id = ? and category = ? and `key` = ? ",
+		permissionChecker: state.PermissionChecker(),
 	}
 }

@@ -30,7 +30,7 @@ func (a AuthManager) Password(secret string) string {
 }
 
 func (a AuthManager) Backend() *gorm.DB {
-	return a.Store().GetDbStore()
+	return a.Store().GetDbStoreByName(a.backendStoreName)
 }
 
 func (a AuthManager) Cache() *redis.Client {

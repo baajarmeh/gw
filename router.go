@@ -59,6 +59,10 @@ func (c *Context) Store() IStore {
 	return c.store
 }
 
+func (c *Context) Server() *HostServer {
+	return c.server
+}
+
 func (c *Context) ResolveByTyper(typer reflect.Type) interface{} {
 	return c.server.DIProvider.ResolveByTyperWithState(c.store, typer)
 }
