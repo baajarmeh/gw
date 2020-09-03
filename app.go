@@ -2,6 +2,7 @@ package gw
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/oceanho/gw/libs/gwjsoner"
 )
 
 // AppInfo ...
@@ -10,6 +11,10 @@ type AppInfo struct {
 	Name       string
 	Router     string
 	Descriptor string
+}
+
+func (a AppInfo) MarshalBinary() (data []byte, err error) {
+	return gwjsoner.Marshal(a)
 }
 
 // IAppManager ...

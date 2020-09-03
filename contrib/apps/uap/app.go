@@ -64,13 +64,14 @@ func New() App {
 			var uapConf = Config.GetUAP(state.ApplicationConfig())
 			err := state.Store().GetDbStoreByName(uapConf.Backend.Name).AutoMigrate(
 				Db.App{},
+				Db.Menu{},
 				Db.User{},
 				Db.UserProfile{},
 				Db.Role{},
 				Db.UserRole{},
 				Db.Credential{},
 				Db.Permission{},
-				Db.PermissionToObject{},
+				Db.ObjectPermission{},
 				Db.UserAccessKeySecret{},
 			)
 			if err != nil {
