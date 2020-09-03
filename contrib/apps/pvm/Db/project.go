@@ -3,9 +3,9 @@ package Db
 import "github.com/oceanho/gw/backend/gwdb"
 
 const (
-	projectTableName          = "pvm_project"
-	projectVersionTableName   = "pvm_project_version"
-	projectComponentTableName = "pvm_project_component"
+	projectTableName          = "gw_pvm_project"
+	projectVersionTableName   = "gw_pvm_project_version"
+	projectComponentTableName = "gw_pvm_project_component"
 )
 
 type Project struct {

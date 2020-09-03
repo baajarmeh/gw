@@ -10,7 +10,6 @@ import (
 	"github.com/oceanho/gw/contrib/apps/uap/RestAPI"
 	"github.com/oceanho/gw/contrib/apps/uap/Service"
 	"github.com/oceanho/gw/logger"
-	"gorm.io/gorm"
 )
 
 var (
@@ -27,13 +26,13 @@ const (
 )
 
 type App struct {
-	name            string
-	router          string
-	registerFunc    func(router *gw.RouterGroup)
-	useFunc         func(option *gw.ServerOption)
-	onPrepareFunc   func(state *gw.ServerState)
-	onStartFunc     func(state *gw.ServerState)
-	onShoutDownFunc func(state *gw.ServerState)
+	name           string
+	router         string
+	registerFunc   func(router *gw.RouterGroup)
+	useFunc        func(option *gw.ServerOption)
+	onPrepareFunc  func(state *gw.ServerState)
+	onStartFunc    func(state *gw.ServerState)
+	onShutDownFunc func(state *gw.ServerState)
 }
 
 func New() App {
@@ -77,9 +76,6 @@ func New() App {
 			if err != nil {
 				panic("migrate uap fail")
 			}
-			state.DbOpProcessor().CreateBefore().Register(func(db *gorm.DB, ctx *gw.Context, model interface{}) error {
-				return nil
-			}, Db.Credential{})
 		},
 		onStartFunc: func(state *gw.ServerState) {
 			// Services dependency injection
@@ -90,7 +86,7 @@ func New() App {
 			initPerms(state)
 			initUsers(state)
 		},
-		onShoutDownFunc: func(state *gw.ServerState) {
+		onShutDownFunc: func(state *gw.ServerState) {
 
 		},
 	}
@@ -121,7 +117,7 @@ func (a App) OnStart(state *gw.ServerState) {
 }
 
 func (a App) OnShutDown(state *gw.ServerState) {
-
+	a.onShutDownFunc(state)
 }
 
 // initial permission
@@ -133,7 +129,7 @@ func initPerms(state *gw.ServerState) {
 	perms = append(perms, AksDecorator.Permissions()...)
 	perms = append(perms, RoleDecorator.Permissions()...)
 	perms = append(perms, CredentialDecorator.Permissions()...)
-	gw.Visit(perms, appInfo)
+	gw.VisitPerms(perms, appInfo)
 	err := state.PermissionManager().Create(perms...)
 	if err != nil {
 		logger.Error("initial permissions fail, err: %v", err)

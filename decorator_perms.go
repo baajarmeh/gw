@@ -102,7 +102,7 @@ func NewPermAllDecorator(resName string) *PermissionDecorator {
 // NewPermDecorator returns a resNames of has perm Permission Decorator.
 func NewPermDecorator(op, resName string) Decorator {
 	kn := fmt.Sprintf("%s.%s", resName, op)
-	desc := fmt.Sprintf("represents has %s permssion on resource %s", op, resName)
+	desc := fmt.Sprintf("Define a %s permssion on resource %s.", op, resName)
 	return NewPermissionDecorator(NewPermSameKeyName(kn, desc))
 }
 
@@ -161,7 +161,7 @@ func NewPermissionDecorator(perms ...*Permission) Decorator {
 	return Decorator{
 		MetaData: perms,
 		Before: func(c *Context) (status int, err error, payload interface{}) {
-			s := c.HostServer()
+			s := c.Server()
 			if s.PermissionManager.Checker().Check(c.User(), perms...) {
 				return 0, nil, nil
 			}

@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/conf"
-	"github.com/oceanho/gw/contrib/apps/tester"
 	"github.com/oceanho/gw/logger"
 	"strings"
 	"time"
@@ -43,6 +42,4 @@ func main() {
 }
 
 func registerApps(server *gw.HostServer) {
-	server.Register(tester.NewAppRestOnly())
-	server.Register(tester.New())
 }

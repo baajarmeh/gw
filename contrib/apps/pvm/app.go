@@ -1,6 +1,9 @@
 package pvm
 
-import "github.com/oceanho/gw"
+import (
+	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/pvm/Db"
+)
 
 type App struct {
 	name            string
@@ -28,7 +31,17 @@ func New() gw.App {
 
 		},
 		onPrepareFunc: func(state *gw.ServerState) {
-
+			err := state.Store().GetDbStore().AutoMigrate(
+				Db.Project{},
+				Db.ProjectVersion{},
+				Db.ProjectComponent{},
+				Db.Product{},
+				Db.ProductVersion{},
+				Db.Artifact{},
+			)
+			if err != nil {
+				panic("migrate pvm fail")
+			}
 		},
 		onStartFunc: func(state *gw.ServerState) {
 

@@ -25,9 +25,6 @@ func (pm *PermissionManagerImpl) Store() *gorm.DB {
 	return pm.store.GetDbStoreByName(pm.conf.Security.Auth.Permission.DefaultStore.Name)
 }
 
-func (pm *PermissionManagerImpl) Initial() {
-}
-
 func (pm *PermissionManagerImpl) Checker() gw.IPermissionChecker {
 	return pm.permissionChecker
 }
@@ -58,7 +55,7 @@ func (pm *PermissionManagerImpl) Create(perms ...*gw.Permission) error {
 			model.TenantID = p.TenantId
 			model.AppID = p.AppID
 			model.Descriptor = p.Descriptor
-			tx.Create(&model)
+			_ = tx.Create(&model)
 			perms[i].ID = model.ID
 		}
 		// FIXME(OceanHo): needs?

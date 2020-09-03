@@ -316,10 +316,6 @@ func (c *Context) BindQuery(out interface{}) error {
 	return nil
 }
 
-func (c *Context) HostServer() *HostServer {
-	return c.server
-}
-
 func (c *Context) AppConfig() *conf.ApplicationConfig {
 	return c.server.conf
 }

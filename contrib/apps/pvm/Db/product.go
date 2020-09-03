@@ -2,11 +2,9 @@ package Db
 
 import "github.com/oceanho/gw/backend/gwdb"
 
-const (
-	componentTableName = "pvm_component"
-)
+const productTableName = "gw_pvm_product"
 
-type Component struct {
+type Product struct {
 	gwdb.Model
 	gwdb.HasTenantState
 	Name       string `gorm:"type:varchar(256)"`
@@ -15,6 +13,6 @@ type Component struct {
 	gwdb.HasModificationState
 }
 
-func (Component) TableName() string {
-	return componentTableName
+func (Product) TableName() string {
+	return productTableName
 }

@@ -5,7 +5,7 @@ package Db
 import "github.com/oceanho/gw/backend/gwdb"
 
 const (
-	storageTableName = "pvm_storage"
+	storageTableName = "gw_pvm_storage"
 )
 
 // docker/fs

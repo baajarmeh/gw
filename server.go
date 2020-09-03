@@ -633,13 +633,9 @@ func initialServer(s *HostServer) *ServerState {
 		httpRouter.router = httpRouter.server.Group(s.options.Prefix)
 		s.router = httpRouter
 	}
-
 	if s.conf.Server.ListenAddr != "" && s.options.Addr == appDefaultAddr {
 		s.options.Addr = s.conf.Server.ListenAddr
 	}
-
-	// permission manager initial
-	s.PermissionManager.Initial()
 	return state
 }
 

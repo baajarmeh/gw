@@ -4,9 +4,7 @@ package Db
 
 import "github.com/oceanho/gw/backend/gwdb"
 
-const (
-	artifactTableName = "pvm_artifact"
-)
+const artifactTableName = "gw_pvm_artifact"
 
 type ArtifactCategory uint8
 

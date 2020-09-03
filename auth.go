@@ -39,7 +39,7 @@ func NewPerm(key, name, descriptor string) *Permission {
 	}
 }
 
-func Visit(perms []*Permission, app *AppInfo) {
+func VisitPerms(perms []*Permission, app *AppInfo) {
 	for i := 0; i < len(perms); i++ {
 		perms[i].AppID = app.ID
 		perms[i].AppName = app.Name
@@ -47,8 +47,8 @@ func Visit(perms []*Permission, app *AppInfo) {
 }
 
 var DefaultPermNames = []string{
-	"ReadAll", "Creation",
-	"Modification", "Deletion", "Disable", "ReadDetail",
+	"Read", "Create",
+	"Modify", "Delete", "Disable", "Query",
 }
 
 //
@@ -58,7 +58,7 @@ var DefaultPermNames = []string{
 //  ReadAllUserPermission, CreationUserPermission,
 //  ModificationUserPermission, DeletionUserPermission, DisableUserPermission, ReadDetailUserPermission etc.
 //
-func NewPermAll(resName string) []Permission {
+func NewPermAll(resName string) []*Permission {
 	return NewPermByNames(resName, DefaultPermNames...)
 }
 
@@ -67,16 +67,12 @@ func NewPermAll(resName string) []Permission {
 // resName like: AuthUser, Role, Order etc.
 // permNames like: ReadAll, Creation, Modification,Deletion, Disable, ReadDetail etc.
 //
-func NewPermByNames(resName string, permNames ...string) []Permission {
-	var perms []Permission
+func NewPermByNames(resName string, permNames ...string) []*Permission {
+	var perms []*Permission
 	for _, p := range permNames {
-		kn := fmt.Sprintf("%s%sPermission", p, resName)
-		desc := fmt.Sprintf("Define A %s %s permission", p, resName)
-		perms = append(perms, Permission{
-			Key:        kn,
-			Name:       kn,
-			Descriptor: desc,
-		})
+		kn := fmt.Sprintf("%s.%s", resName, p)
+		desc := fmt.Sprintf("Define a %s permission on %s.", p, resName)
+		perms = append(perms, NewPerm(kn, kn, desc))
 	}
 	return perms
 }
@@ -127,7 +123,6 @@ type IPermissionChecker interface {
 }
 
 type IPermissionManager interface {
-	Initial()
 	Checker() IPermissionChecker
 	Create(perms ...*Permission) error
 	Modify(perms ...*Permission) error
@@ -208,9 +203,6 @@ func (a DefaultPassPermissionCheckerImpl) Check(user User, perms ...*Permission)
 
 func (p *DefaultPermissionManagerImpl) getStore() *gorm.DB {
 	return p.store.GetDbStoreByName(p.conf.Security.Auth.Permission.DefaultStore.Name)
-}
-
-func (p *DefaultPermissionManagerImpl) Initial() {
 }
 
 func (p *DefaultPermissionManagerImpl) Checker() IPermissionChecker {
