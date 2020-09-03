@@ -307,15 +307,15 @@ func setupDb(db *gorm.DB) {
 			if user.IsEmpty() {
 				return
 			}
-			_, ok = db.Statement.Schema.FieldsByName["TenantId"]
+			_, ok = db.Statement.Schema.FieldsByName["TenantID"]
 			if ok {
 				if user.IsTenancy() {
-					db = db.Where("id = ? or tenant_id = ?", user.ID, user.ID)
+					db = db.Where("tenant_id = ?", user.ID)
 				} else if user.IsUser() {
-					if _, ok := db.Statement.Schema.FieldsByName["UserId"]; !ok {
-						db = db.Where("tenant_id = ?", user.TenantId)
+					if _, ok := db.Statement.Schema.FieldsByName["UserID"]; !ok {
+						db = db.Where("tenant_id = ? and user_id = ?", user.TenantID, user.ID)
 					} else {
-						db = db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantId)
+						db = db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantID)
 					}
 				}
 			}

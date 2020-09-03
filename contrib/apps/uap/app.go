@@ -71,7 +71,7 @@ func New() App {
 				Db.UserRole{},
 				Db.Credential{},
 				Db.Permission{},
-				Db.ObjectPermission{},
+				Db.ObjPermission{},
 				Db.UserAccessKeySecret{},
 			)
 			if err != nil {
@@ -147,7 +147,7 @@ func initUsers(state *gw.ServerState) {
 		usr := u
 		var user gw.User
 		user.Passport = usr.User
-		user.TenantId = usr.TenantId
+		user.TenantID = usr.TenantID
 		user.Secret = passwordSigner.Sign(usr.Secret)
 		user.UserType = usr.UserType
 		err := userManager.Create(&user)

@@ -25,7 +25,7 @@ type User struct {
 	User     string      `json:"user" yaml:"user" toml:"user"`
 	Secret   string      `json:"secret" yaml:"secret" toml:"secret"`
 	UserType gw.UserType `json:"type,string" yaml:"type" toml:"type"`
-	TenantId uint64      `json:"tenantId,string" yaml:"tenantId" toml:"tenantId"`
+	TenantID uint64      `json:"tenantId,string" yaml:"tenantId" toml:"tenantId"`
 	Desc     string      `json:"desc" yaml:"desc" toml:"desc"`
 }
 

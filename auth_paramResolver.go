@@ -18,9 +18,9 @@ func (u UserPasswordAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	param.Passport, _ = c.GetPostForm(paramKey.Passport)
 	param.Password, _ = c.GetPostForm(paramKey.Secret)
 	param.VerifyCode, _ = c.GetPostForm(paramKey.VerifyCode)
-	tenantIdStr, _ = c.GetPostForm(paramKey.TenantId)
+	tenantIdStr, _ = c.GetPostForm(paramKey.TenantID)
 	if check(param) {
-		param.TenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
+		param.TenantID, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 		return param
 	}
 
@@ -31,7 +31,7 @@ func (u UserPasswordAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 			paramKey.Passport:   "",
 			paramKey.Secret:     "",
 			paramKey.VerifyCode: "",
-			paramKey.TenantId:   "",
+			paramKey.TenantID:   "",
 		}
 		err := c.Bind(&cred)
 		if err != nil {
@@ -40,9 +40,9 @@ func (u UserPasswordAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 		param.Passport = cred[paramKey.Passport].(string)
 		param.Password = cred[paramKey.Secret].(string)
 		param.VerifyCode = cred[paramKey.VerifyCode].(string)
-		tenantIdStr = cred[paramKey.TenantId].(string)
+		tenantIdStr = cred[paramKey.TenantID].(string)
 		if check(param) {
-			param.TenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
+			param.TenantID, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 			return param
 		}
 	}
@@ -65,7 +65,7 @@ func (u BasicAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 		param.VerifyCode = c.Query(paramKey.VerifyCode)
 	}
 	if ok && check(param) {
-		param.TenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
+		param.TenantID, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 		return param
 	}
 	return param
@@ -79,12 +79,12 @@ func (u AksAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	var param AuthParameter
 	paramKey := s.conf.Security.Auth.ParamKey
 	param.CredType = AksAuth
-	var tenantIdStr = c.GetHeader(paramKey.TenantId)
+	var tenantIdStr = c.GetHeader(paramKey.TenantID)
 	param.Passport = c.GetHeader(paramKey.Passport)
 	param.Password = c.GetHeader(paramKey.Secret)
 	param.VerifyCode = c.GetHeader(paramKey.VerifyCode)
 	if check(param) {
-		param.TenantId, _ = strconv.ParseUint(tenantIdStr, 10, 64)
+		param.TenantID, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 		return param
 	}
 	return param

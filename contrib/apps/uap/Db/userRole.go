@@ -5,7 +5,7 @@ import "github.com/oceanho/gw/backend/gwdb"
 type UserRole struct {
 	gwdb.Model
 	gwdb.HasTenantState
-	UserId uint64
+	UserID uint64
 	RoleId uint64
 	gwdb.HasCreationState
 }

@@ -69,9 +69,9 @@ func (a AuthManager) Login(param gw.AuthParameter) (gw.User, error) {
 	if user.IsEmpty() {
 		switch param.CredType {
 		case gw.UserPasswordAuth, gw.BasicAuth:
-			user, err = a.UserManager().QueryByUser(param.TenantId, param.Passport, password)
+			user, err = a.UserManager().QueryByUser(param.TenantID, param.Passport, password)
 		case gw.AksAuth:
-			user, err = a.UserManager().QueryByAKS(param.TenantId, param.Passport, password)
+			user, err = a.UserManager().QueryByAKS(param.TenantID, param.Passport, password)
 		default:
 			logger.Error("Un-support cred type: %s", param.CredType)
 			return gw.EmptyUser, err
@@ -83,7 +83,7 @@ func (a AuthManager) Login(param gw.AuthParameter) (gw.User, error) {
 	if user.IsEmpty() {
 		return user, gw.ErrorUserNotFound
 	}
-	_, perms, err := a.PermissionManager().QueryByUser(user.TenantId, user.ID, a.permPagerExpr)
+	_, perms, err := a.PermissionManager().QueryByUser(user.TenantID, user.ID, a.permPagerExpr)
 	if err != nil {
 		return gw.EmptyUser, err
 	}

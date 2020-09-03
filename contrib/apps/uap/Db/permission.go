@@ -14,7 +14,7 @@ type Permission struct {
 }
 
 func (Permission) TableName() string {
-	return getTableName("permission")
+	return getTableName("perm")
 }
 
 type PermissionType uint8

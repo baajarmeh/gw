@@ -70,7 +70,7 @@ func (u UserManager) Create(user *gw.User) error {
 	store := u.Store()
 	db := store.GetDbStore()
 	var model Db.User
-	err := db.First(&model, "tenant_id=? and passport=?", user.TenantId, user.Passport).Error
+	err := db.First(&model, "tenant_id=? and passport=?", user.TenantID, user.Passport).Error
 	if err != nil && err.Error() != "record not found" {
 		return err
 	}
@@ -85,7 +85,7 @@ func (u UserManager) Create(user *gw.User) error {
 
 	// passport
 	model.Passport = user.Passport
-	model.TenantId = user.TenantId
+	model.TenantID = user.TenantID
 	model.Secret = user.Secret
 
 	switch user.UserType {
@@ -123,7 +123,7 @@ func (u UserManager) QueryByUser(tenantId uint64, passport, password string) (gw
 	}
 
 	user.ID = model.ID
-	user.TenantId = model.TenantId
+	user.TenantID = model.TenantID
 	user.Passport = model.Passport
 	user.Password = model.Secret
 	user.UserType = u.mapUserType(model)
@@ -131,7 +131,7 @@ func (u UserManager) QueryByUser(tenantId uint64, passport, password string) (gw
 	if user.IsEmpty() {
 		return gw.EmptyUser, gw.ErrorUserNotFound
 	}
-	_, perms, err := u.PermissionManager().QueryByUser(model.TenantId, model.ID, gw.DefaultPageExpr)
+	_, perms, err := u.PermissionManager().QueryByUser(model.TenantID, model.ID, gw.DefaultPageExpr)
 	if err != nil {
 		return gw.EmptyUser, err
 	}

@@ -11,7 +11,7 @@ import (
 
 type Permission struct {
 	ID         uint64
-	TenantId   uint64
+	TenantID   uint64
 	AppID      uint64
 	AppName    string
 	Key        string
@@ -25,8 +25,8 @@ func (p *Permission) String() string {
 }
 
 func (p *Permission) IdStr() string {
-	if p.TenantId > 0 {
-		return fmt.Sprintf("%d.%d.%s", p.TenantId, p.AppID, p.Key)
+	if p.TenantID > 0 {
+		return fmt.Sprintf("%d.%d.%s", p.TenantID, p.AppID, p.Key)
 	}
 	return fmt.Sprintf("%d.%s", p.AppID, p.Key)
 }
@@ -94,7 +94,7 @@ type IUserManager interface {
 type AuthParameter struct {
 	Passport   string
 	Password   string
-	TenantId   uint64
+	TenantID   uint64
 	VerifyCode string
 	CredType   CredentialType
 }
@@ -314,7 +314,7 @@ func (ut UserType) IsUser() bool {
 //
 type User struct {
 	ID          uint64
-	TenantId    uint64
+	TenantID    uint64
 	Passport    string
 	Secret      string                 `gorm:"-"`
 	Password    string                 `gorm:"-"` // Hash string

@@ -16,5 +16,5 @@ type App struct {
 }
 
 func (App) TableName() string {
-	return getTableName("application")
+	return getTableName("app")
 }

@@ -7,7 +7,7 @@ import (
 
 type UserDto struct {
 	gwdb.Model
-	TenantId uint64
+	TenantID uint64
 	Passport string
 	Secret   string
 	IsActive bool
