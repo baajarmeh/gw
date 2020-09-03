@@ -35,7 +35,7 @@ type UserProfile struct {
 	gwdb.Model
 	gwdb.HasTenantState
 	Gender   uint8  `gorm:"default:4"` // 1.man, 2.woman, 3.custom, 4.unknown
-	UserId   uint64 `gorm:"index"`
+	UserID   uint64 `gorm:"index"`
 	Name     string `gorm:"type:varchar(64);index"`
 	Email    string `gorm:"type:varchar(128);index"`
 	Phone    string `gorm:"type:varchar(16);index"`
