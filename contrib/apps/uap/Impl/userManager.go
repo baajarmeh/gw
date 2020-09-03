@@ -91,13 +91,10 @@ func (u UserManager) Create(user *gw.User) error {
 	switch user.UserType {
 	case gw.Administrator:
 		model.IsAdmin = true
-		break
 	case gw.Tenancy:
 		model.IsTenancy = true
-		break
 	case gw.NonUser:
 		model.IsUser = true
-		break
 	}
 	tx := store.GetDbStore().Begin()
 	err = tx.Create(&model).Error
