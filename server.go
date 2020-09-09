@@ -321,14 +321,6 @@ func NewServerWithNameAddr(name, addr string) *HostServer {
 	return NewServerWithOption(opts)
 }
 
-// NewServerWithName returns a specifies addr, other use default HostServer(the server instance's bcs,svr are default config items.)
-func at(addr string) *HostServer {
-	bcs := conf.DefaultBootConfig()
-	opts := NewServerOption(bcs)
-	opts.Addr = addr
-	return NewServerWithOption(opts)
-}
-
 // New return a  Server with ServerOptions.
 func NewServerWithOption(sopt *ServerOption) *HostServer {
 	server, ok := servers[sopt.Name]
