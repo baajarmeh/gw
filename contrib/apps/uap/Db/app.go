@@ -6,7 +6,7 @@ import (
 
 type App struct {
 	gwdb.Model
-	Key        string `gorm:"type:varchar(32);not null"`
+	Key        string `gorm:"type:varchar(32);not null;unique"`
 	Name       string `gorm:"type:varchar(128);not null"`
 	Router     string `gorm:"type:varchar(128);not null"`
 	Descriptor string `gorm:"type:varchar(512);not null"`
