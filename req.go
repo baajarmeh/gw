@@ -29,6 +29,12 @@ type PagerExpr struct {
 	PageNumber int `json:"pn" binding:"required" query:"pn" params:"pn" form:"pn"`
 }
 
+// PagerResult represents a general pager query result model for gw framework.
+type PagerResult struct {
+	PagerExpr
+	Total int64 `json:"total" query:"total" params:"total" form:"total"`
+}
+
 // DefaultPagerExpr returns a new PagerExpr
 func DefaultPagerExpr(pageSize, pageNumber int) PagerExpr {
 	return PagerExpr{
