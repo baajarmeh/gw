@@ -84,17 +84,16 @@ func NewPermSameKeyName(kn, descriptor string) *Permission {
 type IUserManager interface {
 	Create(user *User) error
 	Modify(user User) error
-	Delete(tenantId, userId uint64) error
-	Query(tenantId, userId uint64) (User, error)
-	QueryByUser(tenantId uint64, passport, password string) (User, error)
-	QueryByAKS(tenantId uint64, accessKey, accessSecret string) (User, error)
+	Delete(userId uint64) error
+	Query(userId uint64) (User, error)
+	QueryByUser(passport, password string) (User, error)
+	QueryByAKS(accessKey, accessSecret string) (User, error)
 	QueryList(tenantId uint64, expr PagerExpr, total int64, out []User) error
 }
 
 type AuthParameter struct {
 	Passport   string
 	Password   string
-	TenantID   uint64
 	VerifyCode string
 	CredType   CredentialType
 }
@@ -267,19 +266,19 @@ func (d EmptyUserManagerImpl) Modify(user User) error {
 	return nil
 }
 
-func (d EmptyUserManagerImpl) Delete(tenantId, userId uint64) error {
+func (d EmptyUserManagerImpl) Delete(userId uint64) error {
 	return nil
 }
 
-func (d EmptyUserManagerImpl) Query(tenantId, userId uint64) (User, error) {
+func (d EmptyUserManagerImpl) Query(userId uint64) (User, error) {
 	return EmptyUser, nil
 }
 
-func (d EmptyUserManagerImpl) QueryByUser(tenantId uint64, user, password string) (User, error) {
+func (d EmptyUserManagerImpl) QueryByUser(user, password string) (User, error) {
 	return EmptyUser, nil
 }
 
-func (d EmptyUserManagerImpl) QueryByAKS(tenantId uint64, accessKey, accessSecret string) (User, error) {
+func (d EmptyUserManagerImpl) QueryByAKS(accessKey, accessSecret string) (User, error) {
 	return EmptyUser, nil
 }
 

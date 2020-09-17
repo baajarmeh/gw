@@ -2,7 +2,6 @@ package gw
 
 import (
 	"github.com/gin-gonic/gin"
-	"strconv"
 )
 
 type UserPasswordAuthParamResolver struct {
@@ -10,7 +9,6 @@ type UserPasswordAuthParamResolver struct {
 
 func (u UserPasswordAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	s := getHostServer(c)
-	var tenantIdStr = ""
 	var param AuthParameter
 	paramKey := s.conf.Security.Auth.ParamKey
 	// 1. User/Password
@@ -18,9 +16,7 @@ func (u UserPasswordAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	param.Passport, _ = c.GetPostForm(paramKey.Passport)
 	param.Password, _ = c.GetPostForm(paramKey.Secret)
 	param.VerifyCode, _ = c.GetPostForm(paramKey.VerifyCode)
-	tenantIdStr, _ = c.GetPostForm(paramKey.TenantID)
 	if check(param) {
-		param.TenantID, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 		return param
 	}
 
@@ -31,7 +27,6 @@ func (u UserPasswordAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 			paramKey.Passport:   "",
 			paramKey.Secret:     "",
 			paramKey.VerifyCode: "",
-			paramKey.TenantID:   "",
 		}
 		err := c.Bind(&cred)
 		if err != nil {
@@ -40,9 +35,7 @@ func (u UserPasswordAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 		param.Passport = cred[paramKey.Passport].(string)
 		param.Password = cred[paramKey.Secret].(string)
 		param.VerifyCode = cred[paramKey.VerifyCode].(string)
-		tenantIdStr = cred[paramKey.TenantID].(string)
 		if check(param) {
-			param.TenantID, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 			return param
 		}
 	}
@@ -54,7 +47,6 @@ type BasicAuthParamResolver struct {
 
 func (u BasicAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	s := getHostServer(c)
-	var tenantIdStr = ""
 	paramKey := s.conf.Security.Auth.ParamKey
 	var param AuthParameter
 	// 2. Basic auth
@@ -65,7 +57,6 @@ func (u BasicAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 		param.VerifyCode = c.Query(paramKey.VerifyCode)
 	}
 	if ok && check(param) {
-		param.TenantID, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 		return param
 	}
 	return param
@@ -79,12 +70,10 @@ func (u AksAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	var param AuthParameter
 	paramKey := s.conf.Security.Auth.ParamKey
 	param.CredType = AksAuth
-	var tenantIdStr = c.GetHeader(paramKey.TenantID)
 	param.Passport = c.GetHeader(paramKey.Passport)
 	param.Password = c.GetHeader(paramKey.Secret)
 	param.VerifyCode = c.GetHeader(paramKey.VerifyCode)
 	if check(param) {
-		param.TenantID, _ = strconv.ParseUint(tenantIdStr, 10, 64)
 		return param
 	}
 	return param

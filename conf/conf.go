@@ -159,7 +159,6 @@ type Security struct {
 		TrustSidKey string `yaml:"trustSidKey" toml:"trustSidKey" json:"trustSidKey"`
 		ParamKey    struct {
 			Passport   string                 `yaml:"passport" toml:"passport" json:"passport"`
-			TenantID   string                 `yaml:"tenantId" toml:"tenantId" json:"tenantId"`
 			Secret     string                 `yaml:"secret" toml:"secret" json:"secret"`
 			VerifyCode string                 `yaml:"verifyCode" toml:"verifyCode" json:"verifyCode"`
 			Custom     map[string]interface{} `yaml:"custom" toml:"custom" json:"custom"`

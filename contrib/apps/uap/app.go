@@ -90,20 +90,20 @@ func New() App {
 				if ok {
 					if user.IsTenancy() {
 						if db.Statement.Schema.ModelType == dbUserTableTyper {
-							db = db.Where("id = ?", user.ID)
+							db.Where("id = ?", user.ID)
 						} else {
-							db = db.Where("tenant_id = ?", user.ID)
+							db.Where("tenant_id = ?", user.ID)
 						}
 					} else if user.IsUser() {
 						if _, ok := db.Statement.Schema.FieldsByName["UserID"]; !ok {
-							db = db.Where("tenant_id = ? and user_id = ?", user.TenantID, user.ID)
+							db.Where("tenant_id = ? and user_id = ?", user.TenantID, user.ID)
 						} else {
-							db = db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantID)
+							db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantID)
 						}
 					}
 				}
 				return nil
-			}, gw.DbHandlerShadowModel{})
+			})
 		},
 		onStartFunc: func(state *gw.ServerState) {
 			// Services dependency injection

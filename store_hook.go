@@ -8,10 +8,10 @@ import (
 
 type DbOpHandler func(db *gorm.DB, ctx *Context) error
 
-type DbHandlerShadowModel struct {
+type dbHandleAllModel struct {
 }
 
-var dbHandlerShadowModelTyper = reflect.TypeOf(DbHandlerShadowModel{})
+var dbHandleAllModelTyper = reflect.TypeOf(dbHandleAllModel{})
 
 type DbOpTyperHandlers struct {
 	locker   sync.Mutex
@@ -21,7 +21,7 @@ type DbOpTyperHandlers struct {
 func (h *DbOpTyperHandlers) Handlers(typer reflect.Type) []DbOpHandler {
 	var handlers = make([]DbOpHandler, 0, 8)
 	handlers = append(handlers, h.handlers[typer]...)
-	handlers = append(handlers, h.handlers[dbHandlerShadowModelTyper]...)
+	handlers = append(handlers, h.handlers[dbHandleAllModelTyper]...)
 	return handlers
 }
 
@@ -93,6 +93,10 @@ func (processor *DbOpProcessor) DeleteAfter() *DbOpTyperHandlers {
 }
 
 func (h *DbOpTyperHandlers) Register(handler DbOpHandler, models ...interface{}) *DbOpTyperHandlers {
+	if len(models) == 0 {
+		models = make([]interface{}, 0, 1)
+		models = append(models, dbHandleAllModel{})
+	}
 	h.locker.Lock()
 	defer h.locker.Unlock()
 	for _, m := range models {

@@ -247,7 +247,7 @@ func setupDb(db *gorm.DB) {
 		if ctx, ok := obj.(*Context); ok {
 			fns, ok := ctx.server.DbOpProcessor.UpdateAfter().handlers[db.Statement.Schema.ModelType]
 			if !ok {
-				fns, ok = ctx.server.DbOpProcessor.UpdateBefore().handlers[dbHandlerShadowModelTyper]
+				fns, ok = ctx.server.DbOpProcessor.UpdateBefore().handlers[dbHandleAllModelTyper]
 			}
 			if ok {
 				for _, f := range fns {

@@ -17,14 +17,16 @@ func (u User) Name() string {
 //
 // var userDto dto.UserDto
 func (u User) Get(ctx *gw.Context) {
-
+	user := ctx.User()
+	svc := Service.Services(ctx)
+	svc.UserManager.Query(user.TenantID)
 }
 
 //
 //
 func (u User) Detail(ctx *gw.Context) {
 	userManager := Service.Services(ctx).UserManager
-	_, _ = userManager.QueryByUser(0, "admin", "admin@123456")
+	_, _ = userManager.QueryByUser("admin", "admin@123456")
 }
 
 //func (u User) OnGetBefore() gw.Decorator {

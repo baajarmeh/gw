@@ -110,14 +110,14 @@ func (u UserManager) Modify(user gw.User) error {
 	panic("implement me")
 }
 
-func (u UserManager) Delete(tenantId, userId uint64) error {
+func (u UserManager) Delete(userId uint64) error {
 	panic("implement me")
 }
 
-func (u UserManager) QueryByUser(tenantId uint64, passport, password string) (gw.User, error) {
+func (u UserManager) QueryByUser(passport, password string) (gw.User, error) {
 	var user gw.User
 	var model Db.User
-	var err = u.Backend().Take(&model, "tenant_id=? and passport=? and secret=?", tenantId, passport, password).Error
+	var err = u.Backend().Take(&model, "passport=? and secret=?", passport, password).Error
 	if err != nil {
 		return gw.EmptyUser, err
 	}
@@ -140,11 +140,11 @@ func (u UserManager) QueryByUser(tenantId uint64, passport, password string) (gw
 	return user, nil
 }
 
-func (u UserManager) QueryByAKS(tenantId uint64, accessKey, accessSecret string) (gw.User, error) {
+func (u UserManager) QueryByAKS(accessKey, accessSecret string) (gw.User, error) {
 	panic("implement me")
 }
 
-func (u UserManager) Query(tenantId, userId uint64) (gw.User, error) {
+func (u UserManager) Query(userId uint64) (gw.User, error) {
 	panic("implement me")
 }
 
