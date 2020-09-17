@@ -2,7 +2,7 @@ package Db
 
 import "github.com/oceanho/gw/backend/gwdb"
 
-type ObjPermission struct {
+type ObjectPermission struct {
 	gwdb.Model
 	gwdb.HasTenantState
 	ObjectID     uint64         `gorm:"index:idx_tenant_expr;not null"`
@@ -12,6 +12,6 @@ type ObjPermission struct {
 	gwdb.HasModificationState
 }
 
-func (ObjPermission) TableName() string {
+func (ObjectPermission) TableName() string {
 	return getTableName("obj_perm")
 }

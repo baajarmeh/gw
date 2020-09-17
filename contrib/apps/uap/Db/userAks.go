@@ -6,9 +6,9 @@ import (
 
 type UserAccessKeySecret struct {
 	gwdb.Model
-	gwdb.HasTenantState
-	Key    string
-	Secret string
+	UserID uint64
+	Key    string `gorm:"type:varchar(64);unique;not null"`
+	Secret string `gorm:"type:varchar(128);not null"`
 	gwdb.HasCreationState
 	gwdb.HasActivationState
 	gwdb.HasModificationState
