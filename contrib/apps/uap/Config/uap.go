@@ -7,6 +7,9 @@ import (
 )
 
 type Uap struct {
+	Router struct {
+		Prefix string `json:"prefix" yaml:"prefix" toml:"prefix"`
+	} `json:"router" yaml:"router" toml:"router"`
 	Backend struct {
 		Name string `json:"name" yaml:"name" toml:"name"`
 		//Prefix string `json:"prefix" yaml:"prefix" toml:"prefix"`

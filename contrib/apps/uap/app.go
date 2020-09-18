@@ -90,7 +90,7 @@ func New() App {
 				if ok {
 					if user.IsTenancy() {
 						if db.Statement.Schema.ModelType == dbUserTableTyper {
-							db.Where("id = ?", user.ID)
+							//db.Where("id = ?", user.ID)
 						} else {
 							db.Where("tenant_id = ?", user.ID)
 						}

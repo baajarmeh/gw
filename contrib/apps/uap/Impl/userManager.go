@@ -15,11 +15,26 @@ import (
 
 type UserManager struct {
 	*gw.ServerState
+	store            gw.IStore
 	cachePrefix      string
 	cacheStoreName   string
 	backendStoreName string
 	cacheExpiration  time.Duration
 	permPagerExpr    gw.PagerExpr
+}
+
+// DI
+func (u UserManager) New(store gw.IStore, state *gw.ServerState) gw.IUserManager {
+	u.store = store
+	u.ServerState = state
+	return u
+}
+
+func (u UserManager) Store() gw.IStore {
+	if u.store == nil {
+		return u.ServerState.Store()
+	}
+	return u.store
 }
 
 func (u UserManager) mapUserType(user Db.User) gw.UserType {
@@ -67,10 +82,9 @@ func (u UserManager) SaveToCache(user gw.User) {
 // APIs
 //
 func (u UserManager) Create(user *gw.User) error {
-	store := u.Store()
-	db := store.GetDbStore()
+	db := u.Store().GetDbStore()
 	var model Db.User
-	err := db.First(&model, "tenant_id=? and passport=?", user.TenantID, user.Passport).Error
+	err := db.First(&model, " passport = ? ", user.Passport).Error
 	if err != nil && err.Error() != "record not found" {
 		return err
 	}
@@ -96,12 +110,10 @@ func (u UserManager) Create(user *gw.User) error {
 	case gw.NonUser:
 		model.IsUser = true
 	}
-	tx := store.GetDbStore().Begin()
-	err = tx.Create(&model).Error
+	err = db.Create(&model).Error
 	if err != nil {
 		return err
 	}
-	err = tx.Commit().Error
 	user.ID = model.ID
 	return err
 }

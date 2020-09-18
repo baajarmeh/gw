@@ -7,9 +7,8 @@ import (
 
 type UserDto struct {
 	gwdb.Model
-	TenantID uint64
-	Passport string
-	Secret   string
+	Passport string `binding:"required"`
+	Secret   string `binding:"required"`
 	IsActive bool
 	UserType gw.UserType `gorm:"-"`
 }

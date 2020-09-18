@@ -15,11 +15,26 @@ import (
 
 type AppManager struct {
 	*gw.ServerState
+	store            gw.IStore
 	cachePrefix      string
 	cacheStoreName   string
 	backendStoreName string
 	cacheExpiration  time.Duration
 	permPagerExpr    gw.PagerExpr
+}
+
+// DI
+
+func (a AppManager) New(store gw.IStore) gw.IAppManager {
+	a.store = store
+	return a
+}
+
+func (a AppManager) Store() gw.IStore {
+	if a.store == nil {
+		return a.ServerState.Store()
+	}
+	return a.store
 }
 
 func (a AppManager) cacheKey(name string) string {

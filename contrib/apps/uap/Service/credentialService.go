@@ -45,8 +45,8 @@ type DefaultCredentialServiceImpl struct {
 	credentialProtectService ICredentialProtectService
 }
 
-func (dcs DefaultCredentialServiceImpl) New(
-	store gw.IStore,
+// DI
+func (dcs DefaultCredentialServiceImpl) New(store gw.IStore,
 	credentialProtectService ICredentialProtectService) ICredentialService {
 	dcs.store = store
 	dcs.credentialProtectService = credentialProtectService

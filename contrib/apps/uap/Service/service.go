@@ -2,17 +2,20 @@ package Service
 
 import (
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/uap/Impl"
 	"reflect"
 )
 
 type Service struct {
+	gw.BuiltinComponent
 	UserManager       gw.IUserManager
 	CredentialService ICredentialService
 }
 
-func (s Service) New(
-	userManager gw.IUserManager,
+// DI
+func (s Service) New(userManager gw.IUserManager, builtin gw.BuiltinComponent,
 	service ICredentialService) Service {
+	s.BuiltinComponent = builtin
 	s.CredentialService = service
 	s.UserManager = userManager
 	return s
@@ -30,5 +33,6 @@ func Register(di gw.IDIProvider) {
 }
 
 func registerServices(di gw.IDIProvider) {
+	di.Register(Impl.AppManager{}, Impl.UserManager{})
 	di.Register(DefaultCredentialProtectServiceImpl{}, DefaultCredentialServiceImpl{})
 }

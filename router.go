@@ -64,7 +64,7 @@ func (c *Context) Server() *HostServer {
 }
 
 func (c *Context) ResolveByTyper(typer reflect.Type) interface{} {
-	return c.server.DIProvider.ResolveByTyperWithState(c.store, typer)
+	return c.server.DIProvider.ResolveByTyperWithState(c, typer)
 }
 
 // Router represents a gw's Router info.
@@ -263,8 +263,8 @@ func (c *Context) QueryArray(key string) []string {
 	return val
 }
 
-// MustGetIdUint64FromParam returns a string from c.Params
-func (c *Context) MustGetIdUint64FromParam(out *uint64) (err error) {
+// MustGetUint64IDFromParam returns a string from c.Params
+func (c *Context) MustGetUint64IDFromParam(out *uint64) (err error) {
 	var _out string
 	if err := c.MustGetIdStrFromParam(&_out); err != nil {
 		c.JSON400Msg(400, err)

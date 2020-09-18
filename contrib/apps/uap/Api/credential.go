@@ -8,7 +8,7 @@ import (
 
 func QueryCredentialById(ctx *gw.Context) {
 	var id uint64
-	if ctx.MustGetIdUint64FromParam(&id) != nil {
+	if ctx.MustGetUint64IDFromParam(&id) != nil {
 		return
 	}
 	var services = Service.Services(ctx)

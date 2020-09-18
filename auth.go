@@ -335,6 +335,10 @@ func (user User) IsEmpty() bool {
 	return user.ID == EmptyUser.ID
 }
 
+func (user User) IsAdminOrTenancy() bool {
+	return user.IsTenancy() || user.IsAdmin()
+}
+
 func (user User) IsAdmin() bool {
 	return user.IsAuth() && user.UserType == Administrator
 }

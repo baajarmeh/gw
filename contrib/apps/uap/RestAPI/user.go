@@ -2,6 +2,8 @@ package RestAPI
 
 import (
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/uap/Const"
+	"github.com/oceanho/gw/contrib/apps/uap/Dto"
 	"github.com/oceanho/gw/contrib/apps/uap/Service"
 )
 
@@ -17,16 +19,19 @@ func (u User) Name() string {
 //
 // var userDto dto.UserDto
 func (u User) Get(ctx *gw.Context) {
-	user := ctx.User()
-	svc := Service.Services(ctx)
-	svc.UserManager.Query(user.TenantID)
+
 }
 
 //
 //
 func (u User) Detail(ctx *gw.Context) {
+	var uid uint64
+	if err := ctx.MustGetUint64IDFromParam(&uid); err != nil {
+		return
+	}
 	userManager := Service.Services(ctx).UserManager
-	_, _ = userManager.QueryByUser("admin", "admin@123456")
+	user, err := userManager.Query(uid)
+	ctx.JSON(err, user)
 }
 
 //func (u User) OnGetBefore() gw.Decorator {
@@ -38,6 +43,34 @@ func (u User) Post(ctx *gw.Context) {
 
 // Put, Creation & decorators
 func (u User) Put(ctx *gw.Context) {
+	var model Dto.UserDto
+	if err := ctx.Bind(&model); err != nil {
+		return
+	}
+	var auth = ctx.User()
+	// Non-user can not be create User resource
+	if auth.IsUser() {
+		ctx.JSON403Msg(403, Const.ErrorNonUserCannotCreationResource)
+		return
+	}
+	// Tenancy can not be create Admin/Tenancy type resource
+	if auth.IsTenancy() && (model.UserType.IsAdmin() || model.UserType.IsTenancy()) {
+		ctx.JSON403Msg(403, Const.ErrorTenancyCannotCreationAdminResource)
+		return
+	}
+	if model.UserType == 0 {
+		model.UserType = gw.NonUser
+	}
+
+	var user gw.User
+	svc := Service.Services(ctx)
+	user.TenantID = auth.ID
+	user.Passport = model.Passport
+	user.Secret = svc.PasswordSigner.Sign(model.Secret)
+	user.UserType = model.UserType
+
+	err := svc.UserManager.Create(&user)
+	ctx.JSON(err, nil)
 }
 
 // Delete, Deletion & decorators
