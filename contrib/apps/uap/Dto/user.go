@@ -8,16 +8,16 @@ import (
 
 //go:generate gomodifytags -w -file ./user.go -add-tags json -transform snakecase -all
 
-type UserDto struct {
+type User struct {
 	gwdb.Model
-	Passport string         `binding:"required" json:"passport"`
-	Secret   string         `binding:"required" json:"secret"`
-	IsActive bool           `json:"is_active"`
-	UserType gw.UserType    `gorm:"-" json:"type"`
-	Profile  UserProfileDto `gorm:"-" json:"profile"`
+	Passport string      `binding:"required" json:"passport"`
+	Secret   string      `binding:"required" json:"secret"`
+	IsActive bool        `json:"is_active"`
+	UserType gw.UserType `gorm:"-" json:"type"`
+	Profile  UserProfile `gorm:"-" json:"profile"`
 }
 
-type UserProfileDto struct {
+type UserProfile struct {
 	UserID   uint64     `json:"user_id"`
 	Gender   uint8      `json:"gender"` // 1.man, 2.woman, 3.custom, 4.unknown
 	Name     string     `json:"name"`

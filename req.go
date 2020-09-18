@@ -84,6 +84,12 @@ type QueryExpr struct {
 	Orderly       []OrderlyExpr       `json:"o" query:"o" params:"o" form:"o"`
 }
 
+// PagerResult represents a general pager query result abstract model for gw framework.
+type PagerResult struct {
+	PagerExpr
+	Total int64 `json:"total"`
+}
+
 // PageOffset returns a Pager Offset Value.
 func (expr PagerExpr) PageOffset() int {
 	p := expr.PageNumber - 1

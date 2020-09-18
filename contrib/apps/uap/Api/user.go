@@ -8,7 +8,7 @@ import (
 )
 
 func GetUser(c *gw.Context) {
-	dto := &Dto.UserDto{}
+	dto := &Dto.User{}
 	if c.Bind(dto) != nil {
 		return
 	}

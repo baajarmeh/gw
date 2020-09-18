@@ -44,7 +44,7 @@ func New() App {
 		name:   appName,
 		router: appRouter,
 		registerFunc: func(router *gw.RouterGroup) {
-			router.RegisterRestAPIs(&RestAPI.User{})
+			router.RegisterRestAPIs(&RestAPI.User{}, &RestAPI.Role{})
 			router.GET("credential/:id", Api.QueryCredentialById, Api.QueryCredentialByIdDecorators())
 		},
 		useFunc: func(option *gw.ServerOption) {
@@ -110,6 +110,9 @@ func New() App {
 				return nil
 			}
 			state.DbOpProcessor().UpdateBefore().Register(func(db *gorm.DB, ctx *gw.Context) error {
+				return globalFilterFunc(db, ctx.User())
+			})
+			state.DbOpProcessor().DeleteBefore().Register(func(db *gorm.DB, ctx *gw.Context) error {
 				return globalFilterFunc(db, ctx.User())
 			})
 			state.DbOpProcessor().QueryBefore().Register(func(db *gorm.DB, ctx *gw.Context) error {

@@ -9,15 +9,17 @@ import (
 type Service struct {
 	gw.BuiltinComponent
 	UserManager       gw.IUserManager
+	RoleSvc           IRoleService
 	CredentialService ICredentialService
 }
 
 // DI
 func (s Service) New(userManager gw.IUserManager, builtin gw.BuiltinComponent,
-	service ICredentialService) Service {
+	service ICredentialService, roleSvc IRoleService) Service {
 	s.BuiltinComponent = builtin
 	s.CredentialService = service
 	s.UserManager = userManager
+	s.RoleSvc = roleSvc
 	return s
 }
 
@@ -33,6 +35,6 @@ func Register(di gw.IDIProvider) {
 }
 
 func registerServices(di gw.IDIProvider) {
-	di.Register(Impl.AppManager{}, Impl.UserManager{})
+	di.Register(Impl.AppManager{}, Impl.UserManager{}, RoleService{})
 	di.Register(DefaultCredentialProtectServiceImpl{}, DefaultCredentialServiceImpl{})
 }
