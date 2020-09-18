@@ -125,11 +125,21 @@ var defaultDIConfig = DIConfig{
 		if !ok {
 			panic("di not are gw framework DefaultDIProviderImpl instance")
 		}
+		var user User
+		var store IStore
 		ctx, ok := state.(*Context)
-		if !ok {
-			panic("state are not a typer of *gw.Context")
+		if ok {
+			user = ctx.User()
+			store = ctx.Store()
+		} else {
+			ss, ok := state.(*ServerState)
+			if !ok {
+				panic("state are not a typer of *gw.Context or *gw.ServerState")
+			}
+			user = EmptyUser
+			store = ss.Store()
 		}
-		return resolverTyperInstance(1, di, ctx, typerName).Interface()
+		return resolverTyperInstance(1, di, user, store, typerName).Interface()
 	},
 }
 
@@ -226,7 +236,7 @@ func (d *DefaultDIProviderImpl) Resolve(typerName string) interface{} {
 }
 
 func (d *DefaultDIProviderImpl) ResolveByTyper(typer reflect.Type) interface{} {
-	return d.ResolveByTyperWithState(d.state.Store(), typer)
+	return d.ResolveByTyperWithState(d.state, typer)
 }
 
 func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state interface{}, typer reflect.Type) interface{} {
@@ -242,13 +252,7 @@ func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName st
 }
 
 // helpers
-func resolverTyperInstance(depth int, di *DefaultDIProviderImpl, ctx *Context, typerName string) reflect.Value {
-	var user = ctx.User()
-	var store = ctx.Store()
-	if ctx != nil {
-		user = ctx.User()
-		store = ctx.Store()
-	}
+func resolverTyperInstance(depth int, di *DefaultDIProviderImpl, user User, store IStore, typerName string) reflect.Value {
 	switch typerName {
 	case IStoreName:
 		if store != nil {
@@ -264,7 +268,7 @@ func resolverTyperInstance(depth int, di *DefaultDIProviderImpl, ctx *Context, t
 	if objectTyper.newAPI == NullReflectValue {
 		return objectTyper.ActualValue
 	}
-	var result = objectTyper.newAPI.Call(resolverTyperDependOn(depth, di, objectTyper.DependOn, ctx))[0]
+	var result = objectTyper.newAPI.Call(resolverTyperDependOn(depth, di, objectTyper.DependOn, user, store))[0]
 	switch result.Kind() {
 	case reflect.Ptr:
 		if objectTyper.IsPtr {
@@ -283,10 +287,10 @@ func resolverTyperInstance(depth int, di *DefaultDIProviderImpl, ctx *Context, t
 	}
 }
 
-func resolverTyperDependOn(depth int, di *DefaultDIProviderImpl, dependencies []TyperDependency, ctx *Context) []reflect.Value {
+func resolverTyperDependOn(depth int, di *DefaultDIProviderImpl, dependencies []TyperDependency, user User, store IStore) []reflect.Value {
 	var values = make([]reflect.Value, 0, 8)
 	for _, dp := range dependencies {
-		values = append(values, resolverTyperInstance(depth+1, di, ctx, dp.Name))
+		values = append(values, resolverTyperInstance(depth+1, di, user, store, dp.Name))
 	}
 	return values
 }

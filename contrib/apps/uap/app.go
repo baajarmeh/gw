@@ -179,7 +179,7 @@ func initUsers(state *gw.ServerState) {
 		user.UserType = usr.UserType
 		err := userManager.Create(&user)
 		if err != nil && err != gw.ErrorUserHasExists {
-			panic(fmt.Sprintf("uap -> initSystemAdministrator fail, err: %v", err))
+			logger.Error(fmt.Sprintf("uap -> initSystemAdministrator fail, err: %v", err))
 		}
 	}
 }

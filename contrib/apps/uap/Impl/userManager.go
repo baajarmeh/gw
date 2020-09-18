@@ -84,14 +84,6 @@ func (u UserManager) SaveToCache(user gw.User) {
 func (u UserManager) Create(user *gw.User) error {
 	db := u.Store().GetDbStore()
 	var model Db.User
-	err := db.First(&model, " passport = ? ", user.Passport).Error
-	if err != nil && err.Error() != "record not found" {
-		return err
-	}
-	if model.ID > 0 {
-		return gw.ErrorUserHasExists
-	}
-
 	// default
 	model.IsUser = false
 	model.IsAdmin = false
@@ -102,6 +94,7 @@ func (u UserManager) Create(user *gw.User) error {
 	model.TenantID = user.TenantID
 	model.Secret = user.Secret
 
+	// userType
 	switch user.UserType {
 	case gw.Administrator:
 		model.IsAdmin = true
@@ -110,10 +103,7 @@ func (u UserManager) Create(user *gw.User) error {
 	case gw.NonUser:
 		model.IsUser = true
 	}
-	err = db.Create(&model).Error
-	if err != nil {
-		return err
-	}
+	err := db.Create(&model).Error
 	user.ID = model.ID
 	return err
 }

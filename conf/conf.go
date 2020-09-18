@@ -245,6 +245,9 @@ type Settings struct {
 	HeaderKey struct {
 		RequestIDKey string `yaml:"requestIdKey" toml:"requestIdKey" json:"requestIdKey"`
 	} `yaml:"headerKey" toml:"headerKey" json:"headerKey"`
+	Monitor struct {
+		SentryDNS string `yaml:"sentryDsn" toml:"sentryDsn" json:"sentryDsn"`
+	} `yaml:"monitor" toml:"monitor" json:"monitor"`
 	TimeoutControl struct {
 		HTTP     int `yaml:"http" toml:"http" json:"http,string"`
 		Redis    int `yaml:"redis" toml:"redis" json:"redis,string"`

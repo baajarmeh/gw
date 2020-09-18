@@ -153,6 +153,8 @@ settings:
       title: "Router Information"
   headerKey:
     requestIdKey: "X-Request-Id"
+  monitor:
+    sentryDsn: "https://571bb56737f6448687fc35b2ee830212@stry.lanhuapp.com/30"
   timeoutControl:  # Timeout control, units is millisecond
     redis: "1000"
     database: "2000"

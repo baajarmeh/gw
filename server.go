@@ -95,6 +95,7 @@ type HostServer struct {
 	quit                   chan bool
 	serverExitSignal       chan struct{}
 	serverStartDone        chan struct{}
+	serverHandlers         map[string][]func(state *ServerState)
 }
 
 func (s *HostServer) State() *ServerState {
@@ -393,6 +394,13 @@ func (s *HostServer) ReplaceHook(name string, hookHandler *Hook) {
 }
 
 // HandleError register a global http error handler API into the server.
+func (s *HostServer) HandleErrors(handler ErrorHandler, httpStatus ...int) {
+	for _, c := range httpStatus {
+		s.HandleError(c, handler)
+	}
+}
+
+// HandleError register a global http error handler API into the server.
 func (s *HostServer) HandleError(httpStatus int, handlers ...ErrorHandler) {
 	if len(handlers) == 0 {
 		return
@@ -407,6 +415,32 @@ func (s *HostServer) HandleError(httpStatus int, handlers ...ErrorHandler) {
 		h = append(h, handlers...)
 	}
 	s.httpErrHandlers[httpStatus] = h
+}
+
+// OnStart define a API that called when the server start before(Serve API before).
+func (s *HostServer) OnStart(handlers ...func(state *ServerState)) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	if len(s.serverHandlers) == 0 {
+		s.serverHandlers = make(map[string][]func(state *ServerState))
+	}
+	if len(s.serverHandlers["start"]) == 0 {
+		s.serverHandlers["start"] = make([]func(*ServerState), 0, 8)
+	}
+	s.serverHandlers["start"] = append(s.serverHandlers["start"], handlers...)
+}
+
+// OnShutDown define a API that called when the server shutdown.
+func (s *HostServer) OnShutDown(handlers ...func(state *ServerState)) {
+	s.locker.Lock()
+	defer s.locker.Unlock()
+	if len(s.serverHandlers) == 0 {
+		s.serverHandlers = make(map[string][]func(state *ServerState))
+	}
+	if len(s.serverHandlers["shutdown"]) == 0 {
+		s.serverHandlers["shutdown"] = make([]func(*ServerState), 0, 8)
+	}
+	s.serverHandlers["shutdown"] = append(s.serverHandlers["shutdown"], handlers...)
 }
 
 // Register register a app instances into the server.
@@ -722,6 +756,26 @@ func (s *HostServer) compile() {
 	}()
 }
 
+func (s *HostServer) startHandlers() {
+	if len(s.serverHandlers) == 0 {
+		return
+	}
+	state := servers[s.Name].State
+	for _, h := range s.serverHandlers["start"] {
+		h(state)
+	}
+}
+
+func (s *HostServer) shutDownHandlers() {
+	if len(s.serverHandlers) == 0 {
+		return
+	}
+	state := servers[s.Name].State
+	for _, h := range s.serverHandlers["shutdown"] {
+		h(state)
+	}
+}
+
 // GetRouters returns has registered routers on the Server.
 func (s *HostServer) GetRouters() []RouterInfo {
 	s.compile()
@@ -765,7 +819,7 @@ func (s *HostServer) Serve() {
 			panic(fmt.Errorf("call app.StartBeforeHandler, %v", err))
 		}
 	}
-
+	s.startHandlers()
 	s.DisplayRouterInfo()
 
 	logger.NewLine(2)
@@ -797,4 +851,5 @@ func (s *HostServer) Serve() {
 
 func (s *HostServer) ShutDown() {
 	s.quit <- true
+	s.shutDownHandlers()
 }

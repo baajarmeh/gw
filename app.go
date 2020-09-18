@@ -89,4 +89,4 @@ type IDynamicRestAPI interface {
 }
 
 // ErrorHandler represents a http Error handler.
-type ErrorHandler func(requestId string, httpRequest string, headers []string, stack string, err []*gin.Error)
+type ErrorHandler func(requestId string, httpRequest string, headers []string, stack string, errOriBody string, err []*gin.Error)

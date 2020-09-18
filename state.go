@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/conf"
+	"github.com/oceanho/gw/libs/gwjsoner"
 	"github.com/oceanho/gw/logger"
 	"github.com/oceanho/gw/utils/secure"
 	"io"
@@ -24,6 +25,36 @@ const (
 	gwSidKey  = "gw-sid"
 	gwUserKey = "gw-user"
 )
+
+type bodyWriter struct {
+	requestId string
+	server    *HostServer
+	ctx       *gin.Context
+	errBody   *bytes.Buffer
+	gin.ResponseWriter
+}
+
+func (w *bodyWriter) Write(b []byte) (int, error) {
+	switch w.Status() {
+	case 400:
+		body := w.server.RespBodyBuildFunc(w.Status(), w.requestId, errDefault400Msg, nil)
+		_b, e := gwjsoner.Marshal(body)
+		if e != nil {
+			return 0, e
+		}
+		w.errBody.Write(b)
+		return w.ResponseWriter.Write(_b)
+	case 500:
+		body := w.server.RespBodyBuildFunc(w.Status(), w.requestId, errDefault500Msg, nil)
+		_b, e := gwjsoner.Marshal(body)
+		if e != nil {
+			return 0, e
+		}
+		w.errBody.Write(b)
+		return w.ResponseWriter.Write(_b)
+	}
+	return w.ResponseWriter.Write(b)
+}
 
 // GW framework state Middleware.
 func gwState(serverName string) gin.HandlerFunc {
@@ -87,6 +118,10 @@ func gwState(serverName string) gin.HandlerFunc {
 					c.JSON(http.StatusInternalServerError, body)
 				}
 			}
+			var errOriBody string
+			if writer, ok := c.Writer.(*bodyWriter); ok {
+				errOriBody = writer.errBody.String()
+			}
 			// handle panic Errors
 			status := c.Writer.Status()
 			handlers, ok := s.httpErrHandlers[status]
@@ -98,7 +133,7 @@ func gwState(serverName string) gin.HandlerFunc {
 			}()
 			if ok {
 				for _, handler := range handlers {
-					handler(requestId, string(httpRequest), headers, string(stacks), c.Errors)
+					handler(requestId, string(httpRequest), headers, string(stacks), errOriBody, c.Errors)
 				}
 			}
 			// After handlers.
@@ -108,6 +143,14 @@ func gwState(serverName string) gin.HandlerFunc {
 				}
 			}
 		}()
+		writer := &bodyWriter{
+			server:         s,
+			ctx:            c,
+			ResponseWriter: c.Writer,
+			requestId:      requestId,
+			errBody:        bytes.NewBufferString(""),
+		}
+		c.Writer = writer
 		// before handlers
 		for _, hook := range s.beforeHooks {
 			if hook.OnBefore != nil {
