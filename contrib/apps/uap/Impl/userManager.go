@@ -82,7 +82,6 @@ func (u UserManager) SaveToCache(user gw.User) {
 // APIs
 //
 func (u UserManager) Create(user *gw.User) error {
-	db := u.Store().GetDbStore()
 	var model Db.User
 	// default
 	model.IsUser = false
@@ -90,8 +89,8 @@ func (u UserManager) Create(user *gw.User) error {
 	model.IsTenancy = false
 
 	// passport
-	model.Passport = user.Passport
 	model.TenantID = user.TenantID
+	model.Passport = user.Passport
 	model.Secret = user.Secret
 
 	// userType
@@ -103,17 +102,20 @@ func (u UserManager) Create(user *gw.User) error {
 	case gw.NonUser:
 		model.IsUser = true
 	}
-	err := db.Create(&model).Error
+	tx := u.Store().GetDbStore()
+	err := tx.Create(&model).Error
 	user.ID = model.ID
 	return err
 }
 
 func (u UserManager) Modify(user gw.User) error {
-	panic("implement me")
+	db := u.Store().GetDbStore()
+	return db.Model(&Db.User{}).Where("passport = ?", user.Passport).Update("secret", user.Password).Error
 }
 
 func (u UserManager) Delete(userId uint64) error {
-	panic("implement me")
+	db := u.Store().GetDbStore()
+	return db.Where("id = ?", userId).Delete(&Db.User{}).Error
 }
 
 func (u UserManager) QueryByUser(passport, password string) (gw.User, error) {

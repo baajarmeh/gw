@@ -152,6 +152,14 @@ func NewCrudPermDecorator(resName string) *PermissionDecorator {
 	return pdList
 }
 
+func NewBeforeCustomFuncDecorator(handler DecoratorHandler) Decorator {
+	return Decorator{
+		MetaData: nil,
+		Before:   handler,
+		After:    nil,
+	}
+}
+
 func NewPermissionDecorator(perms ...*Permission) Decorator {
 	names := make([]string, len(perms))
 	for idx := 0; idx < len(perms); idx++ {

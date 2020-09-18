@@ -3,10 +3,12 @@ package gw
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/oceanho/gw/backend/gwdb"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/libs/gwjsoner"
 	"gorm.io/gorm"
 	"sync"
+	"time"
 )
 
 type Permission struct {
@@ -321,6 +323,21 @@ type User struct {
 	Roles       []string               `gorm:"-"`
 	Permissions []*Permission          `gorm:"-"`
 	PermMaps    map[string]*Permission `gorm:"-"`
+	Profile     UserProfile            `gorm:"-"`
+}
+
+type UserProfile struct {
+	UserID   uint64     `json:"user_id"`
+	Gender   uint8      `json:"gender"` // 1.man, 2.woman, 3.custom, 4.unknown
+	Name     string     `json:"name"`
+	Email    string     `json:"email"`
+	Phone    string     `json:"phone"`
+	Avatar   string     `json:"avatar"`
+	Address  string     `json:"address"`
+	PostCode string     `json:"post_code"`
+	BirthDay *time.Time `json:"birth_day"`
+	gwdb.HasCreationState
+	gwdb.HasModificationState
 }
 
 func (user User) MarshalBinary() (data []byte, err error) {

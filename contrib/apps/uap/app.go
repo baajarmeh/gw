@@ -81,34 +81,44 @@ func New() App {
 			if err != nil {
 				panic("migrate uap fail")
 			}
-			state.DbOpProcessor().QueryBefore().Register(func(db *gorm.DB, ctx *gw.Context) error {
-				user := ctx.User()
-				if user.IsEmpty() {
+			var globalFilterFunc = func(db *gorm.DB, authUser gw.User) error {
+				if authUser.IsEmpty() {
 					return nil
 				}
-				_, ok := db.Statement.Schema.FieldsByName["TenantID"]
-				if ok {
-					if user.IsTenancy() {
-						if db.Statement.Schema.ModelType == dbUserTableTyper {
-							//db.Where("id = ?", user.ID)
-						} else {
-							db.Where("tenant_id = ?", user.ID)
+				_, hasUserId := db.Statement.Schema.FieldsByName["UserID"]
+				_, hasTenantId := db.Statement.Schema.FieldsByName["TenantID"]
+				if authUser.IsTenancy() {
+					if db.Statement.Schema.ModelType == dbUserTableTyper {
+						db.Where("(id = ? or tenant_id = ?)", authUser.ID, authUser.ID)
+					} else {
+						if hasTenantId {
+							db.Where("tenant_id = ?", authUser.ID)
 						}
-					} else if user.IsUser() {
-						if _, ok := db.Statement.Schema.FieldsByName["UserID"]; !ok {
-							db.Where("tenant_id = ? and user_id = ?", user.TenantID, user.ID)
-						} else {
-							db.Where("user_id = ? and tenant_id = ?", user.ID, user.TenantID)
+					}
+				} else if authUser.IsUser() {
+					if db.Statement.Schema.ModelType == dbUserTableTyper {
+						db.Where("id = ?", authUser.ID)
+					} else {
+						if hasUserId {
+							db.Where("user_id = ?", authUser.ID)
+						}
+						if hasTenantId {
+							db.Where("tenant_id = ?", authUser.TenantID)
 						}
 					}
 				}
 				return nil
+			}
+			state.DbOpProcessor().UpdateBefore().Register(func(db *gorm.DB, ctx *gw.Context) error {
+				return globalFilterFunc(db, ctx.User())
+			})
+			state.DbOpProcessor().QueryBefore().Register(func(db *gorm.DB, ctx *gw.Context) error {
+				return globalFilterFunc(db, ctx.User())
 			})
 		},
 		onStartFunc: func(state *gw.ServerState) {
 			// Services dependency injection
 			Service.Register(state.DI())
-
 			// TODO(OceanHo): there are may be consider initial by other tool
 			//  Because of initialization with this way has some problem on a distributed Cluster.
 			initPerms(state)
