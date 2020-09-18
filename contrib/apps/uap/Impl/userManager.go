@@ -121,8 +121,8 @@ func (u UserManager) Delete(userId uint64) error {
 func (u UserManager) QueryByUser(passport, password string) (gw.User, error) {
 	var user gw.User
 	var model Db.User
-	var err = u.Backend().Take(&model, "passport=? and secret=?", passport, password).Error
-	if err != nil {
+	var err = u.Backend().Take(&model, "passport=?", passport).Error
+	if err != nil || model.Secret != password {
 		return gw.EmptyUser, err
 	}
 
@@ -130,11 +130,12 @@ func (u UserManager) QueryByUser(passport, password string) (gw.User, error) {
 	user.TenantID = model.TenantID
 	user.Passport = model.Passport
 	user.Password = model.Secret
-	user.UserType = u.mapUserType(model)
 
 	if user.IsEmpty() {
 		return gw.EmptyUser, gw.ErrorUserNotFound
 	}
+
+	user.UserType = u.mapUserType(model)
 	_, perms, err := u.PermissionManager().QueryByUser(model.TenantID, model.ID, gw.DefaultPageExpr)
 	if err != nil {
 		return gw.EmptyUser, err

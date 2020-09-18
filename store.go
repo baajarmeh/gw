@@ -3,12 +3,13 @@ package gw
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/go-redis/redis/v8"
 	mysqlDb "github.com/go-sql-driver/mysql"
 	"github.com/oceanho/gw/conf"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 // IStore represents a Store engine of gw framework.
@@ -170,7 +171,12 @@ func createDb(db conf.Db) *gorm.DB {
 	dbConf.Params = params
 
 	gDialect := mysql.Open(dbConf.FormatDSN())
-	gDbConf := &gorm.Config{}
+	//
+	// https://gorm.io/docs/performance.html
+	gDbConf := &gorm.Config{
+		SkipDefaultTransaction: true,
+		PrepareStmt:            true,
+	}
 	gDb, err := gorm.Open(gDialect, gDbConf)
 	if err != nil {
 		panic("create backend store db fail.")
@@ -182,7 +188,6 @@ func createDb(db conf.Db) *gorm.DB {
 	if err := sqlDb.Ping(); err != nil {
 		panic(fmt.Sprintf("db not pong, db name:%s. addr: %s, port: %d", db.Name, db.Addr, db.Port))
 	}
-	//FIXME(Ocean): how to warp gw.Context and necessary?
 	setupDb(gDb)
 	return gDb
 }
@@ -197,7 +202,10 @@ func setupDb(db *gorm.DB) {
 			fns, ok := ctx.server.DbOpProcessor.CreateBefore().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx)
+					err := f(db, ctx)
+					if err != nil {
+						_ = db.AddError(err)
+					}
 				}
 			}
 		}
@@ -214,7 +222,10 @@ func setupDb(db *gorm.DB) {
 			fns, ok := ctx.server.DbOpProcessor.CreateAfter().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx)
+					err = f(db, ctx)
+					if err != nil {
+						_ = db.AddError(err)
+					}
 				}
 			}
 		}
@@ -231,7 +242,10 @@ func setupDb(db *gorm.DB) {
 			fns, ok := ctx.server.DbOpProcessor.UpdateBefore().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx)
+					err = f(db, ctx)
+					if err != nil {
+						_ = db.AddError(err)
+					}
 				}
 			}
 		}
@@ -250,8 +264,13 @@ func setupDb(db *gorm.DB) {
 				fns, ok = ctx.server.DbOpProcessor.UpdateBefore().handlers[dbHandleAllModelTyper]
 			}
 			if ok {
-				for _, f := range fns {
-					_ = f(db, ctx)
+				if ok {
+					for _, f := range fns {
+						err = f(db, ctx)
+						if err != nil {
+							_ = db.AddError(err)
+						}
+					}
 				}
 			}
 		}
@@ -324,7 +343,10 @@ func setupDb(db *gorm.DB) {
 			fns, ok := ctx.server.DbOpProcessor.QueryAfter().handlers[db.Statement.Schema.ModelType]
 			if ok {
 				for _, f := range fns {
-					_ = f(db, ctx)
+					err = f(db, ctx)
+					if err != nil {
+						_ = db.AddError(err)
+					}
 				}
 			}
 		}
