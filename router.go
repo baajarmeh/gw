@@ -40,13 +40,6 @@ type Context struct {
 	server     *HostServer
 }
 
-// ServerState represents a Server state context object.
-type ContextState struct {
-	store  IStore
-	state  *ServerState
-	values map[string]interface{}
-}
-
 func (c *Context) RequestId() string {
 	return c.requestId
 }
