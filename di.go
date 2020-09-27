@@ -78,6 +78,7 @@ type BuiltinComponent struct {
 	CryptoProtect       ICryptoProtect
 	PasswordSigner      IPasswordSigner
 	IDGenerator         IdentifierGenerator
+	EventManager        IEventManager
 }
 
 func (bc BuiltinComponent) New(
@@ -92,6 +93,7 @@ func (bc BuiltinComponent) New(
 	CryptoProtect ICryptoProtect,
 	PasswordSigner IPasswordSigner,
 	IDGenerator IdentifierGenerator,
+	EventManager IEventManager,
 ) BuiltinComponent {
 	bc.User = User
 	bc.Store = Store
@@ -104,6 +106,7 @@ func (bc BuiltinComponent) New(
 	bc.CryptoProtect = CryptoProtect
 	bc.PasswordSigner = PasswordSigner
 	bc.IDGenerator = IDGenerator
+	bc.EventManager = EventManager
 	return bc
 }
 

@@ -37,7 +37,7 @@ type bodyWriter struct {
 func (w *bodyWriter) Write(b []byte) (int, error) {
 	switch w.Status() {
 	case 400:
-		body := w.server.RespBodyBuildFunc(w.Status(), w.requestId, errDefault400Msg, nil)
+		body := w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault400Msg, nil)
 		_b, e := gwjsoner.Marshal(body)
 		if e != nil {
 			return 0, e
@@ -45,7 +45,7 @@ func (w *bodyWriter) Write(b []byte) (int, error) {
 		w.errBody.Write(b)
 		return w.ResponseWriter.Write(_b)
 	case 500:
-		body := w.server.RespBodyBuildFunc(w.Status(), w.requestId, errDefault500Msg, nil)
+		body := w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault500Msg, nil)
 		_b, e := gwjsoner.Marshal(body)
 		if e != nil {
 			return 0, e
@@ -114,7 +114,7 @@ func gwState(serverName string) gin.HandlerFunc {
 					c.Error(err.(error)) // nolint: errcheck
 					c.Abort()
 				} else {
-					body := s.RespBodyBuildFunc(http.StatusInternalServerError, requestId, errDefault500Msg, nil)
+					body := s.RespBodyBuildFunc(c, http.StatusInternalServerError, requestId, errDefault500Msg, nil)
 					c.JSON(http.StatusInternalServerError, body)
 				}
 			}

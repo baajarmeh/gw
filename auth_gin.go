@@ -27,7 +27,7 @@ func gwLogin(c *gin.Context) {
 	}
 
 	if !hasCheckPass {
-		c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(http.StatusBadRequest, reqId, err, nil))
+		c.JSON(http.StatusBadRequest, s.RespBodyBuildFunc(c, http.StatusBadRequest, reqId, err, nil))
 		c.Abort()
 		return
 	}
@@ -35,18 +35,18 @@ func gwLogin(c *gin.Context) {
 	// Login
 	user, err := s.AuthManager.Login(authParam)
 	if err != nil || user.IsEmpty() {
-		c.JSON(http.StatusNotFound, s.RespBodyBuildFunc(http.StatusNotFound, reqId, err.Error(), nil))
+		c.JSON(http.StatusNotFound, s.RespBodyBuildFunc(c, http.StatusNotFound, reqId, err, nil))
 		c.Abort()
 		return
 	}
 	sid, credential, ok := encryptSid(s, authParam)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(http.StatusInternalServerError, reqId, "Create session ID fail.", nil))
+		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(c, http.StatusInternalServerError, reqId, "Create session ID fail.", nil))
 		c.Abort()
 		return
 	}
 	if err := s.SessionStateManager.Save(sid, user); err != nil {
-		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(http.StatusInternalServerError, reqId, "Save session fail.", err.Error()))
+		c.JSON(http.StatusInternalServerError, s.RespBodyBuildFunc(c, http.StatusInternalServerError, reqId, "Save session fail.", err.Error()))
 		c.Abort()
 		return
 	}
@@ -73,7 +73,7 @@ func gwLogin(c *gin.Context) {
 		"Roles":       userRoles,
 		"Permissions": userPerms,
 	}
-	body := s.RespBodyBuildFunc(0, reqId, nil, payload)
+	body := s.RespBodyBuildFunc(c, 0, reqId, nil, payload)
 	c.SetCookie(cks.Key, credential, cks.MaxAge, cks.Path, cks.Domain, cks.Secure, cks.HttpOnly)
 	c.JSON(http.StatusOK, body)
 }
@@ -86,12 +86,12 @@ func gwLogout(c *gin.Context) {
 	cks := s.conf.Security.Auth.Cookie
 	ok := s.AuthManager.Logout(user)
 	if !ok {
-		s.RespBodyBuildFunc(http.StatusInternalServerError, reqId, "auth logout fail", nil)
+		s.RespBodyBuildFunc(c, http.StatusInternalServerError, reqId, "auth logout fail", nil)
 		return
 	}
 	sid, ok := getSid(s, c)
 	if !ok {
-		s.RespBodyBuildFunc(http.StatusInternalServerError, reqId, "session store logout fail", nil)
+		s.RespBodyBuildFunc(c, http.StatusInternalServerError, reqId, "session store logout fail", nil)
 		return
 	}
 	_ = s.SessionStateManager.Remove(sid)
@@ -134,7 +134,7 @@ func gwAuthChecker(urls []conf.AllowUrl) gin.HandlerFunc {
 					},
 				},
 			}
-			body := s.RespBodyBuildFunc(http.StatusUnauthorized, requestId, errDefault401Msg, payload)
+			body := s.RespBodyBuildFunc(c, http.StatusUnauthorized, requestId, errDefault401Msg, payload)
 			c.JSON(http.StatusUnauthorized, body)
 			c.Abort()
 			return

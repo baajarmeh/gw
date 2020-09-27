@@ -3,6 +3,7 @@ package gw
 import (
 	"context"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"strconv"
 
 	"github.com/go-redis/redis/v8"
@@ -36,7 +37,7 @@ type AuthManagerHandler func(state *ServerState) IAuthManager
 type PermissionManagerHandler func(state *ServerState) IPermissionManager
 
 // RespBodyBuildFunc represents a response body build handler.
-type RespBodyBuildFunc func(status int, requestID string, err interface{}, msgBody interface{}) interface{}
+type RespBodyBuildFunc func(ctx *gin.Context, status int, requestID string, err interface{}, msgBody interface{}) interface{}
 
 type backendWrapper struct {
 	user                    User
