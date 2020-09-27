@@ -134,7 +134,7 @@ func gwState(serverName string) gin.HandlerFunc {
 			// only http 500, dump request
 			if status == 500 {
 				if len(httpRequest) == 0 {
-					httpRequest, _ = httputil.DumpRequest(c.Request, false)
+					httpRequest, _ = httputil.DumpRequest(c.Request, true)
 				}
 				if len(headers) == 0 {
 					headers = strings.Split(string(httpRequest), "\r\n")
