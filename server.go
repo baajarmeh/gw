@@ -98,10 +98,6 @@ type HostServer struct {
 	serverHandlers         map[string][]func(state *ServerState)
 }
 
-func (s *HostServer) State() *ServerState {
-	return servers[s.options.Name].State
-}
-
 // ServerState represents a Server state context object.
 type ServerState struct {
 	s *HostServer
@@ -346,6 +342,14 @@ func NewServerWithOption(sopt *ServerOption) *HostServer {
 		Server: serverInstance,
 	}
 	return serverInstance
+}
+
+func (s *HostServer) State() *ServerState {
+	return servers[s.options.Name].State
+}
+
+func (s *HostServer) Use(f func(s *HostServer) *HostServer) *HostServer {
+	return f(s)
 }
 
 // AddHook register a global http handler API into the server.
