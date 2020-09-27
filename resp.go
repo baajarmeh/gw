@@ -8,12 +8,13 @@ import (
 )
 
 var (
-	errDefault400Msg              = "Bad Request"
-	errDefault401Msg              = "Unauthorized"
-	errDefault403Msg              = "Access Denied"
-	errDefault404Msg              = "Not Found"
-	errDefault500Msg              = "Internal Server Error"
-	errDefaultPayload interface{} = nil
+	errDefault400Msg                   = "Bad Request"
+	errDefault401Msg                   = "Unauthorized"
+	errDefault403Msg                   = "Access Denied"
+	errDefault404Msg                   = "Not Found"
+	errDefault500Msg                   = "Internal Server Error"
+	errDefaultPayload      interface{} = nil
+	errInvalidParameterMsg             = "Invalid Parameter"
 )
 
 // JSON200 response a JSON formatter to client with http status = 200.

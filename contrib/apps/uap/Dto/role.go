@@ -8,8 +8,8 @@ import (
 
 type Role struct {
 	gwdb.Model
-	Name       string `gorm:"type:varchar(32);not null" json:"name"`
-	Descriptor string `gorm:"type:varchar(128);not null" json:"descriptor"`
+	Name       string `binding:"required,lt=128" json:"name" form:"name"`
+	Descriptor string `binding:"lt=256" json:"desc" form:"desc"`
 	gwdb.HasCreationState
 	gwdb.HasModificationState
 }

@@ -3,11 +3,6 @@ package gw
 import (
 	"bytes"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/oceanho/gw/conf"
-	"github.com/oceanho/gw/libs/gwjsoner"
-	"github.com/oceanho/gw/logger"
-	"github.com/oceanho/gw/utils/secure"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,6 +13,13 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/oceanho/gw/conf"
+	"github.com/oceanho/gw/libs/gwjsoner"
+	"github.com/oceanho/gw/logger"
+	"github.com/oceanho/gw/utils/secure"
 )
 
 const (
@@ -35,9 +37,15 @@ type bodyWriter struct {
 }
 
 func (w *bodyWriter) Write(b []byte) (int, error) {
+
 	switch w.Status() {
 	case 400:
-		body := w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault400Msg, nil)
+		var body interface{}
+		if _, ok := w.ctx.Errors.Last().Err.(validator.ValidationErrors); ok {
+			body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errInvalidParameterMsg, nil)
+		} else {
+			body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault400Msg, nil)
+		}
 		_b, e := gwjsoner.Marshal(body)
 		if e != nil {
 			return 0, e
