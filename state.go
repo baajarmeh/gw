@@ -131,11 +131,14 @@ func gwState(serverName string) gin.HandlerFunc {
 					logger.Error("handler or hooks errors fail, err: %s", string(stacks))
 				}
 			}()
-			if len(httpRequest) == 0 {
-				httpRequest, _ = httputil.DumpRequest(c.Request, false)
-			}
-			if len(headers) == 0 {
-				headers = strings.Split(string(httpRequest), "\r\n")
+			// only http 500, dump request
+			if status == 500 {
+				if len(httpRequest) == 0 {
+					httpRequest, _ = httputil.DumpRequest(c.Request, false)
+				}
+				if len(headers) == 0 {
+					headers = strings.Split(string(httpRequest), "\r\n")
+				}
 			}
 			if ok {
 				for _, handler := range handlers {
