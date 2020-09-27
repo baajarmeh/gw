@@ -55,6 +55,8 @@ func (u Role) QueryList(ctx *gw.Context) {
 	if err := ctx.Bind(&model); err != nil {
 		return
 	}
+	//var svc Service.Service
+	//ctx.Resolve(&svc)
 	err, result := Service.Services(ctx).RoleSvc.QueryList(model)
 	ctx.JSON(err, result)
 }
