@@ -12,10 +12,10 @@ import (
 
 func main() {
 	server := gw.DefaultServer()
-	server.Use(fixServer).Serve()
+	server.Use(addProps).Serve()
 }
 
-func fixServer(server *gw.HostServer) *gw.HostServer {
+func addProps(server *gw.HostServer) *gw.HostServer {
 	return server.OnStart(registerSentry).Register(uap.New(), pvm.New()).
 		HandleErrors(server4XXErrorHandler, 400, 401, 403, 404).
 		HandleErrors(server5XXErrorHandler, 500, 502, 503, 504)
