@@ -349,9 +349,9 @@ func NewServerWithOption(sopt *ServerOption) *HostServer {
 }
 
 // AddHook register a global http handler API into the server.
-func (s *HostServer) AddHook(handlers ...*Hook) {
+func (s *HostServer) AddHook(handlers ...*Hook) *HostServer {
 	if len(handlers) == 0 {
-		return
+		return s
 	}
 	s.locker.Lock()
 	defer s.locker.Unlock()
@@ -364,10 +364,11 @@ func (s *HostServer) AddHook(handlers ...*Hook) {
 			s.hooks = append(s.hooks, handlers[j])
 		}
 	}
+	return s
 }
 
 // DeleteHook delete a global hook from has registered before hooks.
-func (s *HostServer) DeleteHook(name string) {
+func (s *HostServer) DeleteHook(name string) *HostServer {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	for i := 0; i < len(s.hooks); i++ {
@@ -379,10 +380,11 @@ func (s *HostServer) DeleteHook(name string) {
 			break
 		}
 	}
+	return s
 }
 
 // ReplaceHook replace a global hook from has registered before hooks.
-func (s *HostServer) ReplaceHook(name string, hookHandler *Hook) {
+func (s *HostServer) ReplaceHook(name string, hookHandler *Hook) *HostServer {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	for i := 0; i < len(s.hooks); i++ {
@@ -391,19 +393,21 @@ func (s *HostServer) ReplaceHook(name string, hookHandler *Hook) {
 			break
 		}
 	}
+	return s
 }
 
 // HandleError register a global http error handler API into the server.
-func (s *HostServer) HandleErrors(handler ErrorHandler, httpStatus ...int) {
+func (s *HostServer) HandleErrors(handler ErrorHandler, httpStatus ...int) *HostServer {
 	for _, c := range httpStatus {
 		s.HandleError(c, handler)
 	}
+	return s
 }
 
 // HandleError register a global http error handler API into the server.
-func (s *HostServer) HandleError(httpStatus int, handlers ...ErrorHandler) {
+func (s *HostServer) HandleError(httpStatus int, handlers ...ErrorHandler) *HostServer {
 	if len(handlers) == 0 {
-		return
+		return s
 	}
 	s.locker.Lock()
 	defer s.locker.Unlock()
@@ -415,10 +419,11 @@ func (s *HostServer) HandleError(httpStatus int, handlers ...ErrorHandler) {
 		h = append(h, handlers...)
 	}
 	s.httpErrHandlers[httpStatus] = h
+	return s
 }
 
 // OnStart define a API that called when the server start before(Serve API before).
-func (s *HostServer) OnStart(handlers ...func(state *ServerState)) {
+func (s *HostServer) OnStart(handlers ...func(state *ServerState)) *HostServer {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	if len(s.serverHandlers) == 0 {
@@ -428,10 +433,11 @@ func (s *HostServer) OnStart(handlers ...func(state *ServerState)) {
 		s.serverHandlers["start"] = make([]func(*ServerState), 0, 8)
 	}
 	s.serverHandlers["start"] = append(s.serverHandlers["start"], handlers...)
+	return s
 }
 
 // OnShutDown define a API that called when the server shutdown.
-func (s *HostServer) OnShutDown(handlers ...func(state *ServerState)) {
+func (s *HostServer) OnShutDown(handlers ...func(state *ServerState)) *HostServer {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	if len(s.serverHandlers) == 0 {
@@ -441,10 +447,11 @@ func (s *HostServer) OnShutDown(handlers ...func(state *ServerState)) {
 		s.serverHandlers["shutdown"] = make([]func(*ServerState), 0, 8)
 	}
 	s.serverHandlers["shutdown"] = append(s.serverHandlers["shutdown"], handlers...)
+	return s
 }
 
 // Register register a app instances into the server.
-func (s *HostServer) Register(apps ...App) {
+func (s *HostServer) Register(apps ...App) *HostServer {
 	s.locker.Lock()
 	defer s.locker.Unlock()
 	for _, app := range apps {
@@ -456,6 +463,7 @@ func (s *HostServer) Register(apps ...App) {
 			}
 		}
 	}
+	return s
 }
 
 // Patch patch up for HostServer with apps.
@@ -472,9 +480,9 @@ func (s *HostServer) Register(apps ...App) {
 // Now, We can separate deployment of UAP and DevOps
 //
 // And we should be patch up UAP into DevOps app.
-func (s *HostServer) Patch(apps ...App) {
+func (s *HostServer) Patch(apps ...App) *HostServer {
 	if len(apps) == 0 {
-		return
+		return s
 	}
 	s.locker.Lock()
 	defer s.locker.Unlock()
@@ -488,10 +496,11 @@ func (s *HostServer) Patch(apps ...App) {
 			}
 		}
 	}
+	return s
 }
 
 // RegisterByPluginDir register app instances into the server with gw plugin mode.
-func (s *HostServer) RegisterByPluginDir(dirs ...string) {
+func (s *HostServer) RegisterByPluginDir(dirs ...string) *HostServer {
 	for _, d := range dirs {
 		rd, err := ioutil.ReadDir(d)
 		if err != nil {
@@ -527,6 +536,7 @@ func (s *HostServer) RegisterByPluginDir(dirs ...string) {
 			}
 		}
 	}
+	return s
 }
 
 func initialConfig(s *HostServer) {
@@ -799,13 +809,15 @@ func (s *HostServer) DisplayRouterInfo() {
 }
 
 // RegisterStartHandler start the Server.
-func (s *HostServer) RegisterStartHandler(handlers ...ServerHandler) {
+func (s *HostServer) RegisterStartHandler(handlers ...ServerHandler) *HostServer {
 	s.options.StartHandlers = append(s.options.StartHandlers, handlers...)
+	return s
 }
 
 // RegisterShutDownHandler start the Server.
-func (s *HostServer) RegisterShutDownHandler(handlers ...ServerHandler) {
+func (s *HostServer) RegisterShutDownHandler(handlers ...ServerHandler) *HostServer {
 	s.options.ShutDownHandlers = append(s.options.ShutDownHandlers, handlers...)
+	return s
 }
 
 // Serve start the Server.

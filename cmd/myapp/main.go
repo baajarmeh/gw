@@ -12,18 +12,22 @@ import (
 
 func main() {
 	server := gw.DefaultServer()
-	server.OnStart(registerSentry)
-	server.Register(uap.New(), pvm.New())
-	server.HandleErrors(serverErrorHandler, 400, 401, 403, 404)
-	server.HandleErrors(server5XXErrorHandler, 500, 502, 503, 504)
+	fixServer(server)
 	server.Serve()
+}
+
+func fixServer(server *gw.HostServer) {
+	server.OnStart(registerSentry).
+		Register(uap.New(), pvm.New()).
+		HandleErrors(server4XXErrorHandler, 400, 401, 403, 404).
+		HandleErrors(server5XXErrorHandler, 500, 502, 503, 504)
 }
 
 func server5XXErrorHandler(requestId string, statusCode int, httpRequest string, headers []string, stack string, errOriBody string, err []*gin.Error) {
 	sentry.CaptureMessage(warpSentryMessage(requestId, statusCode, httpRequest, headers, stack, errOriBody, err))
 }
 
-func serverErrorHandler(requestId string, statusCode int, httpRequest string, headers []string, stack string, errOriBody string, err []*gin.Error) {
+func server4XXErrorHandler(requestId string, statusCode int, httpRequest string, headers []string, stack string, errOriBody string, err []*gin.Error) {
 	sentry.CaptureMessage(warpSentryMessage(requestId, statusCode, httpRequest, headers, stack, errOriBody, err))
 }
 
