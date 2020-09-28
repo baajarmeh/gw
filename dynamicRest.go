@@ -205,11 +205,23 @@ func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 			m := typ.Method(i)
 			dyApiRegister, ok := restApiRegister[strings.ToLower(m.Name)]
 			if ok {
-				var apiSpecifyDecorators []Decorator
+				var apiSpecifyDecorators = make([]Decorator, 0, 0)
 				name = "SetupOn" + m.Name + "Decorator"
 				_, ok := typ.MethodByName(name)
 				if ok {
-					apiSpecifyDecorators = val.MethodByName(name).Call(nil)[0].Interface().([]Decorator)
+					d := val.MethodByName(name).Call(nil)[0].Interface()
+					if r, ok := d.([]Decorator); ok {
+						apiSpecifyDecorators = append(apiSpecifyDecorators, r...)
+					} else if r, ok := d.(Decorator); ok {
+						apiSpecifyDecorators = append(apiSpecifyDecorators, r)
+					} else if r, ok := d.(*Decorator); ok {
+						apiSpecifyDecorators = append(apiSpecifyDecorators, *r)
+					} else if r, ok := d.([]*Decorator); ok {
+						for _, _r := range r {
+							_r1 := *_r
+							apiSpecifyDecorators = append(apiSpecifyDecorators, _r1)
+						}
+					}
 				}
 				// FIXME(Ocean): how to check the arguments type is *gw.Context.
 				n := 1
@@ -232,16 +244,12 @@ func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 						decorators = append(decorators, Decorator{
 							Before: handler,
 						})
-					} else if decorator, ok := onBeforeHandler.(Decorator); ok {
-						decorators = append(decorators, decorator)
-					} else if decorator, ok := onBeforeHandler.(*Decorator); ok {
-						decorators = append(decorators, *decorator)
-					} else if decorator, ok := onBeforeHandler.([]Decorator); ok {
-						decorators = append(decorators, decorator...)
-					} else if decorator, ok := onBeforeHandler.([]*Decorator); ok {
-						for _, d := range decorator {
-							_d := *d
-							decorators = append(decorators, _d)
+					} else if handler, ok := onBeforeHandler.([]DecoratorHandler); ok {
+						for _, h := range handler {
+							h := h
+							decorators = append(decorators, Decorator{
+								Before: h,
+							})
 						}
 					}
 				}
@@ -258,16 +266,12 @@ func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 						decorators = append(decorators, Decorator{
 							After: handler,
 						})
-					} else if decorator, ok := onAfterHandler.(Decorator); ok {
-						decorators = append(decorators, decorator)
-					} else if decorator, ok := onAfterHandler.(*Decorator); ok {
-						decorators = append(decorators, *decorator)
-					} else if decorator, ok := onAfterHandler.([]Decorator); ok {
-						decorators = append(decorators, decorator...)
-					} else if decorator, ok := onAfterHandler.([]*Decorator); ok {
-						for _, d := range decorator {
-							_d := *d
-							decorators = append(decorators, _d)
+					} else if handler, ok := onAfterHandler.([]DecoratorHandler); ok {
+						for _, h := range handler {
+							h := h
+							decorators = append(decorators, Decorator{
+								After: h,
+							})
 						}
 					}
 				}
