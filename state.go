@@ -3,6 +3,7 @@ package gw
 import (
 	"bytes"
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/oceanho/gw/conf"
 	"github.com/oceanho/gw/libs/gwjsoner"
 	"github.com/oceanho/gw/logger"
@@ -41,9 +41,12 @@ func (w *bodyWriter) Write(b []byte) (int, error) {
 	switch w.Status() {
 	case 400:
 		var body interface{}
-		if _, ok := w.ctx.Errors.Last().Err.(validator.ValidationErrors); ok {
-			body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errInvalidParameterMsg, nil)
-		} else {
+		if err := w.ctx.Errors.Last(); err != nil {
+			if _, ok := err.Err.(validator.ValidationErrors); ok {
+				body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errInvalidParameterMsg, nil)
+			}
+		}
+		if body == nil {
 			body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault400Msg, nil)
 		}
 		_b, e := gwjsoner.Marshal(body)

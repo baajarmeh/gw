@@ -185,9 +185,21 @@ func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 		restPkgId = fmt.Sprintf("%s.(*%s)", el.PkgPath(), el.Name())
 		relativePath := strings.ToLower(val.MethodByName("Name").Call(nil)[0].String())
 		var name = "SetupDecorator"
-		var globalDecorators []Decorator
+		var globalDecorators = make([]Decorator, 0, 0)
 		if _, ok := typ.MethodByName(name); ok {
-			globalDecorators = val.MethodByName(name).Call(nil)[0].Interface().([]Decorator)
+			d := val.MethodByName(name).Call(nil)[0].Interface()
+			if r, ok := d.([]Decorator); ok {
+				globalDecorators = append(globalDecorators, r...)
+			} else if r, ok := d.(Decorator); ok {
+				globalDecorators = append(globalDecorators, r)
+			} else if r, ok := d.(*Decorator); ok {
+				globalDecorators = append(globalDecorators, *r)
+			} else if r, ok := d.([]*Decorator); ok {
+				for _, _r := range r {
+					_r1 := *_r
+					globalDecorators = append(globalDecorators, _r1)
+				}
+			}
 		}
 		for i := 0; i < typ.NumMethod(); i++ {
 			m := typ.Method(i)
@@ -222,8 +234,15 @@ func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 						})
 					} else if decorator, ok := onBeforeHandler.(Decorator); ok {
 						decorators = append(decorators, decorator)
+					} else if decorator, ok := onBeforeHandler.(*Decorator); ok {
+						decorators = append(decorators, *decorator)
 					} else if decorator, ok := onBeforeHandler.([]Decorator); ok {
 						decorators = append(decorators, decorator...)
+					} else if decorator, ok := onBeforeHandler.([]*Decorator); ok {
+						for _, d := range decorator {
+							_d := *d
+							decorators = append(decorators, _d)
+						}
 					}
 				}
 
@@ -241,8 +260,15 @@ func registerRestAPIImpl(router *RouterGroup, restAPIs ...IDynamicRestAPI) {
 						})
 					} else if decorator, ok := onAfterHandler.(Decorator); ok {
 						decorators = append(decorators, decorator)
+					} else if decorator, ok := onAfterHandler.(*Decorator); ok {
+						decorators = append(decorators, *decorator)
 					} else if decorator, ok := onAfterHandler.([]Decorator); ok {
 						decorators = append(decorators, decorator...)
+					} else if decorator, ok := onAfterHandler.([]*Decorator); ok {
+						for _, d := range decorator {
+							_d := *d
+							decorators = append(decorators, _d)
+						}
 					}
 				}
 				bindingFuncPkgName := fmt.Sprintf("%s.%s", restPkgId, m.Name)

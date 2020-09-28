@@ -2,6 +2,7 @@ package RestAPI
 
 import (
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/uap/Const"
 	"github.com/oceanho/gw/contrib/apps/uap/Dto"
 	"github.com/oceanho/gw/contrib/apps/uap/Service"
 )
@@ -11,6 +12,11 @@ type Role struct {
 
 func (u Role) Name() string {
 	return "role"
+}
+
+// Role resources global decorators
+func (u Role) SetupDecorator() gw.Decorator {
+	return Const.RoleGlobalDecorator
 }
 
 //
@@ -60,3 +66,7 @@ func (u Role) QueryList(ctx *gw.Context) {
 	err, result := Service.Services(ctx).RoleSvc.QueryList(model)
 	ctx.JSON(err, result)
 }
+
+//func (u Role) OnQueryListBefore() *gw.Decorator {
+//	return Decorator.CheckPermissionDecorator(Const.RoleDecorator.ReadAllPermKey())
+//}

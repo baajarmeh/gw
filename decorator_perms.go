@@ -23,28 +23,56 @@ type PermissionDecorator struct {
 	permDecorators map[string]Decorator
 }
 
-func (p *PermissionDecorator) Administration() Decorator {
+func (p *PermissionDecorator) Admin() Decorator {
 	return p.permDecorators["Administration"]
+}
+
+func (p *PermissionDecorator) AdminPermKey() string {
+	return p.PermKey("Administration")
+}
+
+func (p *PermissionDecorator) PermKey(perm string) string {
+	return fmt.Sprintf("%s.%s", p.resName, perm)
 }
 
 func (p *PermissionDecorator) Creation() Decorator {
 	return p.permDecorators["Creation"]
 }
 
+func (p *PermissionDecorator) CreationPermKey() string {
+	return p.PermKey("Creation")
+}
+
 func (p *PermissionDecorator) Modification() Decorator {
 	return p.permDecorators["Modification"]
+}
+
+func (p *PermissionDecorator) ModificationPermKey() string {
+	return p.PermKey("Modification")
 }
 
 func (p *PermissionDecorator) Deletion() Decorator {
 	return p.permDecorators["Deletion"]
 }
 
+func (p *PermissionDecorator) DeletionPermKey() string {
+	return p.PermKey("Deletion")
+}
+
 func (p *PermissionDecorator) ReadAll() Decorator {
 	return p.permDecorators["ReadAll"]
 }
 
+func (p *PermissionDecorator) ReadAllPermKey() string {
+	return p.PermKey("ReadAll")
+}
+
 func (p *PermissionDecorator) ReadDetail() Decorator {
 	return p.permDecorators["ReadDetail"]
+}
+
+func (p *PermissionDecorator) ReadDetailPermKey() string {
+	return p.PermKey("ReadDetail")
 }
 
 func (p *PermissionDecorator) Has(name string) bool {
@@ -157,6 +185,14 @@ func NewBeforeCustomFuncDecorator(handler DecoratorHandler) Decorator {
 		MetaData: nil,
 		Before:   handler,
 		After:    nil,
+	}
+}
+
+func NewAfterCustomFuncDecorator(handler DecoratorHandler) Decorator {
+	return Decorator{
+		MetaData: nil,
+		Before:   nil,
+		After:    handler,
 	}
 }
 

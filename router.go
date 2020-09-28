@@ -62,7 +62,7 @@ func (c *Context) ResolveByTyper(typer reflect.Type) interface{} {
 
 func (c *Context) Resolve(obj interface{}) {
 	typer := reflect.TypeOf(obj)
-	if typer.Kind()!= reflect.Ptr{
+	if typer.Kind() != reflect.Ptr {
 		panic("obj should be a pointer typer")
 	}
 	reflect.ValueOf(obj).Elem().Set(reflect.ValueOf(c.ResolveByTyper(typer)))

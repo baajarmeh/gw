@@ -5,6 +5,7 @@ import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/contrib/apps/uap/Api"
 	"github.com/oceanho/gw/contrib/apps/uap/Config"
+	"github.com/oceanho/gw/contrib/apps/uap/Const"
 	"github.com/oceanho/gw/contrib/apps/uap/Db"
 	"github.com/oceanho/gw/contrib/apps/uap/Impl"
 	"github.com/oceanho/gw/contrib/apps/uap/RestAPI"
@@ -12,14 +13,6 @@ import (
 	"github.com/oceanho/gw/logger"
 	"gorm.io/gorm"
 	"reflect"
-)
-
-var (
-	AksDecorator        = gw.NewPermAllDecorator("Aks")
-	RoleDecorator       = gw.NewPermAllDecorator("Role")
-	UserDecorator       = gw.NewPermAllDecorator("User")
-	TenancyDecorator    = gw.NewPermAllDecorator("Tenant")
-	CredentialDecorator = gw.NewPermAllDecorator("Credential")
 )
 
 const (
@@ -165,11 +158,11 @@ func (a App) OnShutDown(state *gw.ServerState) {
 func initPerms(state *gw.ServerState) {
 	var perms []*gw.Permission
 	var appInfo = state.AppManager().QueryByName(appName)
-	perms = append(perms, UserDecorator.Permissions()...)
-	perms = append(perms, TenancyDecorator.Permissions()...)
-	perms = append(perms, AksDecorator.Permissions()...)
-	perms = append(perms, RoleDecorator.Permissions()...)
-	perms = append(perms, CredentialDecorator.Permissions()...)
+	perms = append(perms, Const.UserDecorator.Permissions()...)
+	perms = append(perms, Const.TenancyDecorator.Permissions()...)
+	perms = append(perms, Const.AksDecorator.Permissions()...)
+	perms = append(perms, Const.RoleDecorator.Permissions()...)
+	perms = append(perms, Const.CredentialDecorator.Permissions()...)
 	gw.VisitPerms(perms, appInfo)
 	err := state.PermissionManager().Create(perms...)
 	if err != nil {
