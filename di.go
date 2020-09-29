@@ -142,7 +142,7 @@ var defaultDIConfig = DIConfig{
 			user = EmptyUser
 			store = ss.Store()
 		}
-		return resolverTyperInstance(1, di, user, store, typerName).Interface()
+		return resolverTyperInstance(di, user, store, typerName).Interface()
 	},
 }
 
@@ -154,6 +154,7 @@ type IDIProvider interface {
 	ResolveByTyper(typer reflect.Type) interface{}
 	ResolveWithState(state interface{}, typerName string) interface{}
 	ResolveByTyperWithState(state interface{}, typer reflect.Type) interface{}
+	Check() bool
 }
 
 type DefaultDIProviderImpl struct {
@@ -254,11 +255,13 @@ func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName st
 	return d.config.ResolveFunc(d, state, typerName)
 }
 
+// Check all of register Object has cycle references.
+func (d *DefaultDIProviderImpl) Check() bool {
+	return false
+}
+
 // helpers
-func resolverTyperInstance(depth int, di *DefaultDIProviderImpl, user User, store IStore, typerName string) reflect.Value {
-	if depth > 16 {
-		panic(fmt.Sprintf(typerName))
-	}
+func resolverTyperInstance(di *DefaultDIProviderImpl, user User, store IStore, typerName string) reflect.Value {
 	switch typerName {
 	case IStoreName:
 		if store != nil {
@@ -274,7 +277,7 @@ func resolverTyperInstance(depth int, di *DefaultDIProviderImpl, user User, stor
 	if objectTyper.newAPI == NullReflectValue {
 		return objectTyper.ActualValue
 	}
-	var result = objectTyper.newAPI.Call(resolverTyperDependOn(depth, di, objectTyper.DependOn, user, store))[0]
+	var result = objectTyper.newAPI.Call(resolverTyperDependOn(di, &objectTyper, user, store))[0]
 	switch result.Kind() {
 	case reflect.Ptr:
 		if objectTyper.IsPtr {
@@ -293,10 +296,10 @@ func resolverTyperInstance(depth int, di *DefaultDIProviderImpl, user User, stor
 	}
 }
 
-func resolverTyperDependOn(depth int, di *DefaultDIProviderImpl, dependencies []TyperDependency, user User, store IStore) []reflect.Value {
+func resolverTyperDependOn(di *DefaultDIProviderImpl, objTyper *ObjectTyper, user User, store IStore) []reflect.Value {
 	var values = make([]reflect.Value, 0, 8)
-	for _, dp := range dependencies {
-		values = append(values, resolverTyperInstance(depth+1, di, user, store, dp.Name))
+	for _, dp := range objTyper.DependOn {
+		values = append(values, resolverTyperInstance(di, user, store, dp.Name))
 	}
 	return values
 }
