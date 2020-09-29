@@ -26,32 +26,33 @@ func generalCheck(ctx *gw.Context) (r bool, status int, err error, payload inter
 	}
 	return true, 0, nil, nil
 }
+
 func initialRoleDecorators() {
-	resOpCheckFs[Const.RoleDecorator.CreationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.RolePermDecorator.CreationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
 		return 0, nil, nil
 	}
-	resOpCheckFs[Const.RoleDecorator.ModificationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.RolePermDecorator.ModificationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
 		return 0, nil, nil
 	}
-	resOpCheckFs[Const.RoleDecorator.ModificationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.RolePermDecorator.ModificationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
 		return 0, nil, nil
 	}
-	resOpCheckFs[Const.RoleDecorator.ReadAllPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.RolePermDecorator.ReadAllPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
 		return 0, nil, nil
 	}
-	resOpCheckFs[Const.RoleDecorator.ReadDetailPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.RolePermDecorator.ReadDetailPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
@@ -60,31 +61,31 @@ func initialRoleDecorators() {
 }
 
 func initialUserDecorators() {
-	resOpCheckFs[Const.UserDecorator.CreationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.UserPermDecorator.CreationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
 		return 0, nil, nil
 	}
-	resOpCheckFs[Const.UserDecorator.ModificationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.UserPermDecorator.ModificationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
 		return 0, nil, nil
 	}
-	resOpCheckFs[Const.UserDecorator.ModificationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.UserPermDecorator.ModificationPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
 		return 0, nil, nil
 	}
-	resOpCheckFs[Const.UserDecorator.ReadAllPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.UserPermDecorator.ReadAllPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}
 		return 0, nil, nil
 	}
-	resOpCheckFs[Const.UserDecorator.ReadDetailPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
+	resOpCheckFs[Const.UserPermDecorator.ReadDetailPermKey()] = func(ctx *gw.Context) (status int, err error, payload interface{}) {
 		if ok, s, e, p := generalCheck(ctx); !ok {
 			return s, e, p
 		}

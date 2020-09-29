@@ -256,6 +256,9 @@ func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName st
 
 // helpers
 func resolverTyperInstance(depth int, di *DefaultDIProviderImpl, user User, store IStore, typerName string) reflect.Value {
+	if depth > 16 {
+		panic(fmt.Sprintf(typerName))
+	}
 	switch typerName {
 	case IStoreName:
 		if store != nil {

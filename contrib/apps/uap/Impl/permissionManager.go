@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-type PermissionManagerImpl struct {
+type PermissionManager struct {
 	_state            int
 	locker            sync.Mutex
 	store             gw.IStore
@@ -21,15 +21,22 @@ type PermissionManagerImpl struct {
 	conf              *conf.ApplicationConfig
 }
 
-func (pm *PermissionManagerImpl) Store() *gorm.DB {
+// DI
+
+func (pm PermissionManager) New(store gw.IStore) gw.IPermissionManager {
+	pm.store = store
+	return &pm
+}
+
+func (pm *PermissionManager) Store() *gorm.DB {
 	return pm.store.GetDbStoreByName(pm.conf.Security.Auth.Permission.DefaultStore.Name)
 }
 
-func (pm *PermissionManagerImpl) Checker() gw.IPermissionChecker {
+func (pm *PermissionManager) Checker() gw.IPermissionChecker {
 	return pm.permissionChecker
 }
 
-func (pm *PermissionManagerImpl) Create(perms ...*gw.Permission) error {
+func (pm *PermissionManager) Create(perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
@@ -64,7 +71,7 @@ func (pm *PermissionManagerImpl) Create(perms ...*gw.Permission) error {
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) Modify(perms ...*gw.Permission) error {
+func (pm *PermissionManager) Modify(perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
@@ -77,7 +84,7 @@ func (pm *PermissionManagerImpl) Modify(perms ...*gw.Permission) error {
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) Drop(perms ...*gw.Permission) error {
+func (pm *PermissionManager) Drop(perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return gw.ErrorEmptyInput
 	}
@@ -88,14 +95,14 @@ func (pm *PermissionManagerImpl) Drop(perms ...*gw.Permission) error {
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) Query(tenantId, appId uint64, expr gw.PagerExpr) (
+func (pm *PermissionManager) Query(tenantId, appId uint64, expr gw.PagerExpr) (
 	total int64, result []*gw.Permission, error error) {
 	error = pm.Store().Where("tenant_id = ? and app_id = ?",
 		tenantId, appId).Count(&total).Offset(expr.PageOffset()).Limit(expr.PageSize).Scan(result).Error
 	return
 }
 
-func (pm *PermissionManagerImpl) QueryByUser(tenantId,
+func (pm *PermissionManager) QueryByUser(tenantId,
 	userId uint64, expr gw.PagerExpr) (total int64, result []*gw.Permission, error error) {
 	var sql = fmt.Sprintf(pm.queryPermSQL, tenantId, userId, Db.UserPermission)
 	var countSql = fmt.Sprintf("select t1.id as total %s", sql)
@@ -115,7 +122,7 @@ func (pm *PermissionManagerImpl) QueryByUser(tenantId,
 	return total, result, err
 }
 
-func (pm *PermissionManagerImpl) GrantToUser(uid uint64, perms ...*gw.Permission) error {
+func (pm *PermissionManager) GrantToUser(uid uint64, perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
@@ -132,7 +139,7 @@ func (pm *PermissionManagerImpl) GrantToUser(uid uint64, perms ...*gw.Permission
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...*gw.Permission) error {
+func (pm *PermissionManager) GrantToRole(roleId uint64, perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
@@ -149,7 +156,7 @@ func (pm *PermissionManagerImpl) GrantToRole(roleId uint64, perms ...*gw.Permiss
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...*gw.Permission) error {
+func (pm *PermissionManager) RevokeFromUser(uid uint64, perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
@@ -161,7 +168,7 @@ func (pm *PermissionManagerImpl) RevokeFromUser(uid uint64, perms ...*gw.Permiss
 	return tx.Commit().Error
 }
 
-func (pm *PermissionManagerImpl) RevokeFromRole(roleId uint64, perms ...*gw.Permission) error {
+func (pm *PermissionManager) RevokeFromRole(roleId uint64, perms ...*gw.Permission) error {
 	if len(perms) < 1 {
 		return nil
 	}
@@ -179,7 +186,7 @@ func DefaultPermissionManager(state *gw.ServerState) gw.IPermissionManager {
 	pmtn := Db.ObjectPermission{}.TableName()
 	queryPermSQL := fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id", ptn, pmtn)
 	queryPermSQL = queryPermSQL + " where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d"
-	return &PermissionManagerImpl{
+	return &PermissionManager{
 		conf:              cnf,
 		state:             state,
 		store:             state.Store(),

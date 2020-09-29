@@ -746,6 +746,11 @@ func (s *HostServer) compile() {
 	}
 	// All of app server initial AT here.
 	initialConfig(s)
+
+	// DI initial AT first.
+	initialRequires(s)
+
+	// visitApp
 	useApps(s)
 	state := initialServer(s)
 	registerApps(s, state)
@@ -768,6 +773,11 @@ func (s *HostServer) compile() {
 		s.serverExitSignal <- struct{}{}
 		logger.Info("Shutdown server: %s, Addr: %s", s.options.Name, s.options.Addr)
 	}()
+}
+
+func initialRequires(s *HostServer) {
+	// FIXME(OceanHo):consider DI initial AT first and all of object instance provided by DI framework.
+	//s.DIProvider = s.options.DIProviderHandler(state)
 }
 
 func (s *HostServer) startHandlers() {

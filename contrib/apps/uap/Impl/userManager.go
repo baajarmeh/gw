@@ -14,25 +14,24 @@ import (
 )
 
 type UserManager struct {
-	*gw.ServerState
 	store            gw.IStore
 	cachePrefix      string
 	cacheStoreName   string
 	backendStoreName string
 	cacheExpiration  time.Duration
 	permPagerExpr    gw.PagerExpr
+	serverState      *gw.ServerState
 }
 
 // DI
-func (u UserManager) New(store gw.IStore, state *gw.ServerState) gw.IUserManager {
+func (u UserManager) New(store gw.IStore) gw.IUserManager {
 	u.store = store
-	u.ServerState = state
 	return u
 }
 
 func (u UserManager) Store() gw.IStore {
 	if u.store == nil {
-		return u.ServerState.Store()
+		return u.serverState.Store()
 	}
 	return u.store
 }
@@ -46,16 +45,13 @@ func (u UserManager) mapUserType(user Db.User) gw.UserType {
 	}
 	return gw.NonUser
 }
+
 func (u UserManager) Backend() *gorm.DB {
 	return u.Store().GetDbStoreByName(u.backendStoreName)
 }
 
 func (u UserManager) Cache() *redis.Client {
 	return u.Store().GetCacheStoreByName(u.cacheStoreName)
-}
-
-func (u UserManager) User() *gorm.DB {
-	return u.Backend().Model(Db.User{})
 }
 
 func (u UserManager) GetFromCache(passport string) gw.User {
@@ -136,7 +132,7 @@ func (u UserManager) QueryByUser(passport, password string) (gw.User, error) {
 	}
 
 	user.UserType = u.mapUserType(model)
-	_, perms, err := u.PermissionManager().QueryByUser(model.TenantID, model.ID, gw.DefaultPageExpr)
+	_, perms, err := u.serverState.PermissionManager().QueryByUser(model.TenantID, model.ID, gw.DefaultPageExpr)
 	if err != nil {
 		return gw.EmptyUser, err
 	}
@@ -160,7 +156,7 @@ func (u UserManager) QueryList(tenantId uint64, expr gw.PagerExpr, total int64, 
 func DefaultUserManager(state *gw.ServerState) UserManager {
 	var cnf = Config.GetUAP(state.ApplicationConfig())
 	return UserManager{
-		ServerState:      state,
+		serverState:      state,
 		cacheStoreName:   cnf.User.Cache.Name,
 		backendStoreName: cnf.Backend.Name,
 		cachePrefix:      cnf.User.Cache.Prefix,

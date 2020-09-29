@@ -21,6 +21,12 @@ type AuthManager struct {
 	permPagerExpr    gw.PagerExpr
 }
 
+// DI
+
+func (a AuthManager) New() gw.IAuthManager {
+	return a
+}
+
 func (a AuthManager) UserAuthCacheKey(passport string) string {
 	return fmt.Sprintf("%s.%s", a.cachePrefix, passport)
 }

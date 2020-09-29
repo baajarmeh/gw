@@ -121,7 +121,6 @@ func New() App {
 			initUsers(state)
 		},
 		onShutDownFunc: func(state *gw.ServerState) {
-
 		},
 	}
 }
@@ -158,11 +157,11 @@ func (a App) OnShutDown(state *gw.ServerState) {
 func initPerms(state *gw.ServerState) {
 	var perms []*gw.Permission
 	var appInfo = state.AppManager().QueryByName(appName)
-	perms = append(perms, Const.UserDecorator.Permissions()...)
-	perms = append(perms, Const.TenancyDecorator.Permissions()...)
-	perms = append(perms, Const.AksDecorator.Permissions()...)
-	perms = append(perms, Const.RoleDecorator.Permissions()...)
-	perms = append(perms, Const.CredentialDecorator.Permissions()...)
+	perms = append(perms, Const.UserPermDecorator.Permissions()...)
+	perms = append(perms, Const.TenancyPermDecorator.Permissions()...)
+	perms = append(perms, Const.AksPermDecorator.Permissions()...)
+	perms = append(perms, Const.RolePermDecorator.Permissions()...)
+	perms = append(perms, Const.CredentialPermDecorator.Permissions()...)
 	gw.VisitPerms(perms, appInfo)
 	err := state.PermissionManager().Create(perms...)
 	if err != nil {

@@ -13,10 +13,18 @@ import (
 
 type SessionManager struct {
 	*gw.ServerState
+	store           gw.IStore
 	cachePrefix     string
 	cacheStoreName  string
 	cacheExpiration time.Duration
 	permPagerExpr   gw.PagerExpr
+}
+
+// DI
+
+func (sm SessionManager) New(store gw.IStore) gw.ISessionStateManager {
+	sm.store = store
+	return &sm
 }
 
 func (sm SessionManager) SessionCacheKey(sid string) string {

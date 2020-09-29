@@ -10,16 +10,21 @@ type Service struct {
 	gw.BuiltinComponent
 	UserManager       gw.IUserManager
 	RoleSvc           IRoleService
+	UserSvc           IUserService
 	CredentialService ICredentialService
 }
 
 // DI
-func (s Service) New(userManager gw.IUserManager, builtin gw.BuiltinComponent,
-	service ICredentialService, roleSvc IRoleService) Service {
+func (s Service) New(userManager gw.IUserManager,
+	builtin gw.BuiltinComponent,
+	service ICredentialService,
+	roleSvc IRoleService,
+	userSvc IUserService) Service {
 	s.BuiltinComponent = builtin
 	s.CredentialService = service
 	s.UserManager = userManager
 	s.RoleSvc = roleSvc
+	s.UserSvc = userSvc
 	return s
 }
 
@@ -35,6 +40,14 @@ func Register(di gw.IDIProvider) {
 }
 
 func registerServices(di gw.IDIProvider) {
-	di.Register(Impl.AppManager{}, Impl.UserManager{}, RoleService{})
-	di.Register(DefaultCredentialProtectServiceImpl{}, DefaultCredentialServiceImpl{})
+	di.Register(
+		Impl.AppManager{},
+		Impl.UserManager{},
+		Impl.SessionManager{},
+		Impl.AuthManager{},
+		Impl.PermissionManager{},
+		RoleService{},
+		UserService{},
+		DefaultCredentialProtectServiceImpl{},
+		DefaultCredentialServiceImpl{})
 }
