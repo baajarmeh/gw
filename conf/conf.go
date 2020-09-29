@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	json "github.com/json-iterator/go"
+	"github.com/oceanho/gw/libs/gwjsoner"
 	"github.com/oceanho/gw/logger"
 	"gopkg.in/yaml.v3"
 	"html/template"
@@ -259,8 +260,8 @@ type Settings struct {
 	} `yaml:"expirationTimeControl" toml:"expirationTimeControl" json:"expirationTimeControl"`
 }
 
-func (cnf ApplicationConfig) String() string {
-	b, _ := json.MarshalIndent(cnf, "", "  ")
+func (cnf *ApplicationConfig) String() string {
+	b, _ := gwjsoner.Marshal(cnf)
 	return string(b)
 }
 
