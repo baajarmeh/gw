@@ -38,12 +38,12 @@ func (u UserManager) Store() gw.IStore {
 
 func (u UserManager) mapUserType(user Db.User) gw.UserType {
 	if user.IsTenancy {
-		return gw.Tenancy
+		return gw.TenancyUser
 	}
 	if user.IsAdmin {
-		return gw.Administrator
+		return gw.AdministrationUser
 	}
-	return gw.NonUser
+	return gw.NormalUser
 }
 
 func (u UserManager) Backend() *gorm.DB {
@@ -91,11 +91,11 @@ func (u UserManager) Create(user *gw.User) error {
 
 	// userType
 	switch user.UserType {
-	case gw.Administrator:
+	case gw.AdministrationUser:
 		model.IsAdmin = true
-	case gw.Tenancy:
+	case gw.TenancyUser:
 		model.IsTenancy = true
-	case gw.NonUser:
+	case gw.NormalUser:
 		model.IsUser = true
 	}
 	tx := u.Store().GetDbStore()

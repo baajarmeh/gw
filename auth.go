@@ -326,21 +326,21 @@ var DefaultPageExpr = DefaultPagerExpr(1024, 1)
 type UserType uint8
 
 const (
-	Administrator UserType = 1
-	Tenancy       UserType = 2
-	NonUser       UserType = 3
+	AdministrationUser UserType = 1
+	TenancyUser        UserType = 2
+	NormalUser         UserType = 3
 )
 
 func (ut UserType) IsAdmin() bool {
-	return ut == Administrator
+	return ut == AdministrationUser
 }
 
 func (ut UserType) IsTenancy() bool {
-	return ut == Tenancy
+	return ut == TenancyUser
 }
 
 func (ut UserType) IsUser() bool {
-	return ut == NonUser
+	return ut == NormalUser
 }
 
 //
@@ -390,15 +390,15 @@ func (user User) IsAdminOrTenancy() bool {
 }
 
 func (user User) IsAdmin() bool {
-	return user.IsAuth() && user.UserType == Administrator
+	return user.IsAuth() && user.UserType == AdministrationUser
 }
 
 func (user User) IsTenancy() bool {
-	return user.IsAuth() && user.UserType == Tenancy
+	return user.IsAuth() && user.UserType == TenancyUser
 }
 
 func (user User) IsUser() bool {
-	return user.IsAuth() && user.UserType == NonUser
+	return user.IsAuth() && user.UserType == NormalUser
 }
 
 func (user User) IsPlatformUser() bool {

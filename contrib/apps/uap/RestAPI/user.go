@@ -53,7 +53,7 @@ func (u User) Post(ctx *gw.Context) {
 	if auth.IsUser() {
 		user.ID = auth.ID
 		user.TenantID = auth.TenantID
-		user.UserType = gw.NonUser
+		user.UserType = gw.NormalUser
 	} else if auth.IsTenancy() {
 		user.TenantID = auth.TenantID
 	}
@@ -85,7 +85,7 @@ func (u User) Put(ctx *gw.Context) {
 		return
 	}
 	if model.UserType == 0 {
-		model.UserType = gw.NonUser
+		model.UserType = gw.NormalUser
 	}
 	var user gw.User
 	svc := Service.Services(ctx)
