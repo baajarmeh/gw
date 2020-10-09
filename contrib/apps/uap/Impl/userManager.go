@@ -99,7 +99,9 @@ func (u UserManager) Create(user *gw.User) error {
 		model.IsUser = true
 	}
 	tx := u.Store().GetDbStore()
-	err := tx.Create(&model).Error
+	// references
+	// https://gorm.io/zh_CN/docs/advanced_query.html
+	err := tx.Where(Db.User{Passport: model.Passport}).FirstOrCreate(&model).Error
 	user.ID = model.ID
 	return err
 }
@@ -117,7 +119,7 @@ func (u UserManager) Delete(userId uint64) error {
 func (u UserManager) QueryByUser(passport, password string) (gw.User, error) {
 	var user gw.User
 	var model Db.User
-	var err = u.Backend().Take(&model, "passport=?", passport).Error
+	var err = u.Backend().Take(&model, "passport = ?", passport).Error
 	if err != nil || model.Secret != password {
 		return gw.EmptyUser, err
 	}

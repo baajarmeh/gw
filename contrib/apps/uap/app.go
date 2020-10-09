@@ -16,11 +16,13 @@ import (
 )
 
 const (
+	appKey    = "gw.uap"
 	appName   = "gw.uap"
 	appRouter = "oceanho/gw-uap"
 )
 
 type App struct {
+	key            string
 	name           string
 	router         string
 	registerFunc   func(router *gw.RouterGroup)
@@ -34,6 +36,7 @@ var dbUserTableTyper = reflect.TypeOf(Db.User{})
 
 func New() App {
 	return App{
+		key:    appKey,
 		name:   appName,
 		router: appRouter,
 		registerFunc: func(router *gw.RouterGroup) {
@@ -127,6 +130,7 @@ func New() App {
 
 func (a App) Meta() gw.AppInfo {
 	return gw.AppInfo{
+		Key:        a.key,
 		Name:       a.name,
 		Router:     a.router,
 		Descriptor: "gw user account platform",

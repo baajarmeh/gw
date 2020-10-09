@@ -79,11 +79,13 @@ func (a AppManager) SaveToCache(app gw.AppInfo) {
 // APIs impl
 //
 func (a AppManager) Create(app gw.AppInfo) error {
-	err := a.Backend().FirstOrCreate(&Db.App{
+	// https://gorm.io/zh_CN/docs/advanced_query.html
+	err := a.Backend().Where(Db.App{Key: app.Key}).FirstOrCreate(&Db.App{
+		Key:        app.Key,
 		Name:       app.Name,
 		Router:     app.Router,
 		Descriptor: app.Descriptor,
-	}, "name = ?", app.Name).Error
+	}).Error
 	if err != nil {
 		return err
 	}
