@@ -8,9 +8,9 @@ import (
 type PermissionRelation struct {
 	gwdb.Model
 	gwdb.HasTenantState
-	ObjectID     uint64            `gorm:"index:idx_tenant_expr;not null"`
-	Type         gw.PermissionType `gorm:"not null"` // 1. User Permission, 2. Role/Group Permission
-	PermissionID uint64            `gorm:"index;not null"`
+	ObjectID     uint64                    `gorm:"index:idx_tenant_expr;not null"`
+	Type         gw.PermissionRelationType `gorm:"not null"` // 1. User Permission, 2. Role/Group Permission
+	PermissionID uint64                    `gorm:"index;not null"`
 	gwdb.HasCreationState
 	gwdb.HasModificationState
 }

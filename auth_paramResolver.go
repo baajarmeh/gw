@@ -12,7 +12,7 @@ func (u UserPasswordAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	var param AuthParameter
 	paramKey := s.conf.Security.Auth.ParamKey
 	// 1. User/Password
-	param.CredType = UserPasswordAuth
+	param.CredType = UserPasswordAuthCredential
 	param.Passport, _ = c.GetPostForm(paramKey.Passport)
 	param.Password, _ = c.GetPostForm(paramKey.Secret)
 	param.VerifyCode, _ = c.GetPostForm(paramKey.VerifyCode)
@@ -51,7 +51,7 @@ func (u BasicAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	var param AuthParameter
 	// 2. Basic auth
 	var ok = false
-	param.CredType = BasicAuth
+	param.CredType = BasicAuthCredential
 	param.Passport, param.Password, ok = c.Request.BasicAuth()
 	if param.VerifyCode == "" {
 		param.VerifyCode = c.Query(paramKey.VerifyCode)
@@ -69,7 +69,7 @@ func (u AksAuthParamResolver) Resolve(c *gin.Context) AuthParameter {
 	s := getHostServer(c)
 	var param AuthParameter
 	paramKey := s.conf.Security.Auth.ParamKey
-	param.CredType = AksAuth
+	param.CredType = AksAuthCredential
 	param.Passport = c.GetHeader(paramKey.Passport)
 	param.Password = c.GetHeader(paramKey.Secret)
 	param.VerifyCode = c.GetHeader(paramKey.VerifyCode)

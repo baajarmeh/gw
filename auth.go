@@ -23,15 +23,15 @@ type Permission struct {
 }
 
 type PermissionScope int
-type PermissionType uint8
+type PermissionRelationType uint8
 
 const (
 	PermissionScopeSystem      PermissionScope = 2
 	PermissionScopeApplication PermissionScope = 4
 	PermissionScopeAll                         = PermissionScopeSystem | PermissionScopeApplication
 
-	UserPermission PermissionType = 1
-	RolePermission PermissionType = 2
+	UserPermission PermissionRelationType = 1
+	RolePermission PermissionRelationType = 2
 )
 
 func (p PermissionScope) IsAppScopePermission() bool {
@@ -46,11 +46,11 @@ func (p PermissionScope) IsAllScopePermission() bool {
 	return p == PermissionScopeAll
 }
 
-func (p PermissionType) IsUserPermission() bool {
+func (p PermissionRelationType) IsUserPermission() bool {
 	return p == UserPermission
 }
 
-func (p PermissionType) IsRolePermission() bool {
+func (p PermissionRelationType) IsRolePermission() bool {
 	return p == RolePermission
 }
 
@@ -130,7 +130,7 @@ type AuthParameter struct {
 	Passport   string
 	Password   string
 	VerifyCode string
-	CredType   CredentialType
+	CredType   AuthCredentialType
 }
 
 type IAuthManager interface {
@@ -178,12 +178,12 @@ var (
 	ErrorUserHasExists   = fmt.Errorf("user object has exists")
 )
 
-type CredentialType string
+type AuthCredentialType string
 
 const (
-	AksAuth          CredentialType = "aks"
-	BasicAuth        CredentialType = "basic"
-	UserPasswordAuth CredentialType = "user"
+	AksAuthCredential          AuthCredentialType = "aks"
+	BasicAuthCredential        AuthCredentialType = "basic"
+	UserPasswordAuthCredential AuthCredentialType = "user"
 )
 
 type DefaultPermissionManagerImpl struct {

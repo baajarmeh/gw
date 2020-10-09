@@ -74,9 +74,9 @@ func (a AuthManager) Login(param gw.AuthParameter) (gw.User, error) {
 	var password = a.PasswordSigner().Sign(param.Password)
 	if user.IsEmpty() {
 		switch param.CredType {
-		case gw.UserPasswordAuth, gw.BasicAuth:
+		case gw.UserPasswordAuthCredential, gw.BasicAuthCredential:
 			user, err = a.UserManager().QueryByUser(param.Passport, password)
-		case gw.AksAuth:
+		case gw.AksAuthCredential:
 			user, err = a.UserManager().QueryByAKS(param.Passport, password)
 		default:
 			logger.Error("Un-support cred type: %s", param.CredType)
