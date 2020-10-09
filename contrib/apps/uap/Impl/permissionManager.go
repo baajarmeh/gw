@@ -129,7 +129,7 @@ func (pm *PermissionManager) GrantToUser(uid uint64, perms ...*gw.Permission) er
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		var pm Db.ObjectPermission
+		var pm Db.PermissionRelation
 		pm.PermissionID = p.ID
 		pm.TenantID = p.TenantID
 		pm.Type = Db.UserPermission
@@ -146,7 +146,7 @@ func (pm *PermissionManager) GrantToRole(roleId uint64, perms ...*gw.Permission)
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		var pm Db.ObjectPermission
+		var pm Db.PermissionRelation
 		pm.PermissionID = p.ID
 		pm.TenantID = p.TenantID
 		pm.Type = Db.RolePermission
@@ -163,7 +163,7 @@ func (pm *PermissionManager) RevokeFromUser(uid uint64, perms ...*gw.Permission)
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		tx.Delete(Db.ObjectPermission{}, pm.delPermMapSQL, uid, p.TenantID, p.ID, Db.UserPermission)
+		tx.Delete(Db.PermissionRelation{}, pm.delPermMapSQL, uid, p.TenantID, p.ID, Db.UserPermission)
 	}
 	return tx.Commit().Error
 }
@@ -175,7 +175,7 @@ func (pm *PermissionManager) RevokeFromRole(roleId uint64, perms ...*gw.Permissi
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		tx.Delete(Db.ObjectPermission{}, pm.delPermMapSQL, roleId, p.TenantID, p.ID, Db.RolePermission)
+		tx.Delete(Db.PermissionRelation{}, pm.delPermMapSQL, roleId, p.TenantID, p.ID, Db.RolePermission)
 	}
 	return tx.Commit().Error
 }
@@ -183,7 +183,7 @@ func (pm *PermissionManager) RevokeFromRole(roleId uint64, perms ...*gw.Permissi
 func DefaultPermissionManager(state *gw.ServerState) gw.IPermissionManager {
 	cnf := state.ApplicationConfig()
 	ptn := Db.Permission{}.TableName()
-	pmtn := Db.ObjectPermission{}.TableName()
+	pmtn := Db.PermissionRelation{}.TableName()
 	queryPermSQL := fmt.Sprintf(" from %s t1 inner join %s t2 on t1.id = t2.permission_id", ptn, pmtn)
 	queryPermSQL = queryPermSQL + " where t2.tenant_id=%d and t2.object_id=%d and t2.type=%d"
 	return &PermissionManager{
