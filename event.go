@@ -115,7 +115,6 @@ func DefaultEventManager(state *ServerState) IEventManager {
 			select {
 			case <-quit:
 				isQuit = true
-				break
 			case <-time.After(cleanDuration):
 				func() {
 					m.locker.Lock()
@@ -134,7 +133,6 @@ func DefaultEventManager(state *ServerState) IEventManager {
 					}
 					m.subscribers = subs
 				}()
-				break
 			case event := <-m.eventChan:
 				metaInfo := event.MetaInfo()
 				if subscribers, ok := m.subscribers[metaInfo.Name]; ok {
