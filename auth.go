@@ -19,6 +19,39 @@ type Permission struct {
 	Key        string
 	Name       string
 	Descriptor string
+	Scope      PermissionScope
+}
+
+type PermissionScope int
+type PermissionType uint8
+
+const (
+	PermissionScopeSystem      PermissionScope = 2
+	PermissionScopeApplication PermissionScope = 4
+	PermissionScopeAll                         = PermissionScopeSystem | PermissionScopeApplication
+
+	UserPermission PermissionType = 1
+	RolePermission PermissionType = 2
+)
+
+func (p PermissionScope) IsAppScopePermission() bool {
+	return p == PermissionScopeApplication
+}
+
+func (p PermissionScope) IsSystemScopePermission() bool {
+	return p == PermissionScopeApplication
+}
+
+func (p PermissionScope) IsAllScopePermission() bool {
+	return p == PermissionScopeAll
+}
+
+func (p PermissionType) IsUserPermission() bool {
+	return p == UserPermission
+}
+
+func (p PermissionType) IsRolePermission() bool {
+	return p == RolePermission
 }
 
 func (p *Permission) String() string {
@@ -366,6 +399,10 @@ func (user User) IsTenancy() bool {
 
 func (user User) IsUser() bool {
 	return user.IsAuth() && user.UserType == NonUser
+}
+
+func (user User) IsPlatformUser() bool {
+	return (user.IsUser() && user.TenantID == 1) || user.IsAdmin()
 }
 
 func getUser(c *gin.Context) User {

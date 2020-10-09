@@ -33,9 +33,6 @@ func (u Role) Detail(ctx *gw.Context) {
 
 }
 
-//func (u Role) OnGetBefore() gw.Decorator {
-//}
-
 func (u Role) Post(ctx *gw.Context) {
 
 }

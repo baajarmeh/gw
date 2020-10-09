@@ -104,7 +104,7 @@ func (pm *PermissionManager) Query(tenantId, appId uint64, expr gw.PagerExpr) (
 
 func (pm *PermissionManager) QueryByUser(tenantId,
 	userId uint64, expr gw.PagerExpr) (total int64, result []*gw.Permission, error error) {
-	var sql = fmt.Sprintf(pm.queryPermSQL, tenantId, userId, Db.UserPermission)
+	var sql = fmt.Sprintf(pm.queryPermSQL, tenantId, userId, gw.UserPermission)
 	var countSql = fmt.Sprintf("select t1.id as total %s", sql)
 	var dataSql = fmt.Sprintf("select t1.* %s limit %d offset %d", sql, expr.PageSize, expr.PageOffset())
 	tx := pm.Store().Begin()
@@ -132,7 +132,7 @@ func (pm *PermissionManager) GrantToUser(uid uint64, perms ...*gw.Permission) er
 		var pm Db.PermissionRelation
 		pm.PermissionID = p.ID
 		pm.TenantID = p.TenantID
-		pm.Type = Db.UserPermission
+		pm.Type = gw.UserPermission
 		pm.ObjectID = uid
 		tx.Create(&pm)
 	}
@@ -149,7 +149,7 @@ func (pm *PermissionManager) GrantToRole(roleId uint64, perms ...*gw.Permission)
 		var pm Db.PermissionRelation
 		pm.PermissionID = p.ID
 		pm.TenantID = p.TenantID
-		pm.Type = Db.RolePermission
+		pm.Type = gw.RolePermission
 		pm.ObjectID = roleId
 		tx.Create(&pm)
 	}
@@ -163,7 +163,7 @@ func (pm *PermissionManager) RevokeFromUser(uid uint64, perms ...*gw.Permission)
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		tx.Delete(Db.PermissionRelation{}, pm.delPermMapSQL, uid, p.TenantID, p.ID, Db.UserPermission)
+		tx.Delete(Db.PermissionRelation{}, pm.delPermMapSQL, uid, p.TenantID, p.ID, gw.UserPermission)
 	}
 	return tx.Commit().Error
 }
@@ -175,7 +175,7 @@ func (pm *PermissionManager) RevokeFromRole(roleId uint64, perms ...*gw.Permissi
 	tx := pm.Store().Begin()
 	for _, p := range perms {
 		p := p
-		tx.Delete(Db.PermissionRelation{}, pm.delPermMapSQL, roleId, p.TenantID, p.ID, Db.RolePermission)
+		tx.Delete(Db.PermissionRelation{}, pm.delPermMapSQL, roleId, p.TenantID, p.ID, gw.RolePermission)
 	}
 	return tx.Commit().Error
 }

@@ -8,12 +8,19 @@ const (
 	DecoratorCatalog = "gw/uap-check-res-op-perm-decorator"
 )
 
+func globalPermValidator(ctx *gw.Context) (status int, err error, payload interface{}) {
+	// Role level resources, only allow tenancy, administrator, platform user can be operate.
+	user := ctx.User()
+	if !user.IsPlatformUser() && !user.IsTenancy() {
+		return 403, ErrorNonUserCannotCreationResource, nil
+	}
+	return 0, nil, nil
+}
+
 var (
-	AksPermDecorator    = gw.NewPermAllDecorator("Aks")
-	RolePermDecorator   = gw.NewPermAllDecorator("Role")
-	RoleGlobalDecorator = gw.NewBeforeCustomFuncDecorator(func(ctx *gw.Context) (status int, err error, payload interface{}) {
-		return 0, nil, nil
-	})
+	AksPermDecorator        = gw.NewPermAllDecorator("Aks")
+	RolePermDecorator       = gw.NewPermAllDecorator("Role")
+	RoleGlobalDecorator     = gw.NewBeforeCustomFuncDecorator(globalPermValidator)
 	UserPermDecorator       = gw.NewPermAllDecorator("User")
 	TenancyPermDecorator    = gw.NewPermAllDecorator("Tenant")
 	CredentialPermDecorator = gw.NewPermAllDecorator("Credential")
