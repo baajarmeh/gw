@@ -41,7 +41,7 @@ func (u UserManager) mapUserType(user Db.User) gw.UserType {
 		return gw.TenancyUser
 	}
 	if user.IsAdmin {
-		return gw.AdministrationUser
+		return gw.AdminUser
 	}
 	return gw.NormalUser
 }
@@ -91,7 +91,7 @@ func (u UserManager) Create(user *gw.User) error {
 
 	// userType
 	switch user.UserType {
-	case gw.AdministrationUser:
+	case gw.AdminUser:
 		model.IsAdmin = true
 	case gw.TenancyUser:
 		model.IsTenancy = true
