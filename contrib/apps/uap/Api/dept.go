@@ -12,6 +12,7 @@ func GetDept(c *gw.Context) {
 		"payload": fmt.Sprintf("request id is: %s, Dept ID is %s, db: %v", c.RequestId(), c.Query("uid"), db),
 	})
 }
+
 func CreateDept(c *gw.Context) {
 	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, Dept ID is %s", c.RequestId(), c.Query("uid")),

@@ -16,6 +16,7 @@ func GetUser(c *gw.Context) {
 	//db := c.Store().GetDbStoreByName("user-primary")
 	//biz.CreateUser(db)
 }
+
 func CreateUser(c *gw.Context) {
 	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),

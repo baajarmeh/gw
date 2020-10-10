@@ -11,7 +11,7 @@ const (
 func globalPermValidator(ctx *gw.Context) (status int, err error, payload interface{}) {
 	// Role level resources, only allow tenancy, administrator, platform user can be operate.
 	user := ctx.User()
-	if !user.IsPlatformUser() && !user.IsTenancy() {
+	if !user.IsPlatformUserOrTenancy() {
 		return 403, ErrorNonUserCannotCreationResource, nil
 	}
 	return 0, nil, nil

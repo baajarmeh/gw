@@ -11,6 +11,7 @@ func GetPermission(c *gw.Context) {
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),
 	})
 }
+
 func CreatePermission(c *gw.Context) {
 	c.JSON200(gin.H{
 		"payload": fmt.Sprintf("request id is: %s, user ID is %s", c.RequestId(), c.Query("uid")),

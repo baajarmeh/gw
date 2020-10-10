@@ -401,8 +401,8 @@ func (user User) IsUser() bool {
 	return user.IsAuth() && user.UserType == NormalUser
 }
 
-func (user User) IsPlatformUser() bool {
-	return (user.IsUser() && user.TenantID == 1) || user.IsAdmin()
+func (user User) IsPlatformUserOrTenancy() bool {
+	return (user.IsUser() && user.TenantID == 1) || user.IsAdmin() || user.IsTenancy()
 }
 
 func getUser(c *gin.Context) User {
