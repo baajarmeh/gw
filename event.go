@@ -133,15 +133,19 @@ func DefaultEventManager(state *ServerState) IEventManager {
 					}
 					m.subscribers = subs
 				}()
-			case event := <-m.eventChan:
-				metaInfo := event.MetaInfo()
-				if subscribers, ok := m.subscribers[metaInfo.Name]; ok {
-					for _, sub := range subscribers {
-						if !sub.hasUnsubscribed {
-							_ = sub.Handler(event)
+			case _event := <-m.eventChan:
+				func(event IEvent) {
+					m.locker.Lock()
+					defer m.locker.Unlock()
+					metaInfo := event.MetaInfo()
+					if subscribers, ok := m.subscribers[metaInfo.Name]; ok {
+						for _, sub := range subscribers {
+							if !sub.hasUnsubscribed {
+								_ = sub.Handler(event)
+							}
 						}
 					}
-				}
+				}(_event)
 			}
 			if isQuit {
 				break
