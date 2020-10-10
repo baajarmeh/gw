@@ -30,8 +30,11 @@ func (s Service) New(userManager gw.IUserManager,
 
 var serviceTyper = reflect.TypeOf(Service{})
 
-func Services(ctx *gw.Context) Service {
-	return ctx.ResolveByTyper(serviceTyper).(Service)
+func Services(ctx *gw.Context) (s Service) {
+	if e := ctx.ResolveByObjectTyper(&s); e != nil {
+		panic(e)
+	}
+	return
 }
 
 func Register(di gw.IDIProvider) {

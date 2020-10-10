@@ -34,8 +34,9 @@ const (
 )
 
 var (
-	NullReflectValue      = reflect.ValueOf(nil)
-	BuiltinComponentTyper = reflect.TypeOf(BuiltinComponent{})
+	NullReflectValue             = reflect.ValueOf(nil)
+	BuiltinComponentTyper        = reflect.TypeOf(BuiltinComponent{})
+	ErrorObjectTyperIsNonPointer = fmt.Errorf("object should be a pointer typer")
 )
 
 func (ss *ServerState) objectTypers() map[string]ObjectTyper {
@@ -119,12 +120,12 @@ type TyperDependency struct {
 
 type DIConfig struct {
 	NewFuncName string
-	ResolveFunc func(di interface{}, state interface{}, typerName string) interface{}
+	ResolveFunc func(di interface{}, state interface{}, typerName string) (error, interface{})
 }
 
 var defaultDIConfig = DIConfig{
 	NewFuncName: "New",
-	ResolveFunc: func(diImpl interface{}, state interface{}, typerName string) interface{} {
+	ResolveFunc: func(diImpl interface{}, state interface{}, typerName string) (error, interface{}) {
 		di, ok := diImpl.(*DefaultDIProviderImpl)
 		if !ok {
 			panic("di not are gw framework DefaultDIProviderImpl instance")
@@ -143,7 +144,8 @@ var defaultDIConfig = DIConfig{
 			user = EmptyUser
 			store = ss.Store()
 		}
-		return resolverTyperInstance(di, user, store, typerName).Interface()
+		e, v := resolverTyperInstance(di, user, store, typerName)
+		return e, v.Interface()
 	},
 }
 
@@ -151,10 +153,11 @@ type IDIProvider interface {
 	Register(actual ...interface{}) bool
 	RegisterWithTyper(typers ...reflect.Type) bool
 	RegisterWithName(typerName string, actual interface{}) bool
-	Resolve(typerName string) interface{}
-	ResolveByTyper(typer reflect.Type) interface{}
-	ResolveWithState(state interface{}, typerName string) interface{}
-	ResolveByTyperWithState(state interface{}, typer reflect.Type) interface{}
+	Resolve(typerName string) (error, interface{})
+	ResolveByTyper(typer reflect.Type) (error, interface{})
+	ResolveByObjectTyper(object interface{}) error
+	ResolveWithState(state interface{}, typerName string) (error, interface{})
+	ResolveByTyperWithState(state interface{}, typer reflect.Type) (error, interface{})
 	Check() bool
 }
 
@@ -236,15 +239,28 @@ func (d *DefaultDIProviderImpl) RegisterWithName(name string, actual interface{}
 	return true
 }
 
-func (d *DefaultDIProviderImpl) Resolve(typerName string) interface{} {
+func (d *DefaultDIProviderImpl) Resolve(typerName string) (error, interface{}) {
 	return d.ResolveWithState(d.state.Store(), typerName)
 }
 
-func (d *DefaultDIProviderImpl) ResolveByTyper(typer reflect.Type) interface{} {
+func (d *DefaultDIProviderImpl) ResolveByTyper(typer reflect.Type) (error, interface{}) {
 	return d.ResolveByTyperWithState(d.state, typer)
 }
 
-func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state interface{}, typer reflect.Type) interface{} {
+func (d *DefaultDIProviderImpl) ResolveByObjectTyper(object interface{}) error {
+	typer := reflect.TypeOf(object)
+	if typer.Kind() != reflect.Ptr {
+		return ErrorObjectTyperIsNonPointer
+	}
+	e, v := d.ResolveByTyper(typer)
+	if e != nil {
+		return e
+	}
+	reflect.ValueOf(object).Elem().Set(reflect.ValueOf(v))
+	return nil
+}
+
+func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state interface{}, typer reflect.Type) (error, interface{}) {
 	var typerName, ok = d.typerMappers[typer]
 	if !ok {
 		typerName = gwreflect.GetPkgFullName(typer)
@@ -252,7 +268,7 @@ func (d *DefaultDIProviderImpl) ResolveByTyperWithState(state interface{}, typer
 	return d.ResolveWithState(state, typerName)
 }
 
-func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName string) interface{} {
+func (d *DefaultDIProviderImpl) ResolveWithState(state interface{}, typerName string) (error, interface{}) {
 	return d.config.ResolveFunc(d, state, typerName)
 }
 
@@ -262,45 +278,52 @@ func (d *DefaultDIProviderImpl) Check() bool {
 }
 
 // helpers
-func resolverTyperInstance(di *DefaultDIProviderImpl, user User, store IStore, typerName string) reflect.Value {
+func resolverTyperInstance(di *DefaultDIProviderImpl, user User, store IStore, typerName string) (error, reflect.Value) {
 	switch typerName {
 	case IStoreName:
 		if store != nil {
-			return reflect.ValueOf(store)
+			return nil, reflect.ValueOf(store)
 		}
 	case UserTyperName:
-		return reflect.ValueOf(user)
+		return nil, reflect.ValueOf(user)
 	}
 	var objectTyper, ok = di.objectTypers[typerName]
 	if !ok {
-		panic(fmt.Sprintf("missing typer(%s)", typerName))
+		return fmt.Errorf("missing typer(%s)", typerName), NullReflectValue
 	}
 	if objectTyper.newAPI == NullReflectValue {
-		return objectTyper.ActualValue
+		return nil, objectTyper.ActualValue
 	}
-	var result = objectTyper.newAPI.Call(resolveTyperDependOn(di, &objectTyper, user, store))[0]
+	e, values := resolveTyperDependOn(di, &objectTyper, user, store)
+	if e != nil {
+		return e, NullReflectValue
+	}
+	var result = objectTyper.newAPI.Call(values)[0]
 	switch result.Kind() {
 	case reflect.Ptr:
 		if objectTyper.IsPtr {
-			return result
+			return nil, result
 		} else {
-			return reflect.ValueOf(result.Elem().Interface())
+			return nil, reflect.ValueOf(result.Elem().Interface())
 		}
 	default:
 		if !objectTyper.IsPtr {
-			return result
+			return nil, result
 		} else {
 			var typeValue = reflect.New(reflect.TypeOf(result.Interface()))
 			typeValue.Elem().Set(result)
-			return typeValue
+			return nil, typeValue
 		}
 	}
 }
 
-func resolveTyperDependOn(di *DefaultDIProviderImpl, objTyper *ObjectTyper, user User, store IStore) []reflect.Value {
+func resolveTyperDependOn(di *DefaultDIProviderImpl, objTyper *ObjectTyper, user User, store IStore) (error, []reflect.Value) {
 	var values = make([]reflect.Value, 0, 8)
 	for _, dp := range objTyper.DependOn {
-		value := resolverTyperInstance(di, user, store, dp.Name)
+		e, value := resolverTyperInstance(di, user, store, dp.Name)
+		if e != nil {
+			return e, nil
+		}
 		if dp.IsPtr && value.Kind() != reflect.Ptr {
 			var typeValue = reflect.New(reflect.TypeOf(value.Interface()))
 			typeValue.Elem().Set(value)
@@ -312,7 +335,7 @@ func resolveTyperDependOn(di *DefaultDIProviderImpl, objTyper *ObjectTyper, user
 		//}
 		values = append(values, value)
 	}
-	return values
+	return nil, values
 }
 
 func typeToObjectTyperName(typer reflect.Type) TyperDependency {

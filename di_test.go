@@ -134,12 +134,16 @@ func init() {
 	var myServices MyServices
 	myServicesTyper = reflect.TypeOf(myServices)
 	diTester.Register(myS1Impl, myS2Impl, myS3Impl, myS4Impl, myServices)
-	diTesterBuiltinComponent = diTester.ResolveByTyper(BuiltinComponentTyper).(BuiltinComponent)
+	e, d := diTester.ResolveByTyper(BuiltinComponentTyper)
+	if e != nil {
+		panic(e)
+	}
+	diTesterBuiltinComponent = d.(BuiltinComponent)
 }
 
 func BenchmarkDefaultDIProviderImpl_ResolveByTyperWithState(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = diTester.ResolveByTyperWithState(diTesterStore, myServicesTyper)
+		_, _ = diTester.ResolveByTyperWithState(diTesterStore, myServicesTyper)
 	}
 }
 
@@ -151,11 +155,12 @@ func TestDefaultDIProviderImpl_BuiltinComponent(t *testing.T) {
 // FIXME(OceanHo): go test ./*.go can not pass ?
 func TestDefaultDIProviderImpl(t *testing.T) {
 	var myServices MyServices
-	var services, ok = diTester.ResolveByTyper(reflect.TypeOf(myServices)).(MyServices)
-	assert.IsEqual(ok, true)
+	err := diTester.ResolveByObjectTyper(&myServices)
+	assert.IsEqual(err, nil)
+	assert.NotEqual(t, myServices, nil)
 	var dto Dto1
-	_ = services.MyService1.Create(dto)
-	_ = services.MyService2.Create(dto)
-	_ = services.MyService3.Create(dto)
-	_ = services.MyService4.Create(dto)
+	_ = myServices.MyService1.Create(dto)
+	_ = myServices.MyService2.Create(dto)
+	_ = myServices.MyService3.Create(dto)
+	_ = myServices.MyService4.Create(dto)
 }
