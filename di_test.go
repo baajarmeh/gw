@@ -50,7 +50,7 @@ func (myService MyService2) Create(dto Dto1) error {
 
 //
 // Gw DI framework dependOns
-func (MyService2) New(serverState ServerState, store IStore, service IMyService) *MyService2 {
+func (MyService2) New(store IStore, service IMyService) *MyService2 {
 	var myService = MyService2{}
 	myService.User = store.GetDbStore().Model(MyUser{})
 	myService.MyService1 = service
@@ -73,12 +73,12 @@ func (myService MyService3) Create(dto Dto1) error {
 
 //
 // Gw DI framework dependOns
-func (MyService3) New(serverState ServerState, store IStore, service IMyService, service2 MyService2) MyService3 {
+func (MyService3) New(store IStore, service IMyService, service2 MyService2) *MyService3 {
 	var myService = MyService3{}
 	myService.User = store.GetDbStore().Model(MyUser{})
 	myService.MyService1 = service
 	myService.MyService2 = service2
-	return myService
+	return &myService
 }
 
 type MyService4 struct {
@@ -104,19 +104,17 @@ func (MyService4) New(store IStore, service IMyService, service2 MyService2, ser
 }
 
 type MyServices struct {
-	MyService1    IMyService
-	MyService2    MyService2
-	MyService3    *MyService3
-	MyService3Non MyService3
-	MyService4    MyService4
+	MyService1 IMyService
+	MyService2 MyService2
+	MyService3 *MyService3
+	MyService4 MyService4
 }
 
 func (s MyServices) New(service IMyService, service2 MyService2,
-	service3 *MyService3, service3Non MyService3, service4 MyService4) MyServices {
+	service3 *MyService3, service4 MyService4) MyServices {
 	s.MyService1 = service
 	s.MyService2 = service2
 	s.MyService3 = service3
-	s.MyService3Non = service3Non
 	s.MyService4 = service4
 	return s
 }
@@ -159,6 +157,5 @@ func TestDefaultDIProviderImpl(t *testing.T) {
 	_ = services.MyService1.Create(dto)
 	_ = services.MyService2.Create(dto)
 	_ = services.MyService3.Create(dto)
-	_ = services.MyService3Non.Create(dto)
 	_ = services.MyService4.Create(dto)
 }

@@ -40,6 +40,7 @@ var (
 
 func (ss *ServerState) objectTypers() map[string]ObjectTyper {
 	var typers = make(map[string]ObjectTyper)
+	typers[UserTyperName] = newNilApiObjectTyper(UserTyperName, EmptyUser)
 	typers[IStoreName] = newNilApiObjectTyper(IStoreName, ss.Store())
 	typers[HostServerName] = newNilApiObjectTyper(HostServerName, ss.s)
 	typers[ServerStateName] = newNilApiObjectTyper(ServerStateName, ss)
@@ -203,7 +204,7 @@ func (d *DefaultDIProviderImpl) RegisterWithName(name string, actual interface{}
 	var actualValue = reflect.ValueOf(actual)
 	var newMethod = actualValue.MethodByName(d.config.NewFuncName)
 	if newMethod.Kind() != reflect.Func {
-		panic(fmt.Sprintf("typer(%s) has no %s(...) APIs.",
+		panic(fmt.Sprintf("typer(%s) has no name of %s(...) method",
 			gwreflect.GetPkgFullName(reflect.TypeOf(actual)), d.config.NewFuncName))
 	}
 	var newMethodTyper = newMethod.Type()
@@ -277,7 +278,7 @@ func resolverTyperInstance(di *DefaultDIProviderImpl, user User, store IStore, t
 	if objectTyper.newAPI == NullReflectValue {
 		return objectTyper.ActualValue
 	}
-	var result = objectTyper.newAPI.Call(resolverTyperDependOn(di, &objectTyper, user, store))[0]
+	var result = objectTyper.newAPI.Call(resolveTyperDependOn(di, &objectTyper, user, store))[0]
 	switch result.Kind() {
 	case reflect.Ptr:
 		if objectTyper.IsPtr {
@@ -296,10 +297,20 @@ func resolverTyperInstance(di *DefaultDIProviderImpl, user User, store IStore, t
 	}
 }
 
-func resolverTyperDependOn(di *DefaultDIProviderImpl, objTyper *ObjectTyper, user User, store IStore) []reflect.Value {
+func resolveTyperDependOn(di *DefaultDIProviderImpl, objTyper *ObjectTyper, user User, store IStore) []reflect.Value {
 	var values = make([]reflect.Value, 0, 8)
 	for _, dp := range objTyper.DependOn {
-		values = append(values, resolverTyperInstance(di, user, store, dp.Name))
+		value := resolverTyperInstance(di, user, store, dp.Name)
+		if dp.IsPtr && value.Kind() != reflect.Ptr {
+			var typeValue = reflect.New(reflect.TypeOf(value.Interface()))
+			typeValue.Elem().Set(value)
+			value = typeValue
+		}
+		// FIXME(Ocean): has some problem when register object are not receiver but references by pointer typer
+		//else if !dp.IsPtr && value.Kind() != reflect.Interface && value.Kind() == reflect.Ptr {
+		//	value = reflect.ValueOf(value.Elem().Interface())
+		//}
+		values = append(values, value)
 	}
 	return values
 }
