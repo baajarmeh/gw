@@ -81,7 +81,7 @@ func (u User) Put(ctx *gw.Context) {
 	}
 	// Tenancy can not be create Admin/Tenancy type resource
 	if auth.IsTenancy() && (model.UserType.IsAdmin() || model.UserType.IsTenancy()) {
-		ctx.JSON403Msg(403, Const.ErrorTenancyCannotCreationAdminResource)
+		ctx.JSON403Msg(403, Const.ErrorNonUserHasNoOperatePermission)
 		return
 	}
 	if model.UserType == 0 {

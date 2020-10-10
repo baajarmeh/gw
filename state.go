@@ -3,7 +3,6 @@ package gw
 import (
 	"bytes"
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/oceanho/gw/conf"
-	"github.com/oceanho/gw/libs/gwjsoner"
 	"github.com/oceanho/gw/logger"
 	"github.com/oceanho/gw/utils/secure"
 )
@@ -37,33 +35,34 @@ type bodyWriter struct {
 }
 
 func (w *bodyWriter) Write(b []byte) (int, error) {
-
-	switch w.Status() {
-	case 400:
-		var body interface{}
-		if err := w.ctx.Errors.Last(); err != nil {
-			if _, ok := err.Err.(validator.ValidationErrors); ok {
-				body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errInvalidParameterMsg, nil)
-			}
-		}
-		if body == nil {
-			body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault400Msg, nil)
-		}
-		_b, e := gwjsoner.Marshal(body)
-		if e != nil {
-			return 0, e
-		}
-		w.errBody.Write(b)
-		return w.ResponseWriter.Write(_b)
-	case 500:
-		body := w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault500Msg, nil)
-		_b, e := gwjsoner.Marshal(body)
-		if e != nil {
-			return 0, e
-		}
-		w.errBody.Write(b)
-		return w.ResponseWriter.Write(_b)
-	}
+	//
+	// TODO(Ocean): Re-Write response for ori response status code are necessary?
+	//switch w.Status() {
+	//case 400:
+	//	var body interface{}
+	//	if err := w.ctx.Errors.Last(); err != nil {
+	//		if _, ok := err.Err.(validator.ValidationErrors); ok {
+	//			body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errInvalidParameterMsg, nil)
+	//		}
+	//	}
+	//	if body == nil {
+	//		body = w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault400Msg, nil)
+	//	}
+	//	_b, e := gwjsoner.Marshal(body)
+	//	if e != nil {
+	//		return 0, e
+	//	}
+	//	w.errBody.Write(b)
+	//	return w.ResponseWriter.Write(_b)
+	//case 500:
+	//	body := w.server.RespBodyBuildFunc(w.ctx, w.Status(), w.requestId, errDefault500Msg, nil)
+	//	_b, e := gwjsoner.Marshal(body)
+	//	if e != nil {
+	//		return 0, e
+	//	}
+	//	w.errBody.Write(b)
+	//	return w.ResponseWriter.Write(_b)
+	//}
 	return w.ResponseWriter.Write(b)
 }
 
