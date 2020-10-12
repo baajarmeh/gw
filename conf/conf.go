@@ -48,19 +48,11 @@ func (bc *BootConfig) ParserTo(out interface{}) error {
 	return json.Unmarshal([]byte(bc.configurationJsonString), out)
 }
 
-type GwConfigInfra struct {
-	Addr     string            `yaml:"addr" toml:"addr" json:"addr"`
-	AppID    string            `yaml:"appid" toml:"appid" json:"appid"`
-	Secret   string            `yaml:"secret" toml:"secret" json:"secret"`
-	Provider string            `yaml:"provider" toml:"provider" json:"provider"`
-	Args     map[string]string `yaml:"args" toml:"args" json:"args"`
-}
-
 type LocalFile struct {
 	Path string `yaml:"path" toml:"path" json:"path"`
 }
 
-func (bc BootConfig) String() string {
+func (bc *BootConfig) String() string {
 	b, _ := json.MarshalIndent(bc, "", "  ")
 	return string(b)
 }
