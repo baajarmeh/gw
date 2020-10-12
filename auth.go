@@ -19,30 +19,30 @@ type Permission struct {
 	Key        string
 	Name       string
 	Descriptor string
-	Scope      PermissionScope
+	Scope      PermissionEffectScope
 }
 
-type PermissionScope int
+type PermissionEffectScope int
 type PermissionRelationType uint8
 
 const (
-	PermissionScopeSystem      PermissionScope = 2
-	PermissionScopeApplication PermissionScope = 4
-	PermissionScopeAll                         = PermissionScopeSystem | PermissionScopeApplication
+	PermissionScopeSystem      PermissionEffectScope = 2
+	PermissionScopeApplication PermissionEffectScope = 4
+	PermissionScopeAll                               = PermissionScopeSystem | PermissionScopeApplication
 
 	UserPermission PermissionRelationType = 1
 	RolePermission PermissionRelationType = 2
 )
 
-func (p PermissionScope) IsAppScopePermission() bool {
+func (p PermissionEffectScope) IsApplicationScope() bool {
 	return p == PermissionScopeApplication
 }
 
-func (p PermissionScope) IsSystemScopePermission() bool {
+func (p PermissionEffectScope) IsSystemScope() bool {
 	return p == PermissionScopeApplication
 }
 
-func (p PermissionScope) IsAllScopePermission() bool {
+func (p PermissionEffectScope) IsAllScopes() bool {
 	return p == PermissionScopeAll
 }
 
