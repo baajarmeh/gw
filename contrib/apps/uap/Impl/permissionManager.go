@@ -61,6 +61,7 @@ func (pm *PermissionManager) Create(perms ...*gw.Permission) error {
 			model.Name = p.Name
 			model.TenantID = p.TenantID
 			model.AppID = p.AppID
+			model.Scope = p.Scope
 			model.Descriptor = p.Descriptor
 			_ = tx.Create(&model)
 			perms[i].ID = model.ID
