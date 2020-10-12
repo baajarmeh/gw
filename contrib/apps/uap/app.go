@@ -42,6 +42,14 @@ func New() App {
 		registerFunc: func(router *gw.RouterGroup) {
 			router.RegisterRestAPIs(&RestAPI.User{}, &RestAPI.Role{})
 			router.GET("credential/:id", Api.QueryCredentialById, Api.QueryCredentialByIdDecorators())
+
+			router.GET("menu/i/:id", Api.GetMenu)
+			router.GET("menu/n/:name", Api.GetMenuByName)
+			router.GET("menu/pageList", Api.QueryMenuPageList)
+			router.GET("menu/search", Api.SearchMenuPageList)
+			router.POST("menu/batchCreate", Api.BatchCreateMenu)
+			router.POST("menu/create", Api.CreateMenu)
+			router.POST("menu/modify", Api.ModifyMenu)
 		},
 		useFunc: func(option *gw.ServerOption) {
 			option.AppManagerHandler = func(state *gw.ServerState) gw.IAppManager {

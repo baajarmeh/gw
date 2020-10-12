@@ -14,3 +14,8 @@ type Menu struct {
 	gwdb.HasModificationState
 	gwdb.HasSoftDeletionState
 }
+
+type BatchCreateMenuDto struct {
+	App   string
+	Menus []Menu
+}

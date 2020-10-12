@@ -77,6 +77,7 @@ type BuiltinComponent struct {
 	PermissionManager   IPermissionManager
 	PermissionChecker   IPermissionChecker
 	CryptoHash          ICryptoHash
+	AppManager          IAppManager
 	CryptoProtect       ICryptoProtect
 	PasswordSigner      IPasswordSigner
 	IDGenerator         IdentifierGenerator
@@ -92,6 +93,7 @@ func (bc BuiltinComponent) New(
 	PermissionManager IPermissionManager,
 	PermissionChecker IPermissionChecker,
 	CryptoHash ICryptoHash,
+	AppManager IAppManager,
 	CryptoProtect ICryptoProtect,
 	PasswordSigner IPasswordSigner,
 	IDGenerator IdentifierGenerator,
@@ -105,6 +107,7 @@ func (bc BuiltinComponent) New(
 	bc.PermissionManager = PermissionManager
 	bc.PermissionChecker = PermissionChecker
 	bc.CryptoHash = CryptoHash
+	bc.AppManager = AppManager
 	bc.CryptoProtect = CryptoProtect
 	bc.PasswordSigner = PasswordSigner
 	bc.IDGenerator = IDGenerator

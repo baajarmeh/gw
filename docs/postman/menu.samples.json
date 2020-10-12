@@ -1,0 +1,33 @@
+{
+    "app": "gw.uap",
+    "menus":[
+        {
+            "key": "uap.account.pageList",
+            "name": "账户系统",
+            "icon": "",
+            "url": "uap/account",
+            "permission": "Account.PageList",
+            "openBehavior": "",
+            "children": [
+                {
+                    "name": "用户",
+                    "icon": ""
+                }
+            ]
+        },
+        {
+            "key": "uap.job.pageList",
+            "name": "任务系统",
+            "icon": "",
+            "url": "uap/job",
+            "permission": "Job.PageList",
+            "openBehavior": "",
+            "children": [
+                {
+                    "name": "任务",
+                    "icon": ""
+                }
+            ]
+        }
+    ]
+}
