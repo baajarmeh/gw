@@ -46,7 +46,7 @@ func (u User) Post(ctx *gw.Context) {
 	var auth = ctx.User()
 	user.ID = model.ID
 	user.UserType = model.UserType
-	if model.UserType.IsAdmin() && !auth.UserType.IsAdmin() {
+	if model.UserType.IsAdmin() && !auth.UserType.IsTenancy() {
 		ctx.JSON403Msg(403, Const.ErrorNonUserCannotModifyResource)
 		return
 	}

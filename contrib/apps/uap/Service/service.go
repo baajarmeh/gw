@@ -2,7 +2,7 @@ package Service
 
 import (
 	"github.com/oceanho/gw"
-	"github.com/oceanho/gw/contrib/apps/uap/Impl"
+	"github.com/oceanho/gw/contrib/apps/uap/GwImpl"
 	"reflect"
 )
 
@@ -44,13 +44,14 @@ func Register(di gw.IDIProvider) {
 
 func registerServices(di gw.IDIProvider) {
 	di.Register(
-		Impl.AppManager{},
-		Impl.UserManager{},
-		Impl.SessionManager{},
-		Impl.AuthManager{},
-		Impl.PermissionManager{},
+		GwImpl.AppManager{},
+		GwImpl.UserManager{},
+		GwImpl.SessionManager{},
+		GwImpl.AuthManager{},
+		GwImpl.PermissionManager{},
+		MenuService{},
 		RoleService{},
 		UserService{},
-		DefaultCredentialProtectServiceImpl{},
-		DefaultCredentialServiceImpl{})
+		DefaultCredentialService{},
+		DefaultCredentialProtectService{})
 }

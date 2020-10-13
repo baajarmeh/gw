@@ -12,8 +12,8 @@ type IMenuService interface {
 	Delete(id uint64) error
 	Query(id uint64) (error, *Dto.Menu)
 	QueryByKey(key string) (error, *Dto.Menu)
-	QueryList(expr gw.QueryExpr) (error, *RolePagerResult)
-	QueryListByApp(appId uint64, expr gw.QueryExpr) (error, *RolePagerResult)
+	QueryList(expr gw.QueryExpr) (error, *MenuPagerResult)
+	QueryListByApp(appId uint64, expr gw.QueryExpr) (error, *MenuPagerResult)
 }
 
 type MenuPagerResult struct {
@@ -58,10 +58,10 @@ func (ms MenuService) QueryByKey(key string) (error, *Dto.Menu) {
 	panic("implement me")
 }
 
-func (ms MenuService) QueryList(expr gw.QueryExpr) (error, *RolePagerResult) {
+func (ms MenuService) QueryList(expr gw.QueryExpr) (error, *MenuPagerResult) {
 	panic("implement me")
 }
 
-func (ms MenuService) QueryListByApp(appId uint64, expr gw.QueryExpr) (error, *RolePagerResult) {
+func (ms MenuService) QueryListByApp(appId uint64, expr gw.QueryExpr) (error, *MenuPagerResult) {
 	panic("implement me")
 }

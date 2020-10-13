@@ -15,12 +15,12 @@ type ICredentialService interface {
 	QueryById(id uint64) (Db.Credential, error)
 }
 
-type DefaultCredentialProtectServiceImpl struct {
+type DefaultCredentialProtectService struct {
 	hash    gw.ICryptoHash
 	protect gw.ICryptoProtect
 }
 
-func (dcsi DefaultCredentialProtectServiceImpl) New(
+func (dcsi DefaultCredentialProtectService) New(
 	hash gw.ICryptoHash,
 	protect gw.ICryptoProtect) ICredentialProtectService {
 	dcsi.hash = hash
@@ -28,32 +28,32 @@ func (dcsi DefaultCredentialProtectServiceImpl) New(
 	return dcsi
 }
 
-func (dcsi DefaultCredentialProtectServiceImpl) Encrypt(cred *Db.Credential) error {
+func (dcsi DefaultCredentialProtectService) Encrypt(cred *Db.Credential) error {
 	return nil
 }
 
-func (dcsi DefaultCredentialProtectServiceImpl) Decrypt(cred *Db.Credential) error {
+func (dcsi DefaultCredentialProtectService) Decrypt(cred *Db.Credential) error {
 	return nil
 }
 
-func (dcsi DefaultCredentialProtectServiceImpl) Validate(cred *Db.Credential) error {
+func (dcsi DefaultCredentialProtectService) Validate(cred *Db.Credential) error {
 	return nil
 }
 
-type DefaultCredentialServiceImpl struct {
+type DefaultCredentialService struct {
 	store                    gw.IStore
 	credentialProtectService ICredentialProtectService
 }
 
 // DI
-func (dcs DefaultCredentialServiceImpl) New(store gw.IStore,
+func (dcs DefaultCredentialService) New(store gw.IStore,
 	credentialProtectService ICredentialProtectService) ICredentialService {
 	dcs.store = store
 	dcs.credentialProtectService = credentialProtectService
 	return dcs
 }
 
-func (dcs DefaultCredentialServiceImpl) QueryById(id uint64) (Db.Credential, error) {
+func (dcs DefaultCredentialService) QueryById(id uint64) (Db.Credential, error) {
 	var model Db.Credential
 	err := dcs.store.GetDbStore().First(&model, "id = ?", id).Error
 	return model, err

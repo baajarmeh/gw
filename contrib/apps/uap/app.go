@@ -7,7 +7,7 @@ import (
 	"github.com/oceanho/gw/contrib/apps/uap/Config"
 	"github.com/oceanho/gw/contrib/apps/uap/Const"
 	"github.com/oceanho/gw/contrib/apps/uap/Db"
-	"github.com/oceanho/gw/contrib/apps/uap/Impl"
+	"github.com/oceanho/gw/contrib/apps/uap/GwImpl"
 	"github.com/oceanho/gw/contrib/apps/uap/RestAPI"
 	"github.com/oceanho/gw/contrib/apps/uap/Service"
 	"github.com/oceanho/gw/logger"
@@ -53,19 +53,19 @@ func New() App {
 		},
 		useFunc: func(option *gw.ServerOption) {
 			option.AppManagerHandler = func(state *gw.ServerState) gw.IAppManager {
-				return Impl.DefaultAppManager(state)
+				return GwImpl.DefaultAppManager(state)
 			}
 			option.AuthManagerHandler = func(state *gw.ServerState) gw.IAuthManager {
-				return Impl.DefaultAuthManager(state)
+				return GwImpl.DefaultAuthManager(state)
 			}
 			option.UserManagerHandler = func(state *gw.ServerState) gw.IUserManager {
-				return Impl.DefaultUserManager(state)
+				return GwImpl.DefaultUserManager(state)
 			}
 			option.PermissionManagerHandler = func(state *gw.ServerState) gw.IPermissionManager {
-				return Impl.DefaultPermissionManager(state)
+				return GwImpl.DefaultPermissionManager(state)
 			}
 			option.SessionStateManager = func(state *gw.ServerState) gw.ISessionStateManager {
-				return Impl.DefaultSessionManager(state)
+				return GwImpl.DefaultSessionManager(state)
 			}
 		},
 		onPrepareFunc: func(state *gw.ServerState) {
