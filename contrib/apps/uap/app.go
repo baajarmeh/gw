@@ -48,8 +48,8 @@ func New() App {
 			router.GET("menu/pageList", Api.QueryMenuPageList)
 			router.GET("menu/search", Api.SearchMenuPageList)
 			router.POST("menu/batchCreate", Api.BatchCreateMenu)
-			router.POST("menu/create", Api.CreateMenu)
-			router.POST("menu/modify", Api.ModifyMenu)
+			router.POST("menu/create/:app", Api.CreateMenu)
+			router.POST("menu/modify/:app", Api.ModifyMenu)
 		},
 		useFunc: func(option *gw.ServerOption) {
 			option.AppManagerHandler = func(state *gw.ServerState) gw.IAppManager {
