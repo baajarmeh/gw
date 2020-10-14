@@ -132,7 +132,7 @@ func (c *Context) MustParam(key string, out *string) error {
 // returns a error message for c.Bind(...).
 func (c *Context) Bind(out interface{}) error {
 	if err := c.Context.Bind(out); err != nil {
-		c.JSON400Msg(400, fmt.Sprintf("invalid request parameters, details: \n%v", err))
+		c.JSON400Msg(400, "invalid request parameters")
 		return err
 	}
 	return nil
@@ -143,7 +143,7 @@ func (c *Context) Bind(out interface{}) error {
 // returns a error message for c.BindQuery(...).
 func (c *Context) BindQuery(out interface{}) error {
 	if err := c.Context.BindQuery(out); err != nil {
-		c.JSON400Msg(400, fmt.Sprintf("invalid request parameters, details: \n%v", err))
+		c.JSON400Msg(400, "invalid request parameters")
 		return err
 	}
 	return nil
