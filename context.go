@@ -52,12 +52,20 @@ func (c *Context) Server() *HostServer {
 	return c.server
 }
 
-func (c *Context) ResolveByTyper(typer reflect.Type) (error, interface{}) {
-	return c.server.DIProvider.ResolveByTyperWithState(c, typer)
+func (c *Context) ResolveByTyper(typer reflect.Type) (err error, result interface{}) {
+	err, result = c.server.DIProvider.ResolveByTyperWithState(c, typer)
+	if err != nil {
+		c.JSON400Msg(400, "resolve object fail")
+	}
+	return
 }
 
 func (c *Context) ResolveByObjectTyper(object interface{}) error {
-	return c.server.DIProvider.ResolveByObjectTyper(object)
+	err := c.server.DIProvider.ResolveByObjectTyper(object)
+	if err != nil {
+		c.JSON400Msg(400, "resolve object fail")
+	}
+	return err
 }
 
 // StartTime returns the Context start *time.Time

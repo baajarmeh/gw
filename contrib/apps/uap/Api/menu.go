@@ -3,6 +3,7 @@ package Api
 import (
 	"github.com/oceanho/gw"
 	"github.com/oceanho/gw/contrib/apps/uap/Dto"
+	"github.com/oceanho/gw/contrib/apps/uap/Service"
 )
 
 func GetMenu(c *gw.Context) {
@@ -30,6 +31,10 @@ func CreateMenu(c *gw.Context) {
 func BatchCreateMenu(c *gw.Context) {
 	var dto Dto.Menu
 	if c.Bind(&dto) != nil {
+		return
+	}
+	var menuSvc Service.MenuService
+	if c.ResolveByObjectTyper(&menuSvc) != nil {
 		return
 	}
 }
