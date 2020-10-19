@@ -29,7 +29,7 @@ func CreateMenu(c *gw.Context) {
 }
 
 func BatchCreateMenu(c *gw.Context) {
-	var dto Dto.Menu
+	var dto Dto.BatchCreateMenuDto
 	if c.Bind(&dto) != nil {
 		return
 	}
@@ -37,6 +37,11 @@ func BatchCreateMenu(c *gw.Context) {
 	if c.ResolveByObjectTyper(&menuSvc) != nil {
 		return
 	}
+	if err := menuSvc.Create(&dto); err != nil {
+		c.JSON400Msg(400, err)
+		return
+	}
+	c.JSON200(nil)
 }
 
 func ModifyMenu(c *gw.Context) {

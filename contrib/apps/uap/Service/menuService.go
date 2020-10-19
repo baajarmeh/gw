@@ -33,8 +33,6 @@ func (ms MenuService) New(bc gw.BuiltinComponent) IMenuService {
 
 func (ms MenuService) Create(dto *Dto.BatchCreateMenuDto) error {
 	db := ms.Store.GetDbStore()
-	//var model Db.Menu
-	//var appId uint64
 	var appInfo = ms.AppManager.QueryByName(dto.App)
 	if appInfo == nil {
 		return fmt.Errorf("system not found app, key=%s", dto.App)
