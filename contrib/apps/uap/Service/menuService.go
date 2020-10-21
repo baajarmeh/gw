@@ -3,7 +3,9 @@ package Service
 import (
 	"fmt"
 	"github.com/oceanho/gw"
+	"github.com/oceanho/gw/contrib/apps/uap/Db"
 	"github.com/oceanho/gw/contrib/apps/uap/Dto"
+	"gorm.io/gorm"
 )
 
 type IMenuService interface {
@@ -37,7 +39,40 @@ func (ms MenuService) Create(dto *Dto.BatchCreateMenuDto) error {
 	if appInfo == nil {
 		return fmt.Errorf("system not found app, key=%s", dto.App)
 	}
-	return db.Error
+	tx := db.Begin()
+	err := reversionCreateMenu(appInfo.ID, tx, dto.Menus)
+	if err != nil {
+		tx.Rollback()
+	} else {
+		tx.Commit()
+	}
+	return err
+}
+
+func reversionCreateMenu(appID uint64, tx *gorm.DB, menus []Dto.Menu) error {
+	// children
+	for j := 0; j < len(menus); j++ {
+		var m = newMenuModel(appID, menus[j])
+		if err := tx.Create(m).Error; err != nil {
+			return err
+		}
+		if len(menus[j].Children) > 0 {
+			return reversionCreateMenu(appID, tx, menus[j].Children)
+		}
+	}
+	return nil
+}
+
+func newMenuModel(appId uint64, d Dto.Menu) *Db.Menu {
+	var m Db.Menu
+	m.ParentID = 0
+	m.Name = d.Name
+	m.Icon = d.Icon
+	m.Link = d.Link
+	m.AppID = appId
+	m.Permission = d.Permission
+	m.OpenBehavior = d.OpenBehavior
+	return &m
 }
 
 func (ms MenuService) Modify(dto *Dto.Menu) error {
