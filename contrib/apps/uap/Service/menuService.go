@@ -42,9 +42,9 @@ func (ms MenuService) Create(dto *Dto.BatchCreateMenuDto) error {
 	tx := db.Begin()
 	err := reversionCreateMenu(appInfo.ID, tx, dto.Menus)
 	if err != nil {
-		tx.Rollback()
+		err = tx.Rollback().Error
 	} else {
-		tx.Commit()
+		err = tx.Commit().Error
 	}
 	return err
 }
