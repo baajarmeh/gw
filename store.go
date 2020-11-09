@@ -260,18 +260,11 @@ func setupDb(db *gorm.DB) {
 			return
 		}
 		if ctx, ok := obj.(*Context); ok {
-			fns, ok := ctx.server.DbOpProcessor.UpdateAfter().handlers[db.Statement.Schema.ModelType]
-			if !ok {
-				fns, ok = ctx.server.DbOpProcessor.UpdateBefore().handlers[dbHandleAllModelTyper]
-			}
-			if ok {
-				if ok {
-					for _, f := range fns {
-						err = f(db, ctx)
-						if err != nil {
-							_ = db.AddError(err)
-						}
-					}
+			handlers := ctx.server.DbOpProcessor.UpdateAfter().Handlers(db.Statement.Schema.ModelType)
+			for _, f := range handlers {
+				err := f(db, ctx)
+				if err != nil {
+					_ = db.AddError(err)
 				}
 			}
 		}
