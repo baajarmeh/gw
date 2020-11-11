@@ -34,11 +34,11 @@ const (
 	RolePermission PermissionRelationType = 2
 )
 
-func (p PermissionEffectScope) IsApplicationScope() bool {
+func (p PermissionEffectScope) IsAppScope() bool {
 	return p == PermissionScopeApplication
 }
 
-func (p PermissionEffectScope) IsSystemScope() bool {
+func (p PermissionEffectScope) IsSysScope() bool {
 	return p == PermissionScopeApplication
 }
 
@@ -74,7 +74,7 @@ func NewPerm(key, name, descriptor string) *Permission {
 	}
 }
 
-func VisitPerms(perms []*Permission, app *AppInfo) {
+func FillAppInfoToPerms(perms []*Permission, app *AppInfo) {
 	for i := 0; i < len(perms); i++ {
 		perms[i].AppID = app.ID
 		perms[i].AppName = app.Name

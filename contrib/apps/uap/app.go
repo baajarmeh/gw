@@ -174,7 +174,7 @@ func initPerms(state *gw.ServerState) {
 	perms = append(perms, Const.AksPermDecorator.Permissions()...)
 	perms = append(perms, Const.RolePermDecorator.Permissions()...)
 	perms = append(perms, Const.CredentialPermDecorator.Permissions()...)
-	gw.VisitPerms(perms, appInfo)
+	gw.FillAppInfoToPerms(perms, appInfo)
 	err := state.PermissionManager().Create(perms...)
 	if err != nil {
 		logger.Error("initial permissions fail, err: %v", err)
